@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-50 text-ink-900 antialiased;
+}
+
+.dark body {
+  @apply bg-ink-950 text-ink-100;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-ink-300 rounded-full; }
+.dark ::-webkit-scrollbar-thumb { @apply bg-ink-700; }
+
+/* Hide native number input spinners (Chrome, Safari, Firefox) */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white shadow-card border border-ink-100 p-5;
+  }
+  .dark .card {
+    @apply bg-ink-900 border-ink-800;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-500 transition-colors;
+  }
+  .nav-link:hover {
+    @apply bg-ink-100 text-ink-900;
+  }
+  .dark .nav-link:hover {
+    @apply bg-ink-800 text-white;
+  }
+  .nav-link.active {
+    @apply bg-brand-600 text-white shadow-soft;
+  }
+  .dark .nav-link.active {
+    @apply bg-brand-600 text-white;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+  }
+  .btn-ghost {
+    @apply btn text-ink-600 hover:bg-ink-100;
+  }
+  .dark .btn-ghost {
+    @apply text-ink-300 hover:bg-ink-800;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm font-medium outline-none transition
+           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+  .dark .input {
+    @apply border-ink-700 bg-ink-800 text-white placeholder:text-ink-500;
+  }
+}

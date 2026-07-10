@@ -1,0 +1,80 @@
+import { getAccessToken, getRefreshToken, loadSession, saveSession } from '../auth/session.js'
+
+const BASE = '/v1'
+
+async function refreshTokens() {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) throw new Error('No refresh token')
+  const res = await fetch(`${BASE}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
+  })
+  if (!res.ok) throw new Error('Session expired')
+  const data = await res.json()
+  const prev = loadSession() || {}
+  saveSession({ ...prev, ...data })
+  return data.accessToken
+}
+
+export async function apiFetch(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...options.headers }
+  let token = getAccessToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  let res = await fetch(`${BASE}${path}`, { ...options, headers })
+
+  if (res.status === 401 && getRefreshToken()) {
+    try {
+      token = await refreshTokens()
+      headers.Authorization = `Bearer ${token}`
+      res = await fetch(`${BASE}${path}`, { ...options, headers })
+    } catch {
+      saveSession(null)
+      throw new Error('Session expired')
+    }
+  }
+
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const err = new Error(data.error || res.statusText)
+    err.status = res.status
+    err.data = data
+    throw err
+  }
+  return data
+}
+
+export async function requestOtp(email) {
+  return apiFetch('/auth/otp/request', { method: 'POST', body: JSON.stringify({ email }) })
+}
+
+export async function verifyOtp(email, otp) {
+  const data = await apiFetch('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ email, otp }) })
+  saveSession(data)
+  return data
+}
+
+export async function logoutApi() {
+  const refreshToken = getRefreshToken()
+  if (refreshToken) {
+    await fetch(`${BASE}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => {})
+  }
+  saveSession(null)
+}
+
+export async function fetchPlans() {
+  return apiFetch('/plans')
+}
+
+export async function fetchPlan(planId) {
+  return apiFetch(`/plans/${planId}`)
+}
+
+export async function syncPlan(planId, body) {
+  return apiFetch(`/plans/${planId}`, { method: 'PUT', body: JSON.stringify(body) })
+}

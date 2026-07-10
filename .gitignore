@@ -1,0 +1,14 @@
+node_modules/
+dist/
+apps/web/dist/
+apps/api/data/
+apps/web/android/.gradle/
+apps/web/android/app/build/
+apps/web/android/build/
+apps/web/android/capacitor-cordova-android-plugins/build/
+.tools/
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db

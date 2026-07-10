@@ -1,0 +1,8 @@
+{
+  "appId": "in.projectlab.app",
+  "appName": "ProjectLab",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
