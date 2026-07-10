@@ -1,6 +1,8 @@
 import { getAccessToken, getRefreshToken, loadSession, saveSession } from '../auth/session.js'
 
-const BASE = '/v1'
+// In dev the Vite proxy forwards /v1 → localhost:3001; in APK/production builds
+// set VITE_API_URL to the deployed API origin (e.g. https://projectlab-api.onrender.com).
+const BASE = (import.meta.env.VITE_API_URL || '') + '/v1'
 
 async function refreshTokens() {
   const refreshToken = getRefreshToken()
