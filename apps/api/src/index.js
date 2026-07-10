@@ -7,7 +7,9 @@ import { users, ready } from './db.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
-const isDev = process.env.NODE_ENV !== 'production'
+// Until an email service (RESEND_API_KEY) is wired up, the OTP is returned in the
+// response so login works. Once email sending exists, this automatically turns off.
+const showDevOtp = !process.env.RESEND_API_KEY
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '512kb' }))
@@ -20,7 +22,7 @@ app.post('/v1/auth/otp/request', async (req, res, next) => {
   try {
     const code = await requestOtp(req.body.email || '')
     const body = { ok: true, message: 'OTP sent' }
-    if (isDev) body.devOtp = code
+    if (showDevOtp) body.devOtp = code
     res.json(body)
   } catch (err) { next(err) }
 })
