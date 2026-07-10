@@ -4,12 +4,10 @@ import { requestOtp, verifyOtp, refreshSession, logout } from './auth.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
+import { emailConfigured, sendOtpEmail } from './email.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
-// Until an email service (RESEND_API_KEY) is wired up, the OTP is returned in the
-// response so login works. Once email sending exists, this automatically turns off.
-const showDevOtp = !process.env.RESEND_API_KEY
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '512kb' }))
@@ -22,7 +20,11 @@ app.post('/v1/auth/otp/request', async (req, res, next) => {
   try {
     const code = await requestOtp(req.body.email || '')
     const body = { ok: true, message: 'OTP sent' }
-    if (showDevOtp) body.devOtp = code
+    if (emailConfigured) {
+      await sendOtpEmail(req.body.email.trim().toLowerCase(), code)
+    } else {
+      body.devOtp = code
+    }
     res.json(body)
   } catch (err) { next(err) }
 })
