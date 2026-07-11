@@ -10,6 +10,10 @@ html, body, #root {
   height: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-ink-50 text-ink-900 antialiased;
 }
@@ -18,13 +22,27 @@ body {
   @apply bg-ink-950 text-ink-100;
 }
 
+/* Accessible focus ring for every interactive element (keyboard only) */
+*:focus-visible {
+  outline: none;
+  @apply ring-2 ring-brand-500/60 ring-offset-2 ring-offset-white rounded-lg;
+}
+.dark *:focus-visible {
+  @apply ring-offset-ink-950;
+}
+
+/* Text selection */
+::selection { @apply bg-brand-500/25; }
+
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { @apply bg-ink-300 rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-ink-400; }
 .dark ::-webkit-scrollbar-thumb { @apply bg-ink-700; }
+.dark ::-webkit-scrollbar-thumb:hover { @apply bg-ink-600; }
 
-/* Hide native number input spinners (Chrome, Safari, Firefox) */
+/* Hide native number input spinners */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -37,13 +55,21 @@ input[type='number'] {
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-white shadow-card border border-ink-100 p-5;
+    @apply rounded-2xl bg-white shadow-card border border-ink-100 p-5
+           animate-fade-in-up transition-shadow duration-300;
   }
   .dark .card {
     @apply bg-ink-900 border-ink-800;
   }
+  /* Opt-in hover lift for clickable cards */
+  .card-interactive {
+    @apply cursor-pointer hover:shadow-lift hover:-translate-y-0.5
+           transition-[transform,box-shadow] duration-300 ease-out-expo;
+  }
+
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-500 transition-colors;
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-500
+           transition-colors duration-200;
   }
   .nav-link:hover {
     @apply bg-ink-100 text-ink-900;
@@ -57,11 +83,22 @@ input[type='number'] {
   .dark .nav-link.active {
     @apply bg-brand-600 text-white;
   }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 min-h-[44px]
+           text-sm font-semibold select-none
+           transition-[background-color,box-shadow,transform] duration-150 ease-out
+           active:scale-[0.97]
+           disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white hover:bg-brand-700;
+    @apply btn bg-brand-600 text-white shadow-soft hover:bg-brand-700 hover:shadow-glow;
+  }
+  .btn-secondary {
+    @apply btn border border-ink-200 bg-white text-ink-700 hover:bg-ink-50 hover:border-ink-300;
+  }
+  .dark .btn-secondary {
+    @apply border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800 hover:border-ink-600;
   }
   .btn-ghost {
     @apply btn text-ink-600 hover:bg-ink-100;
@@ -69,14 +106,42 @@ input[type='number'] {
   .dark .btn-ghost {
     @apply text-ink-300 hover:bg-ink-800;
   }
+
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
   }
+
   .input {
-    @apply w-full rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm font-medium outline-none transition
-           focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 min-h-[44px]
+           text-sm font-medium outline-none transition duration-150
+           placeholder:text-ink-400
+           hover:border-ink-300
+           focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
   }
   .dark .input {
-    @apply border-ink-700 bg-ink-800 text-white placeholder:text-ink-500;
+    @apply border-ink-700 bg-ink-800 text-white placeholder:text-ink-500 hover:border-ink-600;
+  }
+
+  /* Loading skeleton — shimmer sweep */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    content: '';
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+  }
+  .dark .skeleton::after {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+  }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

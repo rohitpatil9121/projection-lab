@@ -34,9 +34,49 @@ export default {
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
+      // 8px-grid-friendly extra sizes
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+      },
       boxShadow: {
         card: '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
         soft: '0 4px 24px rgba(15,23,42,0.06)',
+        lift: '0 12px 32px -8px rgba(15,23,42,0.14), 0 4px 12px -4px rgba(15,23,42,0.08)',
+        glow: '0 0 0 1px rgba(99,102,241,0.15), 0 8px 30px -6px rgba(99,102,241,0.35)',
+      },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      keyframes: {
+        'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          '0%': { opacity: '0', transform: 'scale(0.96)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        shimmer: {
+          '100%': { transform: 'translateX(100%)' },
+        },
+        float: {
+          '0%,100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-14px)' },
+        },
+        'gradient-pan': {
+          '0%,100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.4s ease-out both',
+        'fade-in-up': 'fade-in-up 0.5s cubic-bezier(0.16,1,0.3,1) both',
+        'scale-in': 'scale-in 0.35s cubic-bezier(0.16,1,0.3,1) both',
+        shimmer: 'shimmer 1.6s infinite',
+        float: 'float 6s ease-in-out infinite',
+        'gradient-pan': 'gradient-pan 12s ease infinite',
       },
     },
   },
