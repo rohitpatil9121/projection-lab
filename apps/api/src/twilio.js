@@ -55,7 +55,6 @@ export async function sendPhoneOtp(phone) {
   bucket.expiresAt = now + OTP_TTL_MS
   bucket.attempts.push(now)
   await otps.put(phone, bucket)
-  console.log(`[OTP-SMS] ${phone} → ${code}`)
   return { devOtp: code }
 }
 

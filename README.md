@@ -28,18 +28,31 @@ This starts:
 ## Auth & sync
 
 - **Guest mode**: works immediately with localStorage (no sign-in required)
-- **Sign in**: email OTP at `/login` — in dev, OTP is shown on screen and logged in the API console
-- Edits sync to the API after 2 seconds (debounced)
+- **Sign in**: mobile-number OTP (Twilio Verify) or email OTP at `/login`
+- When SMS/email delivery isn't configured, the OTP is returned in the API response for testing (`devOtp`). **Configure Twilio/SMTP before public launch.**
+- Edits sync to the API after 2 seconds (debounced), stored per-user in Postgres
 - First login with a local plan prompts to import it to the cloud
+
+## Architecture
+
+- **Web** — React + Vite + Tailwind SPA, wrapped as an Android app via Capacitor
+- **API** — Express REST, JWT (15 min access) + rotating refresh tokens, helmet + rate limiting, Zod-validated payloads
+- **Database** — Supabase Postgres (set `DATABASE_URL`); falls back to local SQLite for dev
+- **Hosting** — API on Render, database on Supabase (both Singapore region)
+
+## Deployment
+
+- API env vars (Render): `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`, and optionally `SMTP_*` / `TWILIO_*` for OTP delivery. See `apps/api/.env.example`.
+- Build the APK against the deployed API: `VITE_API_URL=https://your-api npm run apk`
+- Privacy policy is served at `/privacy-policy.html` (required for the Play Store listing)
 
 ## Project structure
 
 ```
 projectlab/
 ├── apps/
-│   ├── web/       React + Vite + Tailwind (main UI)
-│   ├── api/       Express REST API (file-based DB for local dev)
-│   └── mobile/    Expo scaffold (Phase 2)
+│   ├── web/       React + Vite + Tailwind (main UI) + Capacitor Android
+│   └── api/       Express REST API (Postgres/Supabase, SQLite fallback)
 ├── packages/
 │   ├── engine/    Pure JS projection + Monte Carlo engine
 │   ├── schema/    Zod validation for plan payloads
