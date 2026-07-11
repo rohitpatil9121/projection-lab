@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { requestOtp, verifyOtp, refreshSession, logout } from './auth.js'
+import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, refreshSession, logout } from './auth.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
@@ -32,6 +32,27 @@ app.post('/v1/auth/otp/request', async (req, res, next) => {
 app.post('/v1/auth/otp/verify', async (req, res, next) => {
   try {
     const session = await verifyOtp(req.body.email || '', req.body.otp || '')
+    await ensureDefaultPlan(session.user.id)
+    res.json({
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: publicUser(session.user),
+    })
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/phone/request', async (req, res, next) => {
+  try {
+    const { phone, devOtp } = await requestPhoneOtp(req.body.phone || '')
+    const body = { ok: true, message: 'OTP sent', phone }
+    if (devOtp) body.devOtp = devOtp
+    res.json(body)
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/phone/verify', async (req, res, next) => {
+  try {
+    const session = await verifyPhoneOtp(req.body.phone || '', req.body.otp || '')
     await ensureDefaultPlan(session.user.id)
     res.json({
       accessToken: session.accessToken,
@@ -138,6 +159,7 @@ function publicUser(user) {
   return {
     id: user.id,
     email: user.email,
+    phone: user.phone,
     name: user.name,
     currentAge: user.currentAge,
     retirementAge: user.retirementAge,
