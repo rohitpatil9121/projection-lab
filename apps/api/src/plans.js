@@ -1,5 +1,5 @@
 import { plans, users, id } from './db.js'
-import { defaultPlanPayload, parsePlanPayload } from '@projectlab/schema'
+import { emptyPlanPayload, parsePlanPayload } from '@projectlab/schema'
 
 export async function listPlans(userId) {
   const rows = await plans.listByUser(userId)
@@ -29,7 +29,9 @@ export async function createPlan(userId, { name = 'Base scenario', payload } = {
     err.status = 403
     throw err
   }
-  const parsed = parsePlanPayload(payload || defaultPlanPayload)
+  // New sign-ups get an EMPTY plan so onboarding collects their real data,
+  // instead of pre-filling sample figures.
+  const parsed = parsePlanPayload(payload || emptyPlanPayload)
   const now = new Date().toISOString()
   return plans.create({
     id: id(),
