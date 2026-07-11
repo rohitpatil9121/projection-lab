@@ -85,6 +85,60 @@ export async function verifyOtp(email, otp) {
   return { user, accessToken: signAccess(user.id), refreshToken, sessionId: session.id }
 }
 
+// ---- Phone (SMS OTP via Twilio) ----
+
+export async function requestPhoneOtp(phone) {
+  const { normalizePhone, sendPhoneOtp } = await import('./twilio.js')
+  const e164 = normalizePhone(phone)
+  if (!e164) {
+    const err = new Error('Enter a valid 10-digit mobile number')
+    err.status = 400
+    throw err
+  }
+  const result = await sendPhoneOtp(e164)
+  return { phone: e164, ...result }
+}
+
+export async function verifyPhoneOtp(phone, otp) {
+  const { normalizePhone, checkPhoneOtp } = await import('./twilio.js')
+  const e164 = normalizePhone(phone)
+  if (!e164) {
+    const err = new Error('Enter a valid mobile number')
+    err.status = 400
+    throw err
+  }
+  await checkPhoneOtp(e164, otp)
+
+  let user = await users.byPhone(e164)
+  if (!user) {
+    user = await users.create({
+      id: id(),
+      phone: e164,
+      name: 'User ' + e164.slice(-4),
+      currentAge: 32,
+      retirementAge: 60,
+      lifeExpectancy: 85,
+      inflation: 0.06,
+      taxRegime: 'old',
+      taxSlab: 0.3,
+      currency: 'INR',
+      uiPrefs: { dark: false, realTerms: true },
+      createdAt: new Date().toISOString(),
+    })
+  }
+
+  const refreshToken = crypto.randomBytes(32).toString('hex')
+  const session = await sessions.create({
+    id: id(),
+    userId: user.id,
+    refreshHash: hashToken(refreshToken),
+    expiresAt: new Date(Date.now() + REFRESH_DAYS * 86400000).toISOString(),
+    createdAt: new Date().toISOString(),
+  })
+
+  return { user, accessToken: signAccess(user.id), refreshToken, sessionId: session.id }
+}
+
 export async function refreshSession(refreshToken) {
   const session = await sessions.byHash(hashToken(refreshToken))
   if (!session || new Date(session.expiresAt) < new Date()) {

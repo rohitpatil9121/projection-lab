@@ -1,8 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts'
 import { useStore } from '../data/store.js'
 import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionTitle } from '../components/ui.jsx'
+import { IconPlus, IconTrash } from '../components/Icons.jsx'
+
+const PALETTE = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#f43f5e']
 
 // Custom node renderer with labels + value.
 function SankeyNode({ x, y, width, height, index, payload, containerWidth }) {
@@ -141,8 +144,8 @@ export default function CashFlow() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <BreakdownCard title="Income Sources" items={incomes} total={totalIncome} />
-        <BreakdownCard title="Expense Categories" items={expenses} total={totalExpense} />
+        <BreakdownCard title="Income Sources" collection="incomes" items={incomes} total={totalIncome} kind="income" />
+        <BreakdownCard title="Expense Categories" collection="expenses" items={expenses} total={totalExpense} kind="expense" />
       </div>
     </div>
   )
@@ -152,27 +155,78 @@ function Mini({ label, value, color }) {
   return (
     <div className="card">
       <div className="flex items-center gap-2 text-xs font-semibold text-ink-400 uppercase tracking-wide">
-        <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />{label}
+        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} /><span className="truncate">{label}</span>
       </div>
-      <div className="mt-1.5 text-2xl font-extrabold tracking-tight">{value}</div>
+      <div className="mt-1.5 text-lg sm:text-2xl font-extrabold tracking-tight tabular-nums">{value}</div>
     </div>
   )
 }
 
-function BreakdownCard({ title, items, total }) {
+// Editable income / expense list: inline edit name + amount, delete, and an add form.
+function BreakdownCard({ title, collection, items, total, kind }) {
+  const profile = useStore((s) => s.profile)
+  const updateItem = useStore((s) => s.updateItem)
+  const removeItem = useStore((s) => s.removeItem)
+  const addItem = useStore((s) => s.addItem)
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState({ name: '', amount: '' })
+
+  const save = () => {
+    if (!draft.name.trim() || !(Number(draft.amount) > 0)) return
+    addItem(collection, {
+      name: draft.name.trim(),
+      amount: Number(draft.amount),
+      growth: kind === 'income' ? 0.07 : 0.06,
+      startAge: profile.currentAge,
+      endAge: kind === 'income' ? profile.retirementAge : 85,
+      color: PALETTE[items.length % PALETTE.length],
+    })
+    setDraft({ name: '', amount: '' })
+    setAdding(false)
+  }
+
   return (
     <Card>
-      <SectionTitle title={title} />
+      <SectionTitle title={title} subtitle={`${items.length} ${kind === 'income' ? 'sources' : 'categories'}`}
+        action={<button onClick={() => setAdding(!adding)} className="btn-primary !py-1.5"><IconPlus size={16} /> Add</button>} />
+
+      {adding && (
+        <div className="mb-3 rounded-xl border border-dashed border-brand-300 bg-brand-50/50 dark:bg-brand-500/5 p-3 space-y-2">
+          <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            placeholder={kind === 'income' ? 'e.g. Freelance income' : 'e.g. Kids school fees'} className="input !py-1.5 text-sm" />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-sm">₹</span>
+              <input type="number" value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                placeholder="Yearly amount" className="input !py-1.5 pl-7 text-sm" />
+            </div>
+            <button onClick={save} className="btn-primary !py-1.5 text-sm">Save</button>
+            <button onClick={() => setAdding(false)} className="btn-ghost !py-1.5 text-sm">Cancel</button>
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {items.map((it) => {
           const pct = total ? Math.round((it.amount / total) * 100) : 0
           return (
-            <div key={it.id}>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="font-semibold flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: it.color }} />{it.name}
+            <div key={it.id} className="group">
+              <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                <span className="font-semibold flex items-center gap-2 min-w-0 flex-1">
+                  <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: it.color }} />
+                  <input value={it.name} onChange={(e) => updateItem(collection, it.id, { name: e.target.value })}
+                    className="bg-transparent outline-none min-w-0 flex-1 focus:text-brand-600" />
                 </span>
-                <span className="text-ink-500">{fmtMoney(it.amount)} · {pct}%</span>
+                <span className="flex items-center gap-1 shrink-0 text-ink-500">
+                  <span className="text-xs">₹</span>
+                  <input type="number" value={it.amount} onWheel={(e) => e.currentTarget.blur()}
+                    onChange={(e) => updateItem(collection, it.id, { amount: Number(e.target.value) })}
+                    className="w-[76px] text-right bg-transparent outline-none font-semibold tabular-nums focus:text-brand-600 [appearance:textfield]" />
+                  <span className="text-xs text-ink-400 w-8 text-right">{pct}%</span>
+                  <button onClick={() => removeItem(collection, it.id)} className="opacity-0 group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition ml-1">
+                    <IconTrash size={14} />
+                  </button>
+                </span>
               </div>
               <div className="h-2 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden">
                 <div className="h-full rounded-full" style={{ width: `${pct}%`, background: it.color }} />
@@ -180,6 +234,7 @@ function BreakdownCard({ title, items, total }) {
             </div>
           )
         })}
+        {items.length === 0 && <div className="text-sm text-ink-400 py-2">Nothing yet — tap Add.</div>}
       </div>
     </Card>
   )

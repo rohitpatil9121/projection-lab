@@ -57,6 +57,16 @@ export async function verifyOtp(email, otp) {
   return data
 }
 
+export async function requestPhoneOtp(phone) {
+  return apiFetch('/auth/phone/request', { method: 'POST', body: JSON.stringify({ phone }) })
+}
+
+export async function verifyPhoneOtp(phone, otp) {
+  const data = await apiFetch('/auth/phone/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) })
+  saveSession(data)
+  return data
+}
+
 export async function logoutApi() {
   const refreshToken = getRefreshToken()
   if (refreshToken) {
