@@ -1,4 +1,32 @@
+import { useEffect } from 'react'
 import { IconTrend } from './Icons.jsx'
+
+// Centered modal dialog with backdrop. Closes on Escape / backdrop click.
+export function Modal({ open, onClose, title, children }) {
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-5 bg-ink-950/50 backdrop-blur-sm animate-fade-in"
+      onClick={onClose}
+      role="dialog" aria-modal="true"
+    >
+      <div
+        className="card w-full max-w-sm shadow-lift animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {title && <h3 className="text-base font-bold tracking-tight mb-3">{title}</h3>}
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export function Card({ className = '', interactive = false, children, ...rest }) {
   return (

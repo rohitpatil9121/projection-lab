@@ -2,9 +2,10 @@ import { useStore } from '../data/store.js'
 import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionTitle } from '../components/ui.jsx'
 import { IconPlus, IconTrash } from '../components/Icons.jsx'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 export default function Settings() {
+  const navigate = useNavigate()
   const profile = useStore((s) => s.profile)
   const setProfile = useStore((s) => s.setProfile)
   const incomes = useStore((s) => s.incomes)
@@ -16,17 +17,19 @@ export default function Settings() {
   const auth = useStore((s) => s.auth)
   const logout = useStore((s) => s.logout)
 
+  const signOut = async () => { await logout(); navigate('/login') }
+
   return (
     <div className="space-y-6">
       <Card>
         <SectionTitle title="Account & Sync" subtitle="Sign in to sync your plan across devices" />
         {auth ? (
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="font-semibold">{auth.user.email}</div>
-              <div className="text-xs text-ink-400">Cloud sync enabled</div>
+            <div className="min-w-0">
+              <div className="font-semibold truncate">{auth.user.email || auth.user.phone}</div>
+              <div className="text-xs text-emerald-600 font-medium flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Cloud sync enabled</div>
             </div>
-            <button onClick={() => logout()} className="btn-ghost">Sign out</button>
+            <button onClick={signOut} className="btn-secondary text-rose-600 shrink-0">Sign out</button>
           </div>
         ) : (
           <div className="flex items-center justify-between gap-4">
