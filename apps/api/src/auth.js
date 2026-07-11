@@ -2,18 +2,25 @@ import crypto from 'node:crypto'
 import jwt from 'jsonwebtoken'
 import { users, otps, sessions, hashToken, id } from './db.js'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'projectlab-dev-secret-change-me'
+const JWT_SECRET = process.env.JWT_SECRET
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in production. Refusing to start.')
+  }
+  console.warn('[auth] JWT_SECRET not set — using an insecure dev-only default. Set JWT_SECRET before deploying.')
+}
+const SECRET = JWT_SECRET || 'projectlab-insecure-dev-only'
 const ACCESS_TTL = '15m'
 const REFRESH_DAYS = 30
 const OTP_TTL_MS = 5 * 60 * 1000
 const OTP_RATE_LIMIT = 5
 
 export function signAccess(userId) {
-  return jwt.sign({ sub: userId }, JWT_SECRET, { expiresIn: ACCESS_TTL })
+  return jwt.sign({ sub: userId }, SECRET, { expiresIn: ACCESS_TTL })
 }
 
 export function verifyAccess(token) {
-  return jwt.verify(token, JWT_SECRET)
+  return jwt.verify(token, SECRET)
 }
 
 function otpCode() {
@@ -41,7 +48,6 @@ export async function requestOtp(email) {
   bucket.expiresAt = now + OTP_TTL_MS
   bucket.attempts.push(now)
   await otps.put(normalized, bucket)
-  console.log(`[OTP] ${normalized} → ${code}`)
   return code
 }
 

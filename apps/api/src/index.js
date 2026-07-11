@@ -1,5 +1,7 @@
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, refreshSession, logout } from './auth.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
@@ -9,8 +11,30 @@ import { emailConfigured, sendOtpEmail } from './email.js'
 const app = express()
 const PORT = process.env.PORT || 3001
 
-app.use(cors({ origin: true, credentials: true }))
+app.set('trust proxy', 1) // behind Render's proxy — needed for correct rate-limit IPs
+app.use(helmet())
+// Auth is via Bearer tokens (not cookies), so we allow any origin without credentials.
+app.use(cors({ origin: true, credentials: false }))
 app.use(express.json({ limit: '512kb' }))
+
+// Global rate limit — 300 requests / 15 min per IP.
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+}))
+
+// Stricter limit on auth endpoints — 20 attempts / 15 min per IP.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts. Try again later.' },
+})
+app.use('/v1/auth', authLimiter)
 
 app.get('/healthz', (_req, res) => {
   res.json({ ok: true, service: 'projectlab-api', time: new Date().toISOString() })

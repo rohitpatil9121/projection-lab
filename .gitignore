@@ -12,3 +12,7 @@ apps/web/android/capacitor-cordova-android-plugins/build/
 *.log
 .DS_Store
 Thumbs.db
+
+# build artifacts & junk
+ProjectLab-debug.apk
+*.apk
