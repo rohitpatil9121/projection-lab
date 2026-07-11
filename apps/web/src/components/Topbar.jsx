@@ -1,6 +1,8 @@
-import { Link, useLocation } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
-import { IconSun, IconMoon } from './Icons.jsx'
+import { Modal } from './ui.jsx'
+import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
 
 const titles = {
   '/': 'Today',
@@ -24,6 +26,7 @@ const syncLabels = {
 
 export default function Topbar() {
   const { pathname } = useLocation()
+  const navigate = useNavigate()
   const profile = useStore((s) => s.profile)
   const dark = useStore((s) => s.ui.dark)
   const toggleDark = useStore((s) => s.toggleDark)
@@ -36,31 +39,64 @@ export default function Topbar() {
   const switchScenario = useStore((s) => s.switchScenario)
   const addScenario = useStore((s) => s.addScenario)
   const deleteScenario = useStore((s) => s.deleteScenario)
+  const logout = useStore((s) => s.logout)
+
+  const [newOpen, setNewOpen] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [delOpen, setDelOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const onClick = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false) }
+    window.addEventListener('mousedown', onClick)
+    return () => window.removeEventListener('mousedown', onClick)
+  }, [])
+
+  const createScenario = () => {
+    if (newName.trim()) addScenario(newName.trim())
+    setNewName('')
+    setNewOpen(false)
+  }
+
+  const confirmDelete = () => {
+    deleteScenario(activeScenarioId)
+    setDelOpen(false)
+  }
+
+  const signOut = async () => {
+    setMenuOpen(false)
+    await logout()
+    navigate('/login')
+  }
+
+  const activeName = scenarios.find((x) => x.id === activeScenarioId)?.name
+  const initials = (profile.name || 'U').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50/80 dark:bg-ink-950/80 backdrop-blur px-5 md:px-8 py-4">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50/80 dark:bg-ink-950/80 backdrop-blur px-5 md:px-8 py-4">
       <div className="min-w-0">
         <h1 className="text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'ProjectLab'}</h1>
         <div className="flex items-center gap-1 text-xs text-ink-400 font-medium">
           <select
             value={activeScenarioId}
             onChange={(e) => switchScenario(e.target.value)}
-            className="bg-transparent font-semibold text-ink-500 dark:text-ink-300 outline-none cursor-pointer max-w-[140px] truncate"
+            className="bg-transparent font-semibold text-ink-500 dark:text-ink-300 outline-none cursor-pointer max-w-[140px] truncate rounded"
             title="Switch scenario"
           >
             {scenarios.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
           </select>
           <button
-            onClick={() => { const name = prompt('New scenario name (copies current plan):'); if (name?.trim()) addScenario(name.trim()) }}
-            className="px-1 text-brand-600 hover:text-brand-700 font-bold" title="New scenario (copy of current)"
+            onClick={() => setNewOpen(true)}
+            className="px-1.5 text-brand-600 hover:text-brand-700 font-bold rounded" title="New scenario (copy of current)"
           >+</button>
           {scenarios.length > 1 && (
             <button
-              onClick={() => { const sc = scenarios.find((x) => x.id === activeScenarioId); if (confirm(`Delete scenario "${sc?.name}"?`)) deleteScenario(activeScenarioId) }}
-              className="px-1 text-ink-400 hover:text-rose-500" title="Delete this scenario"
+              onClick={() => setDelOpen(true)}
+              className="px-1.5 text-ink-400 hover:text-rose-500 rounded" title="Delete this scenario"
             >×</button>
           )}
-          <span className="hidden sm:inline truncate">· {auth?.user?.email || profile.name}</span>
+          <span className="hidden sm:inline truncate">· {auth?.user?.email || auth?.user?.phone || profile.name}</span>
         </div>
       </div>
 
@@ -85,16 +121,65 @@ export default function Topbar() {
           <Link to="/login" className="btn-ghost text-xs sm:text-sm">Sign in</Link>
         )}
 
-        <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme">
+        <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme" aria-label="Toggle theme">
           {dark ? <IconSun size={19} /> : <IconMoon size={19} />}
         </button>
-        <div className="hidden sm:flex items-center gap-2 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 px-2.5 py-1.5">
-          <div className="grid place-items-center h-7 w-7 rounded-full bg-brand-100 text-brand-700 text-xs font-bold">
-            {profile.name.split(' ').map((w) => w[0]).join('')}
-          </div>
-          <span className="text-sm font-semibold pr-1">{profile.name}</span>
+
+        {/* Avatar + dropdown menu */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((o) => !o)}
+            className="flex items-center gap-2 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 pl-1.5 pr-2 py-1.5 hover:border-ink-200 dark:hover:border-ink-700 transition-colors"
+            aria-haspopup="true" aria-expanded={menuOpen}
+          >
+            <div className="grid place-items-center h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xs font-bold">{initials}</div>
+            <span className="hidden sm:inline text-sm font-semibold max-w-[120px] truncate">{profile.name || 'Guest'}</span>
+            <IconChevron size={14} className={`text-ink-400 transition-transform ${menuOpen ? 'rotate-90' : ''}`} />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 shadow-lift p-1.5 animate-scale-in origin-top-right">
+              <div className="px-3 py-2 border-b border-ink-100 dark:border-ink-800 mb-1">
+                <div className="text-sm font-bold truncate">{profile.name || 'Guest'}</div>
+                <div className="text-xs text-ink-400 truncate">{auth?.user?.email || auth?.user?.phone || 'Not signed in'}</div>
+              </div>
+              <Link to="/settings" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors">⚙️ Settings</Link>
+              {auth ? (
+                <button onClick={signOut} className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">↩ Sign out</button>
+              ) : (
+                <Link to="/login" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors">→ Sign in</Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {/* New scenario modal */}
+      <Modal open={newOpen} onClose={() => setNewOpen(false)} title="New scenario">
+        <p className="text-sm text-ink-400 mb-3">Creates a copy of your current plan you can tweak independently.</p>
+        <input
+          autoFocus value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') createScenario() }}
+          placeholder="e.g. Retire at 50"
+          className="input"
+        />
+        <div className="flex gap-2 justify-end mt-4">
+          <button onClick={() => setNewOpen(false)} className="btn-secondary">Cancel</button>
+          <button onClick={createScenario} className="btn-primary" disabled={!newName.trim()}>Create</button>
+        </div>
+      </Modal>
+
+      {/* Delete scenario confirm */}
+      <Modal open={delOpen} onClose={() => setDelOpen(false)} title="Delete scenario?">
+        <p className="text-sm text-ink-500 dark:text-ink-300">
+          "<span className="font-semibold">{activeName}</span>" and its data will be removed. This can't be undone.
+        </p>
+        <div className="flex gap-2 justify-end mt-4">
+          <button onClick={() => setDelOpen(false)} className="btn-secondary">Cancel</button>
+          <button onClick={confirmDelete} className="btn bg-rose-600 text-white hover:bg-rose-700">Delete</button>
+        </div>
+      </Modal>
     </header>
   )
 }
