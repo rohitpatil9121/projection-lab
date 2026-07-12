@@ -35,10 +35,21 @@ export function normalizePhone(raw) {
 // Returns { devOtp } when running in fallback mode, else {}.
 export async function sendPhoneOtp(phone) {
   if (phoneConfigured) {
-    await client.verify.v2
-      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
-      .verifications.create({ to: phone, channel: 'sms' })
-    return {}
+    try {
+      await client.verify.v2
+        .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+        .verifications.create({ to: phone, channel: 'sms' })
+      return {}
+    } catch (e) {
+      // Present a clean message instead of leaking Twilio internals to the user.
+      const err = new Error(
+        /unverified/i.test(e.message || '')
+          ? "We couldn't send an SMS to this number yet. Please try the Email option, or contact support."
+          : "Couldn't send OTP right now. Please try again or use the Email option.",
+      )
+      err.status = 400
+      throw err
+    }
   }
 
   // Fallback: generate + store our own OTP (reuses the otps table).

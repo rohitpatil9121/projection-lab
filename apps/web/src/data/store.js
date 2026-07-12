@@ -161,11 +161,15 @@ export const useStore = create((set, get) => ({
 
   async afterLogin(user) {
     const local = load()
-    const hasLocal = localStorage.getItem(KEY) != null
+    const localHasData = (local.accounts?.length || 0) + (local.incomes?.length || 0) > 0
     const plans = await fetchPlans()
+
     if (plans.length) {
       const plan = await fetchPlan(plans[0].id)
-      if (hasLocal && confirm('We found a local plan. Import it to the cloud? (Cancel keeps the cloud copy)')) {
+      const cloudHasData = (plan.payload?.accounts?.length || 0) + (plan.payload?.incomes?.length || 0) > 0
+      // Returning user with a synced plan → use the cloud copy.
+      // New signup (empty cloud) but built data as a guest → import that data.
+      if (!cloudHasData && localHasData) {
         const updated = await syncPlan(plan.id, {
           payload: planPayload(local),
           version: plan.version,
@@ -179,7 +183,7 @@ export const useStore = create((set, get) => ({
     } else {
       const plan = await apiFetch('/plans', {
         method: 'POST',
-        body: JSON.stringify({ payload: planPayload(hasLocal ? local : get()) }),
+        body: JSON.stringify({ payload: planPayload(localHasData ? local : get()) }),
       })
       get().applyServerPlan(plan, user)
     }
