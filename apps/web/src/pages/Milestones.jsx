@@ -107,10 +107,14 @@ export default function Milestones() {
             <label className="block">
               <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Measure progress against</span>
               <select value={draft.metric} onChange={(e) => setDraft({ ...draft, metric: e.target.value })} className="input text-sm mt-1">
-                <option value="netWorth">Net Worth — all assets minus loans</option>
-                <option value="investable">Investments — only your investment accounts</option>
+                <option value="netWorth">Net Worth</option>
+                <option value="investable">Investments</option>
               </select>
-              <span className="text-[11px] text-ink-400">The goal fills up as this number grows toward your target.</span>
+              <span className="block text-[11px] text-ink-400 mt-1 leading-snug">
+                {draft.metric === 'netWorth'
+                  ? 'Net Worth = all your assets minus loans. The goal fills up as your net worth grows toward the target.'
+                  : 'Investments = only your investment accounts. The goal fills up as these grow toward the target.'}
+              </span>
             </label>
             <div className="flex gap-2 pt-1">
               <button onClick={save} className="btn-primary flex-1 text-sm">Save goal</button>
