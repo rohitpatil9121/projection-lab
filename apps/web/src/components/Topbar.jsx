@@ -76,7 +76,7 @@ export default function Topbar() {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50/80 dark:bg-ink-950/80 backdrop-blur px-5 md:px-8 py-4">
       <div className="min-w-0">
-        <h1 className="text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'ProjectLab'}</h1>
+        <h1 className="text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'Financial Blueprint'}</h1>
         <div className="flex items-center gap-1 text-xs text-ink-400 font-medium">
           <select
             value={activeScenarioId}

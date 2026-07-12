@@ -189,7 +189,7 @@ export default function Onboarding() {
 
   const headings = {
     welcome: { badge: 'WELCOME', title: "Let's build a model of your life!", sub: "You'll be looking at projections in just a few minutes." },
-    persona: { badge: 'SANDBOX', title: 'Choose an example persona.', sub: 'Each one includes a full plan so you can see how ProjectLab works when everything is populated.' },
+    persona: { badge: 'SANDBOX', title: 'Choose an example persona.', sub: 'Each one includes a full plan so you can see how Financial Blueprint works when everything is populated.' },
     about: { badge: 'ABOUT YOU', title: "Let's get started:", sub: "Update your basic information below. On the following screens, you'll begin building your plan for the future." },
     have: { badge: 'CURRENT FINANCES', title: 'Which of these do you have today?', sub: 'This will help refine the initial conditions for your plan — everything can be adjusted later.' },
     income: { badge: 'CASH FLOW', title: 'Income & spending', sub: 'Rough monthly numbers are fine — you can edit everything later.' },
@@ -202,7 +202,7 @@ export default function Onboarding() {
       <div className={`card w-full shadow-soft ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
         {/* Header */}
         <div className="text-center mb-2">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white text-lg font-extrabold mb-2">PL</div>
+          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white text-lg font-extrabold mb-2">FB</div>
           <h2 className="text-sm font-extrabold tracking-tight">Setup</h2>
         </div>
         <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden mb-2">
