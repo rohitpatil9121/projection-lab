@@ -1,6 +1,6 @@
 {
   "appId": "in.projectlab.app",
-  "appName": "ProjectLab",
+  "appName": "Financial Blueprint",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

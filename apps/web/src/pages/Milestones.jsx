@@ -94,19 +94,27 @@ export default function Milestones() {
               <input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className="input !py-1.5 text-sm w-14 text-center" maxLength={2} />
               <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Goal name (e.g. Dream home)" className="input !py-1.5 text-sm flex-1" />
             </div>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-sm">₹</span>
-                <input type="number" value={draft.target} onChange={(e) => setDraft({ ...draft, target: e.target.value })} placeholder="Target amount" className="input !py-1.5 pl-7 text-sm" />
+            <label className="block">
+              <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Target amount</span>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-sm font-semibold">₹</span>
+                <input type="number" value={draft.target} onChange={(e) => setDraft({ ...draft, target: e.target.value })} placeholder="e.g. 10000000" className="input pl-7 text-sm" />
               </div>
-              <select value={draft.metric} onChange={(e) => setDraft({ ...draft, metric: e.target.value })} className="input !py-1.5 text-sm">
-                <option value="netWorth">Net Worth</option>
-                <option value="investable">Investments</option>
+              {Number(draft.target) > 0 && (
+                <span className="text-[11px] text-brand-600 font-medium">= {fmtMoney(Number(draft.target), { compact: true })}</span>
+              )}
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Measure progress against</span>
+              <select value={draft.metric} onChange={(e) => setDraft({ ...draft, metric: e.target.value })} className="input text-sm mt-1">
+                <option value="netWorth">Net Worth — all assets minus loans</option>
+                <option value="investable">Investments — only your investment accounts</option>
               </select>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={save} className="btn-primary flex-1 !py-1.5 text-sm">Save goal</button>
-              <button onClick={() => setAdding(false)} className="btn-ghost !py-1.5 text-sm">Cancel</button>
+              <span className="text-[11px] text-ink-400">The goal fills up as this number grows toward your target.</span>
+            </label>
+            <div className="flex gap-2 pt-1">
+              <button onClick={save} className="btn-primary flex-1 text-sm">Save goal</button>
+              <button onClick={() => setAdding(false)} className="btn-secondary text-sm">Cancel</button>
             </div>
           </div>
         )}

@@ -108,10 +108,10 @@ export default function CashFlow() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Mini label="Total Income" value={fmtMoney(totalIncome)} color="#6366f1" />
-        <Mini label="Total Expenses" value={fmtMoney(totalExpense)} color="#ef4444" />
-        <Mini label="Savings / Investing" value={fmtMoney(totalSavings)} color="#22c55e" />
-        <Mini label="Savings Rate" value={`${savingsRate}%`} color="#f59e0b" />
+        <Mini label="Income" value={fmtMoney(totalIncome)} color="#6366f1" />
+        <Mini label="Expenses" value={fmtMoney(totalExpense)} color="#ef4444" />
+        <Mini label="Investing" value={fmtMoney(totalSavings)} color="#22c55e" />
+        <Mini label="Savings rate" value={`${savingsRate}%`} color="#f59e0b" />
       </div>
 
       <Card>
@@ -155,7 +155,7 @@ function Mini({ label, value, color }) {
   return (
     <div className="card">
       <div className="flex items-center gap-2 text-xs font-semibold text-ink-400 uppercase tracking-wide">
-        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} /><span className="truncate">{label}</span>
+        <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: color }} /><span>{label}</span>
       </div>
       <div className="mt-1.5 text-lg sm:text-2xl font-extrabold tracking-tight tabular-nums">{value}</div>
     </div>

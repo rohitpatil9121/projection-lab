@@ -74,9 +74,9 @@ export default function Login() {
         {/* Right — auth card */}
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
           <div className="text-center mb-6">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xl font-extrabold mb-3 shadow-glow">PL</div>
+            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xl font-extrabold mb-3 shadow-glow">FB</div>
             <h1 className="text-2xl font-extrabold tracking-tight">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
-            <p className="text-sm text-ink-400 mt-1">{mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your ProjectLab account'}</p>
+            <p className="text-sm text-ink-400 mt-1">{mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your Financial Blueprint account'}</p>
           </div>
 
           {/* Login / Signup toggle */}
