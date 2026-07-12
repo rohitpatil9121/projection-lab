@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { PERSONAS } from '../data/personas.js'
 import CasImport from '../components/CasImport.jsx'
+import AppLogo from '../components/AppLogo.jsx'
 
 const L = 100000 // ₹1 lakh
 
@@ -202,7 +203,7 @@ export default function Onboarding() {
       <div className={`card w-full shadow-soft ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
         {/* Header */}
         <div className="text-center mb-2">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-600 text-white text-lg font-extrabold mb-2">FB</div>
+          <AppLogo size={44} className="mb-2 mx-auto" />
           <h2 className="text-sm font-extrabold tracking-tight">Setup</h2>
         </div>
         <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden mb-2">
