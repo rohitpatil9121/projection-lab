@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { loginUser, registerUser, forgotPassword, resetPassword } from '../api/client.js'
 import { useStore } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
+import AppLogo from '../components/AppLogo.jsx'
 
 const FEATURES = [
   { icon: '📈', text: 'Year-by-year net-worth projection' },
@@ -109,7 +110,7 @@ export default function Login() {
         {/* Right — auth card */}
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
           <div className="text-center mb-6">
-            <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xl font-extrabold mb-3 shadow-glow">FB</div>
+            <AppLogo size={56} className="mb-3 shadow-glow" />
             <h1 className="text-2xl font-extrabold tracking-tight">
               {view === 'forgot' ? 'Reset password' : view === 'reset' ? 'Check your email' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
             </h1>
