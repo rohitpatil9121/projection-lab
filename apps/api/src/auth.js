@@ -91,6 +91,32 @@ export async function loginUser(email, password) {
   return issueSession(user)
 }
 
+export async function requestPasswordReset(email) {
+  const normalized = String(email).trim().toLowerCase()
+  const user = await users.byEmail(normalized)
+  // Don't reveal whether the email exists — always succeed silently.
+  if (!user) return { sent: false }
+  const code = otpCode()
+  await otps.put('reset:' + normalized, { code, expiresAt: Date.now() + OTP_TTL_MS, attempts: [] })
+  return { sent: true, code, email: normalized }
+}
+
+export async function resetPassword(email, code, newPassword) {
+  const normalized = String(email).trim().toLowerCase()
+  if (!newPassword || newPassword.length < 6) {
+    const err = new Error('Password must be at least 6 characters'); err.status = 400; throw err
+  }
+  const bucket = await otps.get('reset:' + normalized)
+  if (!bucket || bucket.code !== code || Date.now() > bucket.expiresAt) {
+    const err = new Error('Invalid or expired reset code'); err.status = 401; throw err
+  }
+  const user = await users.byEmail(normalized)
+  if (!user) { const err = new Error('Account not found'); err.status = 404; throw err }
+  await users.setPassword(user.id, hashPassword(newPassword))
+  await otps.del('reset:' + normalized)
+  return issueSession(user)
+}
+
 async function issueSession(user) {
   const refreshToken = crypto.randomBytes(32).toString('hex')
   await sessions.create({

@@ -2,11 +2,11 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
-import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, refreshSession, logout } from './auth.js'
+import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, requestPasswordReset, resetPassword, refreshSession, logout } from './auth.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
-import { emailConfigured, sendOtpEmail } from './email.js'
+import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -76,6 +76,26 @@ app.post('/v1/auth/register', async (req, res, next) => {
 app.post('/v1/auth/login', async (req, res, next) => {
   try {
     const session = await loginUser(req.body.email || '', req.body.password || '')
+    await ensureDefaultPlan(session.user.id)
+    res.json({ accessToken: session.accessToken, refreshToken: session.refreshToken, user: publicUser(session.user) })
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/password/forgot', async (req, res, next) => {
+  try {
+    const result = await requestPasswordReset(req.body.email || '')
+    const body = { ok: true, message: 'If that email exists, a reset code has been sent.' }
+    if (result.sent) {
+      if (emailConfigured) await sendCodeEmail(result.email, result.code, 'reset')
+      else body.devCode = result.code
+    }
+    res.json(body)
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/password/reset', async (req, res, next) => {
+  try {
+    const session = await resetPassword(req.body.email || '', req.body.code || '', req.body.password || '')
     await ensureDefaultPlan(session.user.id)
     res.json({ accessToken: session.accessToken, refreshToken: session.refreshToken, user: publicUser(session.user) })
   } catch (err) { next(err) }

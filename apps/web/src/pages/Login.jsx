@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { loginUser, registerUser } from '../api/client.js'
+import { loginUser, registerUser, forgotPassword, resetPassword } from '../api/client.js'
 import { useStore } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
 
@@ -14,13 +14,16 @@ const FEATURES = [
 export default function Login() {
   const navigate = useNavigate()
   const afterLogin = useStore((s) => s.afterLogin)
+  const [view, setView] = useState('auth') // 'auth' | 'forgot' | 'reset'
   const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   async function submit(e) {
     e.preventDefault()
@@ -38,6 +41,38 @@ export default function Login() {
       setLoading(false)
     }
   }
+
+  async function submitForgot(e) {
+    e.preventDefault()
+    setLoading(true); setError(''); setNotice('')
+    try {
+      const res = await forgotPassword(email.trim())
+      setView('reset')
+      setNotice(res.devCode
+        ? `Dev mode: your reset code is ${res.devCode}`
+        : 'If that email exists, a reset code has been sent. Check your inbox.')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function submitReset(e) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try {
+      const data = await resetPassword(email.trim(), code.trim(), password)
+      await afterLogin(data.user)
+      navigate(useStore.getState().onboarded ? '/' : '/onboarding', { replace: true })
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const goAuth = () => { setView('auth'); setError(''); setNotice(''); setPassword(''); setCode('') }
 
   return (
     <div className="relative min-h-screen overflow-hidden flex items-center justify-center px-5 py-10 bg-ink-50 dark:bg-ink-950">
@@ -75,77 +110,131 @@ export default function Login() {
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
           <div className="text-center mb-6">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xl font-extrabold mb-3 shadow-glow">FB</div>
-            <h1 className="text-2xl font-extrabold tracking-tight">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
-            <p className="text-sm text-ink-400 mt-1">{mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your Financial Blueprint account'}</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">
+              {view === 'forgot' ? 'Reset password' : view === 'reset' ? 'Check your email' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
+            </h1>
+            <p className="text-sm text-ink-400 mt-1">
+              {view === 'forgot' ? "Enter your email and we'll send a reset code"
+                : view === 'reset' ? 'Enter the code and your new password'
+                : mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your Financial Blueprint account'}
+            </p>
           </div>
 
-          {/* Login / Signup toggle */}
-          <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold mb-4" role="tablist">
-            <button type="button" role="tab" aria-selected={mode === 'login'}
-              onClick={() => { setMode('login'); setError('') }}
-              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'login' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
-            >Log in</button>
-            <button type="button" role="tab" aria-selected={mode === 'signup'}
-              onClick={() => { setMode('signup'); setError('') }}
-              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'signup' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
-            >Sign up</button>
-          </div>
+          {error && (
+            <p className="flex items-start gap-2 text-sm text-rose-600 font-medium bg-rose-50 dark:bg-rose-950/40 rounded-lg px-3 py-2 mb-4 animate-fade-in">
+              <span aria-hidden="true">⚠️</span><span>{error}</span>
+            </p>
+          )}
+          {notice && (
+            <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/40 rounded-lg px-3 py-2 mb-4 animate-fade-in">{notice}</p>
+          )}
 
-          <form onSubmit={submit} className="space-y-4">
-            {mode === 'signup' && (
-              <label className="block animate-fade-in">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Your name</span>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohit" className="input mt-1" />
-              </label>
-            )}
-            <label className="block">
-              <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
-              <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
-            </label>
-            <label className="block">
-              <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
-              <div className="relative mt-1">
-                <input
-                  type={showPw ? 'text' : 'password'} required
-                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                  value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
-                  className="input pr-16"
-                />
-                <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">
-                  {showPw ? 'Hide' : 'Show'}
-                </button>
+          {/* ---- AUTH (login / signup) ---- */}
+          {view === 'auth' && (
+            <>
+              <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold mb-4" role="tablist">
+                <button type="button" role="tab" aria-selected={mode === 'login'}
+                  onClick={() => { setMode('login'); setError('') }}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'login' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+                >Log in</button>
+                <button type="button" role="tab" aria-selected={mode === 'signup'}
+                  onClick={() => { setMode('signup'); setError('') }}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'signup' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+                >Sign up</button>
               </div>
-            </label>
-            {error && (
-              <p className="flex items-start gap-2 text-sm text-rose-600 font-medium bg-rose-50 dark:bg-rose-950/40 rounded-lg px-3 py-2 animate-fade-in">
-                <span aria-hidden="true">⚠️</span><span>{error}</span>
+
+              <form onSubmit={submit} className="space-y-4">
+                {mode === 'signup' && (
+                  <label className="block animate-fade-in">
+                    <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Your name</span>
+                    <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohit" className="input mt-1" />
+                  </label>
+                )}
+                <label className="block">
+                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
+                  <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
+                </label>
+                <label className="block">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
+                    {mode === 'login' && (
+                      <button type="button" onClick={() => { setView('forgot'); setError('') }} className="text-xs font-semibold text-brand-600 hover:text-brand-700">Forgot?</button>
+                    )}
+                  </div>
+                  <div className="relative mt-1">
+                    <input
+                      type={showPw ? 'text' : 'password'} required
+                      autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                      value={password} onChange={(e) => setPassword(e.target.value)}
+                      placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                      className="input pr-16"
+                    />
+                    <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">
+                      {showPw ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </label>
+                <button type="submit" disabled={loading} className="btn-primary w-full">
+                  {loading ? <><Spinner size={16} /> Please wait…</> : mode === 'signup' ? 'Create account' : 'Log in'}
+                </button>
+              </form>
+
+              <p className="text-center text-sm text-ink-400 mt-4">
+                {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
+                <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-semibold text-brand-600 hover:text-brand-700">
+                  {mode === 'signup' ? 'Log in' : 'Sign up'}
+                </button>
               </p>
-            )}
-            <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? <><Spinner size={16} /> Please wait…</> : mode === 'signup' ? 'Create account' : 'Log in'}
-            </button>
-          </form>
 
-          <p className="text-center text-sm text-ink-400 mt-4">
-            {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
-            <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-semibold text-brand-600 hover:text-brand-700">
-              {mode === 'signup' ? 'Log in' : 'Sign up'}
-            </button>
-          </p>
+              <div className="flex items-center gap-3 my-5">
+                <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
+                <span className="text-xs text-ink-400 font-medium">or</span>
+                <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
+              </div>
 
-          <div className="flex items-center gap-3 my-5">
-            <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
-            <span className="text-xs text-ink-400 font-medium">or</span>
-            <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
-          </div>
+              <Link to="/onboarding" className="btn-secondary w-full">Continue as guest</Link>
 
-          <Link to="/onboarding" className="btn-secondary w-full">Continue as guest</Link>
+              <p className="text-[11px] text-ink-400 text-center mt-5 leading-relaxed">
+                Illustration only — not investment advice.<br />
+                <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>
+              </p>
+            </>
+          )}
 
-          <p className="text-[11px] text-ink-400 text-center mt-5 leading-relaxed">
-            Illustration only — not investment advice.<br />
-            <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>
-          </p>
+          {/* ---- FORGOT: enter email ---- */}
+          {view === 'forgot' && (
+            <form onSubmit={submitForgot} className="space-y-4">
+              <label className="block">
+                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
+                <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
+              </label>
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? <><Spinner size={16} /> Sending…</> : 'Send reset code'}
+              </button>
+              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
+            </form>
+          )}
+
+          {/* ---- RESET: code + new password ---- */}
+          {view === 'reset' && (
+            <form onSubmit={submitReset} className="space-y-4">
+              <label className="block">
+                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Reset code</span>
+                <input inputMode="numeric" required autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit code" className="input mt-1 tracking-widest" />
+              </label>
+              <label className="block">
+                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">New password</span>
+                <div className="relative mt-1">
+                  <input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="input pr-16" />
+                  <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">{showPw ? 'Hide' : 'Show'}</button>
+                </div>
+              </label>
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? <><Spinner size={16} /> Resetting…</> : 'Reset password & sign in'}
+              </button>
+              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
+            </form>
+          )}
         </div>
       </div>
     </div>
