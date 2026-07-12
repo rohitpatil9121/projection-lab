@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
-import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, refreshSession, logout } from './auth.js'
+import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, refreshSession, logout } from './auth.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
@@ -62,6 +62,22 @@ app.post('/v1/auth/otp/verify', async (req, res, next) => {
       refreshToken: session.refreshToken,
       user: publicUser(session.user),
     })
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/register', async (req, res, next) => {
+  try {
+    const session = await registerUser(req.body.email || '', req.body.password || '', req.body.name)
+    await ensureDefaultPlan(session.user.id)
+    res.status(201).json({ accessToken: session.accessToken, refreshToken: session.refreshToken, user: publicUser(session.user) })
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/login', async (req, res, next) => {
+  try {
+    const session = await loginUser(req.body.email || '', req.body.password || '')
+    await ensureDefaultPlan(session.user.id)
+    res.json({ accessToken: session.accessToken, refreshToken: session.refreshToken, user: publicUser(session.user) })
   } catch (err) { next(err) }
 })
 

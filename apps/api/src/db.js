@@ -44,6 +44,7 @@ if (DATABASE_URL) {
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE,
         phone TEXT UNIQUE,
+        password_hash TEXT,
         name TEXT,
         current_age INTEGER,
         retirement_age INTEGER,
@@ -56,6 +57,7 @@ if (DATABASE_URL) {
         created_at TEXT
       );
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
       ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
       CREATE TABLE IF NOT EXISTS otps (
         email TEXT PRIMARY KEY,
@@ -113,11 +115,15 @@ if (DATABASE_URL) {
       const { rows } = await pool.query('SELECT * FROM users WHERE phone = $1', [phone])
       return userFromRow(rows[0])
     },
+    async credByEmail(email) {
+      const { rows } = await pool.query('SELECT id, password_hash FROM users WHERE email = $1', [email])
+      return rows[0] ? { id: rows[0].id, passwordHash: rows[0].password_hash } : null
+    },
     async create(u) {
       await pool.query(
-        `INSERT INTO users (id, email, phone, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [u.id, u.email || null, u.phone || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt],
+        `INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+        [u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt],
       )
       return u
     },
@@ -215,6 +221,7 @@ if (DATABASE_URL) {
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE,
       phone TEXT UNIQUE,
+      password_hash TEXT,
       name TEXT,
       current_age INTEGER,
       retirement_age INTEGER,
@@ -254,9 +261,10 @@ if (DATABASE_URL) {
     CREATE INDEX IF NOT EXISTS idx_plans_user ON plans(user_id);
   `)
 
-  // Add phone column to pre-existing DBs that don't have it yet.
-  const hasPhone = sqlite.prepare("PRAGMA table_info(users)").all().some((c) => c.name === 'phone')
-  if (!hasPhone) sqlite.exec('ALTER TABLE users ADD COLUMN phone TEXT')
+  // Add newer columns to pre-existing DBs that don't have them yet.
+  const cols = sqlite.prepare('PRAGMA table_info(users)').all().map((c) => c.name)
+  if (!cols.includes('phone')) sqlite.exec('ALTER TABLE users ADD COLUMN phone TEXT')
+  if (!cols.includes('password_hash')) sqlite.exec('ALTER TABLE users ADD COLUMN password_hash TEXT')
 
   const userFromRow = (r) => r ? {
     id: r.id, email: r.email, phone: r.phone, name: r.name,
@@ -276,10 +284,14 @@ if (DATABASE_URL) {
     byId: (uid) => userFromRow(sqlite.prepare('SELECT * FROM users WHERE id = ?').get(uid)),
     byEmail: (email) => userFromRow(sqlite.prepare('SELECT * FROM users WHERE email = ?').get(email)),
     byPhone: (phone) => userFromRow(sqlite.prepare('SELECT * FROM users WHERE phone = ?').get(phone)),
+    credByEmail(email) {
+      const r = sqlite.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(email)
+      return r ? { id: r.id, passwordHash: r.password_hash } : null
+    },
     create(u) {
-      sqlite.prepare(`INSERT INTO users (id, email, phone, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(u.id, u.email || null, u.phone || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt)
+      sqlite.prepare(`INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt)
       return u
     },
     update(uid, patch) {
