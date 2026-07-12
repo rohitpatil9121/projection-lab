@@ -27,6 +27,82 @@ function otpCode() {
   return String(crypto.randomInt(100000, 999999))
 }
 
+// ---- Password hashing (scrypt, no external dependency) ----
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex')
+  return `${salt}:${hash}`
+}
+
+function verifyPassword(password, stored) {
+  if (!stored || !stored.includes(':')) return false
+  const [salt, hash] = stored.split(':')
+  const test = crypto.scryptSync(password, salt, 64).toString('hex')
+  const a = Buffer.from(hash, 'hex')
+  const b = Buffer.from(test, 'hex')
+  return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
+
+function newUserFields(extra) {
+  return {
+    id: id(),
+    currentAge: 32,
+    retirementAge: 60,
+    lifeExpectancy: 85,
+    inflation: 0.06,
+    taxRegime: 'old',
+    taxSlab: 0.3,
+    currency: 'INR',
+    uiPrefs: { dark: false, realTerms: true },
+    createdAt: new Date().toISOString(),
+    ...extra,
+  }
+}
+
+// ---- Email + password auth ----
+
+export async function registerUser(email, password, name) {
+  const normalized = String(email).trim().toLowerCase()
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    const err = new Error('Please enter a valid email address'); err.status = 400; throw err
+  }
+  if (!password || password.length < 6) {
+    const err = new Error('Password must be at least 6 characters'); err.status = 400; throw err
+  }
+  if (await users.byEmail(normalized)) {
+    const err = new Error('An account with this email already exists. Please log in.'); err.status = 409; throw err
+  }
+  const user = await users.create(newUserFields({
+    email: normalized,
+    passwordHash: hashPassword(password),
+    name: (name && name.trim()) || normalized.split('@')[0],
+  }))
+  return issueSession(user)
+}
+
+export async function loginUser(email, password) {
+  const normalized = String(email).trim().toLowerCase()
+  const cred = await users.credByEmail(normalized)
+  if (!cred || !cred.passwordHash || !verifyPassword(password, cred.passwordHash)) {
+    const err = new Error('Incorrect email or password'); err.status = 401; throw err
+  }
+  const user = await users.byId(cred.id)
+  return issueSession(user)
+}
+
+async function issueSession(user) {
+  const refreshToken = crypto.randomBytes(32).toString('hex')
+  await sessions.create({
+    id: id(),
+    userId: user.id,
+    refreshHash: hashToken(refreshToken),
+    expiresAt: new Date(Date.now() + REFRESH_DAYS * 86400000).toISOString(),
+    createdAt: new Date().toISOString(),
+  })
+  return { user, accessToken: signAccess(user.id), refreshToken }
+}
+
 export async function requestOtp(email) {
   const normalized = email.trim().toLowerCase()
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {

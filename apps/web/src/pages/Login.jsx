@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { requestOtp, requestPhoneOtp } from '../api/client.js'
+import { loginUser, registerUser } from '../api/client.js'
+import { useStore } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
 
 const FEATURES = [
@@ -12,9 +13,12 @@ const FEATURES = [
 
 export default function Login() {
   const navigate = useNavigate()
-  const [mode, setMode] = useState('phone') // 'phone' | 'email'
+  const afterLogin = useStore((s) => s.afterLogin)
+  const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -23,15 +27,11 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      if (mode === 'phone') {
-        const digits = phone.replace(/\D/g, '')
-        if (digits.length !== 10) throw new Error('Enter a valid 10-digit mobile number')
-        const res = await requestPhoneOtp(digits)
-        navigate('/otp', { state: { channel: 'phone', phone: res.phone || ('+91' + digits), devOtp: res.devOtp } })
-      } else {
-        const res = await requestOtp(email)
-        navigate('/otp', { state: { channel: 'email', email, devOtp: res.devOtp } })
-      }
+      const data = mode === 'signup'
+        ? await registerUser(email.trim(), password, name.trim())
+        : await loginUser(email.trim(), password)
+      await afterLogin(data.user)
+      navigate(useStore.getState().onboarded ? '/' : '/onboarding', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
@@ -75,60 +75,64 @@ export default function Login() {
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
           <div className="text-center mb-6">
             <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xl font-extrabold mb-3 shadow-glow">PL</div>
-            <h1 className="text-2xl font-extrabold tracking-tight">Welcome to ProjectLab</h1>
-            <p className="text-sm text-ink-400 mt-1">Sign in to save &amp; sync your plan</p>
+            <h1 className="text-2xl font-extrabold tracking-tight">{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h1>
+            <p className="text-sm text-ink-400 mt-1">{mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your ProjectLab account'}</p>
           </div>
 
-          {/* Email / Phone toggle */}
+          {/* Login / Signup toggle */}
           <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold mb-4" role="tablist">
-            <button
-              type="button" role="tab" aria-selected={mode === 'phone'}
-              onClick={() => { setMode('phone'); setError('') }}
-              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'phone' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
-            >📱 Mobile</button>
-            <button
-              type="button" role="tab" aria-selected={mode === 'email'}
-              onClick={() => { setMode('email'); setError('') }}
-              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'email' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
-            >✉️ Email</button>
+            <button type="button" role="tab" aria-selected={mode === 'login'}
+              onClick={() => { setMode('login'); setError('') }}
+              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'login' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+            >Log in</button>
+            <button type="button" role="tab" aria-selected={mode === 'signup'}
+              onClick={() => { setMode('signup'); setError('') }}
+              className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'signup' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+            >Sign up</button>
           </div>
 
           <form onSubmit={submit} className="space-y-4">
-            {mode === 'phone' ? (
+            {mode === 'signup' && (
               <label className="block animate-fade-in">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Mobile number</span>
-                <div className="flex mt-1">
-                  <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-ink-200 dark:border-ink-700 bg-ink-50 dark:bg-ink-800 text-sm font-semibold text-ink-500">+91</span>
-                  <input
-                    type="tel" inputMode="numeric" required autoFocus
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    placeholder="98765 43210"
-                    className="input !rounded-l-none flex-1"
-                  />
-                </div>
-              </label>
-            ) : (
-              <label className="block animate-fade-in">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
-                <input
-                  type="email" required autoFocus
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="input mt-1"
-                />
+                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Your name</span>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Rohit" className="input mt-1" />
               </label>
             )}
+            <label className="block">
+              <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
+              <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
+            </label>
+            <label className="block">
+              <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
+              <div className="relative mt-1">
+                <input
+                  type={showPw ? 'text' : 'password'} required
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                  className="input pr-16"
+                />
+                <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">
+                  {showPw ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </label>
             {error && (
               <p className="flex items-start gap-2 text-sm text-rose-600 font-medium bg-rose-50 dark:bg-rose-950/40 rounded-lg px-3 py-2 animate-fade-in">
                 <span aria-hidden="true">⚠️</span><span>{error}</span>
               </p>
             )}
             <button type="submit" disabled={loading} className="btn-primary w-full">
-              {loading ? <><Spinner size={16} /> Sending OTP…</> : mode === 'phone' ? 'Send OTP to mobile' : 'Continue with email'}
+              {loading ? <><Spinner size={16} /> Please wait…</> : mode === 'signup' ? 'Create account' : 'Log in'}
             </button>
           </form>
+
+          <p className="text-center text-sm text-ink-400 mt-4">
+            {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
+            <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-semibold text-brand-600 hover:text-brand-700">
+              {mode === 'signup' ? 'Log in' : 'Sign up'}
+            </button>
+          </p>
 
           <div className="flex items-center gap-3 my-5">
             <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
@@ -136,9 +140,7 @@ export default function Login() {
             <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
           </div>
 
-          <Link to="/onboarding" className="btn-secondary w-full">
-            Continue as guest
-          </Link>
+          <Link to="/onboarding" className="btn-secondary w-full">Continue as guest</Link>
 
           <p className="text-[11px] text-ink-400 text-center mt-5 leading-relaxed">
             Illustration only — not investment advice.<br />

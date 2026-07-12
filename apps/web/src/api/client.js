@@ -57,6 +57,18 @@ export async function verifyOtp(email, otp) {
   return data
 }
 
+export async function registerUser(email, password, name) {
+  const data = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) })
+  saveSession(data)
+  return data
+}
+
+export async function loginUser(email, password) {
+  const data = await apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) })
+  saveSession(data)
+  return data
+}
+
 export async function requestPhoneOtp(phone) {
   return apiFetch('/auth/phone/request', { method: 'POST', body: JSON.stringify({ phone }) })
 }
