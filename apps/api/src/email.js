@@ -35,16 +35,21 @@ if (!BREVO_API_KEY && smtpReady) {
 function otpHtml(code) {
   return `
     <div style="font-family:Arial,sans-serif;max-width:420px;margin:0 auto;padding:24px">
-      <div style="font-size:20px;font-weight:800;margin-bottom:4px">ProjectLab</div>
-      <p style="color:#555">Your login code:</p>
+      <div style="font-size:20px;font-weight:800;margin-bottom:4px">Financial Blueprint</div>
+      <p style="color:#555">Your verification code:</p>
       <div style="font-size:32px;font-weight:800;letter-spacing:8px;background:#f4f4f8;border-radius:12px;padding:16px;text-align:center">${code}</div>
       <p style="color:#888;font-size:13px;margin-top:16px">Expires in 5 minutes. If you didn't request this, ignore this email.</p>
     </div>`
 }
 
 export async function sendOtpEmail(to, code) {
-  const subject = `${code} — your ProjectLab login code`
-  const text = `Your ProjectLab login code is: ${code}\n\nIt expires in 5 minutes.`
+  return sendCodeEmail(to, code, 'login')
+}
+
+export async function sendCodeEmail(to, code, purpose = 'login') {
+  const label = purpose === 'reset' ? 'password reset code' : 'login code'
+  const subject = `${code} — your Financial Blueprint ${label}`
+  const text = `Your Financial Blueprint ${label} is: ${code}\n\nIt expires in 5 minutes.`
 
   if (BREVO_API_KEY) {
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {

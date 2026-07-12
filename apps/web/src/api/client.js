@@ -69,6 +69,16 @@ export async function loginUser(email, password) {
   return data
 }
 
+export async function forgotPassword(email) {
+  return apiFetch('/auth/password/forgot', { method: 'POST', body: JSON.stringify({ email }) })
+}
+
+export async function resetPassword(email, code, password) {
+  const data = await apiFetch('/auth/password/reset', { method: 'POST', body: JSON.stringify({ email, code, password }) })
+  saveSession(data)
+  return data
+}
+
 export async function requestPhoneOtp(phone) {
   return apiFetch('/auth/phone/request', { method: 'POST', body: JSON.stringify({ phone }) })
 }

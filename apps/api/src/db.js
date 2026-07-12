@@ -119,6 +119,9 @@ if (DATABASE_URL) {
       const { rows } = await pool.query('SELECT id, password_hash FROM users WHERE email = $1', [email])
       return rows[0] ? { id: rows[0].id, passwordHash: rows[0].password_hash } : null
     },
+    async setPassword(userId, passwordHash) {
+      await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [passwordHash, userId])
+    },
     async create(u) {
       await pool.query(
         `INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
@@ -287,6 +290,9 @@ if (DATABASE_URL) {
     credByEmail(email) {
       const r = sqlite.prepare('SELECT id, password_hash FROM users WHERE email = ?').get(email)
       return r ? { id: r.id, passwordHash: r.password_hash } : null
+    },
+    setPassword(userId, passwordHash) {
+      sqlite.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, userId)
     },
     create(u) {
       sqlite.prepare(`INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
