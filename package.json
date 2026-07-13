@@ -13,7 +13,9 @@
     "build": "npm run build -w web",
     "start": "npm run start -w api",
     "preview": "npm run preview -w web",
-    "apk": "npm run build -w web && npm run cap:sync -w web && node scripts/build-apk.mjs"
+    "apk": "npm run build -w web && npm run cap:sync -w web && node scripts/build-apk.mjs",
+    "aab": "npm run build -w web && npm run cap:sync -w web && node scripts/build-aab.mjs",
+    "icons": "node scripts/generate-android-icons.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"

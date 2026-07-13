@@ -12,9 +12,9 @@ const smtpReady = !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.e
 export const emailConfigured = !!(BREVO_API_KEY || smtpReady)
 
 // From address: "Name <email>" — parsed for the Brevo payload.
-const FROM_RAW = process.env.EMAIL_FROM || process.env.SMTP_FROM || `ProjectLab <${process.env.SMTP_USER || 'no-reply@projectlab.in'}>`
+const FROM_RAW = process.env.EMAIL_FROM || process.env.SMTP_FROM || `Financial Blueprint <${process.env.SMTP_USER || 'no-reply@financialblueprint.in'}>`
 const fromMatch = FROM_RAW.match(/^\s*(.*?)\s*<(.+)>\s*$/)
-const FROM = { name: fromMatch ? fromMatch[1] || 'ProjectLab' : 'ProjectLab', email: fromMatch ? fromMatch[2] : FROM_RAW }
+const FROM = { name: fromMatch ? fromMatch[1] || 'Financial Blueprint' : 'Financial Blueprint', email: fromMatch ? fromMatch[2] : FROM_RAW }
 
 let transporter = null
 if (!BREVO_API_KEY && smtpReady) {

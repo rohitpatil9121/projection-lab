@@ -4,7 +4,7 @@
 import { create } from './miniStore.js'
 import { CURRENT_YEAR } from '@projectlab/engine'
 import { defaultPlanPayload, defaultProfile, emptyPlanPayload, emptyProfile } from '@projectlab/schema'
-import { loadSession } from '../auth/session.js'
+import { loadSession, saveSession, isAuthenticated } from '../auth/session.js'
 import { fetchPlans, fetchPlan, syncPlan, logoutApi, apiFetch } from '../api/client.js'
 
 export {
@@ -23,6 +23,10 @@ const DEFAULT_STATE = {
   activeScenarioId: 'base',
   snapshots: [],
   ui: { dark: false, realTerms: true },
+}
+
+function emptyScenarioData() {
+  return JSON.parse(JSON.stringify({ profile: { ...emptyProfile }, ...emptyPlanPayload }))
 }
 
 // Everything that differs between scenarios (plan data + profile assumptions).
@@ -51,6 +55,11 @@ function planPayload(state) {
   return { accounts, incomes, expenses, contributions, milestones, events }
 }
 
+function planHasData(payload) {
+  if (!payload) return false
+  return (payload.accounts?.length || 0) + (payload.incomes?.length || 0) > 0
+}
+
 function applyUserProfile(state, user) {
   return {
     profile: {
@@ -68,12 +77,19 @@ function applyUserProfile(state, user) {
   }
 }
 
-export const useStore = create((set, get) => ({
+export const useStore = create((set, get) => {
+  const session = loadSession()
+  return {
   ...load(),
   currentYear: CURRENT_YEAR,
-  auth: null,
+  auth: session?.accessToken && session?.user ? {
+    user: session.user,
+    planId: session.planId || null,
+    planVersion: session.planVersion || null,
+  } : null,
   syncStatus: 'idle',
   syncError: null,
+  planHydrating: false,
 
   persist() {
     const s = get()
@@ -128,7 +144,10 @@ export const useStore = create((set, get) => ({
   async initFromSession() {
     const session = loadSession()
     if (!session?.accessToken) return
+    set({ planHydrating: true, syncStatus: 'syncing' })
     try {
+      const user = await apiFetch('/me')
+      saveSession({ ...session, user })
       const plans = await fetchPlans()
       let plan
       if (plans.length) {
@@ -140,52 +159,82 @@ export const useStore = create((set, get) => ({
           body: JSON.stringify({ payload: planPayload(local) }),
         })
       }
-      get().applyServerPlan(plan, session.user)
-    } catch {
-      set({ auth: null, syncStatus: 'idle' })
+      get().applyServerPlan(plan, user)
+    } catch (err) {
+      // Drop stale tokens so the app doesn't stay stuck on the loading screen.
+      saveSession(null)
+      set({
+        syncStatus: 'error',
+        syncError: err.message || 'Could not load your plan',
+        auth: null,
+      })
+    } finally {
+      set({ planHydrating: false })
     }
   },
 
   applyServerPlan(plan, user) {
-    const hasData = (plan.payload?.accounts?.length || 0) + (plan.payload?.incomes?.length || 0) > 0
-    const patch = {
-      ...plan.payload,
-      ...applyUserProfile(get(), user || {}),
+    const payload = plan.payload || emptyPlanPayload
+    const hasData = planHasData(payload)
+    const { profile, ui } = applyUserProfile(
+      { profile: { ...emptyProfile }, ui: get().ui || { dark: false, realTerms: true } },
+      user || {},
+    )
+    set({
+      ...emptyPlanPayload,
+      ...payload,
+      profile,
+      ui,
+      scenarios: [{ id: 'base', name: 'Base plan', data: null }],
+      activeScenarioId: 'base',
       auth: { user, planId: plan.id, planVersion: plan.version },
       syncStatus: 'synced',
-      onboarded: get().onboarded || hasData,
-    }
-    set(patch)
+      syncError: null,
+      onboarded: hasData || get().onboarded,
+      planHydrating: false,
+    })
+    saveSession({
+      ...loadSession(),
+      user,
+      planId: plan.id,
+      planVersion: plan.version,
+    })
     get().persistLocalOnly()
+    if (hasData) get().recordSnapshot()
   },
 
   async afterLogin(user) {
-    const local = load()
-    const localHasData = (local.accounts?.length || 0) + (local.incomes?.length || 0) > 0
-    const plans = await fetchPlans()
+    set({ planHydrating: true, syncStatus: 'syncing' })
+    try {
+      const local = load()
+      const localHasData = planHasData(local)
+      const plans = await fetchPlans()
 
-    if (plans.length) {
-      const plan = await fetchPlan(plans[0].id)
-      const cloudHasData = (plan.payload?.accounts?.length || 0) + (plan.payload?.incomes?.length || 0) > 0
-      // Returning user with a synced plan → use the cloud copy.
-      // New signup (empty cloud) but built data as a guest → import that data.
-      if (!cloudHasData && localHasData) {
-        const updated = await syncPlan(plan.id, {
-          payload: planPayload(local),
-          version: plan.version,
-          profile: local.profile,
-          uiPrefs: local.ui,
-        })
-        get().applyServerPlan(updated, user)
+      if (plans.length) {
+        const plan = await fetchPlan(plans[0].id)
+        const cloudHasData = planHasData(plan.payload)
+        // Returning user → always use cloud when it has data.
+        // New signup with guest data on device → upload local once.
+        if (!cloudHasData && localHasData) {
+          const updated = await syncPlan(plan.id, {
+            payload: planPayload(local),
+            version: plan.version,
+            profile: local.profile,
+            uiPrefs: local.ui,
+          })
+          get().applyServerPlan(updated, user)
+        } else {
+          get().applyServerPlan(plan, user)
+        }
       } else {
+        const plan = await apiFetch('/plans', {
+          method: 'POST',
+          body: JSON.stringify({ payload: planPayload(localHasData ? local : get()) }),
+        })
         get().applyServerPlan(plan, user)
       }
-    } else {
-      const plan = await apiFetch('/plans', {
-        method: 'POST',
-        body: JSON.stringify({ payload: planPayload(localHasData ? local : get()) }),
-      })
-      get().applyServerPlan(plan, user)
+    } finally {
+      set({ planHydrating: false })
     }
   },
 
@@ -197,7 +246,7 @@ export const useStore = create((set, get) => ({
 
   async logout() {
     await logoutApi()
-    set({ auth: null, syncStatus: 'idle', syncError: null })
+    set({ auth: null, syncStatus: 'idle', syncError: null, planHydrating: false })
   },
 
   resolveConflict(useLocal) {
@@ -213,7 +262,12 @@ export const useStore = create((set, get) => ({
     const current = scenarioData(s)
     const scenarios = s.scenarios.map((x) => (x.id === s.activeScenarioId ? { ...x, data: current } : x))
     const id = 'sc' + Math.round(performance.now() * 1000)
-    set({ scenarios: [...scenarios, { id, name, data: JSON.parse(JSON.stringify(current)) }], activeScenarioId: id })
+    const emptyData = emptyScenarioData()
+    set({
+      scenarios: [...scenarios, { id, name, data: emptyData }],
+      activeScenarioId: id,
+      ...emptyData,
+    })
     get().persist()
   },
 
@@ -271,12 +325,18 @@ export const useStore = create((set, get) => ({
   },
 
   completeOnboarding(profile, payload) {
-    set({
+    const s = get()
+    const next = {
       ...emptyPlanPayload,
       ...payload,
-      profile: { ...get().profile, ...profile },
+      profile: { ...emptyProfile, ...profile },
       onboarded: true,
-    })
+    }
+    const data = scenarioData({ ...s, ...next })
+    const scenarios = s.scenarios.map((x) =>
+      x.id === s.activeScenarioId ? { ...x, data } : x,
+    )
+    set({ ...next, scenarios })
     get().persist()
     get().recordSnapshot()
   },
@@ -286,7 +346,13 @@ export const useStore = create((set, get) => ({
   setProfile(p) { set({ profile: { ...get().profile, ...p } }); get().persist() },
 
   addItem(collection, item) {
-    set({ [collection]: [...get()[collection], { id: 'x' + Math.round(performance.now() * 1000), ...item }] })
+    const extra = collection === 'milestones'
+      ? {
+          startAge: get().profile.currentAge,
+          priority: Math.max(0, ...get().milestones.map((m) => m.priority || 0)) + 1,
+        }
+      : {}
+    set({ [collection]: [...get()[collection], { id: 'x' + Math.round(performance.now() * 1000), ...extra, ...item }] })
     get().persist()
   },
   updateItem(collection, id, patch) {
@@ -296,6 +362,26 @@ export const useStore = create((set, get) => ({
   removeItem(collection, id) {
     set({ [collection]: get()[collection].filter((i) => i.id !== id) })
     get().persist()
+  },
+
+  moveMilestone(id, direction) {
+    const list = [...get().milestones].sort((a, b) => (a.priority ?? 99) - (b.priority ?? 99))
+    const idx = list.findIndex((m) => m.id === id)
+    if (idx < 0) return
+    const swap = direction === 'up' ? idx - 1 : idx + 1
+    if (swap < 0 || swap >= list.length) return
+    const a = list[idx]
+    const b = list[swap]
+    const aPri = a.priority ?? idx + 1
+    const bPri = b.priority ?? swap + 1
+    set({
+      milestones: get().milestones.map((m) => {
+        if (m.id === a.id) return { ...m, priority: bPri }
+        if (m.id === b.id) return { ...m, priority: aPri }
+        return m
+      }),
+    })
+    get().persistLocalOnly()
   },
 
   toggleDark() {
@@ -312,4 +398,12 @@ export const useStore = create((set, get) => ({
     set({ ...DEFAULT_STATE, auth: get().auth, syncStatus: get().auth ? 'syncing' : 'idle' })
     get().persist()
   },
-}))
+}})
+
+export function redirectAfterAuth(navigate) {
+  const s = useStore.getState()
+  const hasData = planHasData(s)
+  navigate(s.onboarded || hasData ? '/' : '/onboarding', { replace: true })
+}
+
+export { isAuthenticated }

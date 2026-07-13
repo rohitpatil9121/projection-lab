@@ -54,9 +54,11 @@ export default function Topbar() {
   }, [])
 
   const createScenario = () => {
-    if (newName.trim()) addScenario(newName.trim())
+    if (!newName.trim()) return
+    addScenario(newName.trim())
     setNewName('')
     setNewOpen(false)
+    navigate('/onboarding', { state: { newScenario: true } })
   }
 
   const confirmDelete = () => {
@@ -87,8 +89,8 @@ export default function Topbar() {
             {scenarios.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
           </select>
           <button
-            onClick={() => setNewOpen(true)}
-            className="px-1.5 text-brand-600 hover:text-brand-700 font-bold rounded" title="New scenario (copy of current)"
+            onClick={() => { setNewName(''); setNewOpen(true) }}
+            className="px-1.5 text-brand-600 hover:text-brand-700 font-bold rounded" title="New scenario (fresh setup)"
           >+</button>
           {scenarios.length > 1 && (
             <button
@@ -155,8 +157,8 @@ export default function Topbar() {
       </div>
 
       {/* New scenario modal */}
-      <Modal open={newOpen} onClose={() => setNewOpen(false)} title="New scenario">
-        <p className="text-sm text-ink-400 mb-3">Creates a copy of your current plan you can tweak independently.</p>
+      <Modal open={newOpen} onClose={() => { setNewOpen(false); setNewName('') }} title="New scenario">
+        <p className="text-sm text-ink-400 mb-3">Start a fresh plan from scratch — you'll fill in your details in the setup wizard.</p>
         <input
           autoFocus value={newName}
           onChange={(e) => setNewName(e.target.value)}

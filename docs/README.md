@@ -1,4 +1,4 @@
-# ProjectLab India — Documentation
+# Financial Blueprint — Documentation
 
 Product & engineering docs for taking the existing web prototype to a production **website + mobile app**.
 

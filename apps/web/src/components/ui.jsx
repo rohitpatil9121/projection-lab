@@ -1,19 +1,24 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { IconTrend } from './Icons.jsx'
 
-// Centered modal dialog with backdrop. Closes on Escape / backdrop click.
+// Centered modal dialog with backdrop. Portals to body so sticky/filter ancestors don't offset it.
 export function Modal({ open, onClose, title, children }) {
   useEffect(() => {
     if (!open) return
     const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-5 bg-ink-950/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-center justify-center px-5 bg-ink-950/50 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       role="dialog" aria-modal="true"
     >
@@ -24,7 +29,8 @@ export function Modal({ open, onClose, title, children }) {
         {title && <h3 className="text-base font-bold tracking-tight mb-3">{title}</h3>}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

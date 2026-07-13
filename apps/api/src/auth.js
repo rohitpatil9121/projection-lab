@@ -44,6 +44,16 @@ function verifyPassword(password, stored) {
   return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
+const MIN_PASSWORD = 8
+
+function assertPassword(password) {
+  if (!password || password.length < MIN_PASSWORD) {
+    const err = new Error(`Password must be at least ${MIN_PASSWORD} characters`)
+    err.status = 400
+    throw err
+  }
+}
+
 function newUserFields(extra) {
   return {
     id: id(),
@@ -67,9 +77,7 @@ export async function registerUser(email, password, name) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     const err = new Error('Please enter a valid email address'); err.status = 400; throw err
   }
-  if (!password || password.length < 6) {
-    const err = new Error('Password must be at least 6 characters'); err.status = 400; throw err
-  }
+  assertPassword(password)
   if (await users.byEmail(normalized)) {
     const err = new Error('An account with this email already exists. Please log in.'); err.status = 409; throw err
   }
@@ -103,9 +111,7 @@ export async function requestPasswordReset(email) {
 
 export async function resetPassword(email, code, newPassword) {
   const normalized = String(email).trim().toLowerCase()
-  if (!newPassword || newPassword.length < 6) {
-    const err = new Error('Password must be at least 6 characters'); err.status = 400; throw err
-  }
+  assertPassword(newPassword)
   const bucket = await otps.get('reset:' + normalized)
   if (!bucket || bucket.code !== code || Date.now() > bucket.expiresAt) {
     const err = new Error('Invalid or expired reset code'); err.status = 401; throw err

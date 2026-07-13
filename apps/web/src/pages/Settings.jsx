@@ -1,5 +1,4 @@
 import { useStore } from '../data/store.js'
-import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionTitle } from '../components/ui.jsx'
 import { IconPlus, IconTrash } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
@@ -8,8 +7,8 @@ export default function Settings() {
   const navigate = useNavigate()
   const profile = useStore((s) => s.profile)
   const setProfile = useStore((s) => s.setProfile)
-  const incomes = useStore((s) => s.incomes)
-  const expenses = useStore((s) => s.expenses)
+  const incomes = useStore((s) => s.incomes) || []
+  const expenses = useStore((s) => s.expenses) || []
   const updateItem = useStore((s) => s.updateItem)
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
@@ -26,7 +25,7 @@ export default function Settings() {
         {auth ? (
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <div className="font-semibold truncate">{auth.user.email || auth.user.phone}</div>
+              <div className="font-semibold truncate">{auth.user?.email || auth.user?.phone || 'Signed in'}</div>
               <div className="text-xs text-emerald-600 font-medium flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Cloud sync enabled</div>
             </div>
             <button onClick={signOut} className="btn-secondary text-rose-600 shrink-0">Sign out</button>

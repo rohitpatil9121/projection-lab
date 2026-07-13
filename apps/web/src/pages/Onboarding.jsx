@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { PERSONAS } from '../data/personas.js'
 import CasImport from '../components/CasImport.jsx'
@@ -61,6 +61,8 @@ const HAVE_OPTIONS = [
 
 export default function Onboarding() {
   const navigate = useNavigate()
+  const { state } = useLocation()
+  const isNewScenario = !!state?.newScenario
   const completeOnboarding = useStore((s) => s.completeOnboarding)
 
   // welcome → (sandbox: persona) | (walkthrough: about → have → income → balances)
@@ -204,7 +206,7 @@ export default function Onboarding() {
         {/* Header */}
         <div className="text-center mb-2">
           <AppLogo size={44} className="mb-2 mx-auto" />
-          <h2 className="text-sm font-extrabold tracking-tight">Setup</h2>
+          <h2 className="text-sm font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
         </div>
         <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden mb-2">
           <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${progress * 100}%` }} />

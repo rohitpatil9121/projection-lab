@@ -41,6 +41,14 @@ export const MilestoneSchema = z.object({
   metric: z.string().nullable().optional(),
   icon: z.string().max(8).optional(),
   achieved: z.boolean().default(false),
+  /** Age when tracking started (defaults to current age at creation). */
+  startAge: age.optional(),
+  /** Target age by which the goal should be met — drives on-track timeline. */
+  targetAge: age.optional(),
+  /** 1 = highest funding priority. */
+  priority: z.number().int().min(1).max(99).optional(),
+  /** Expected annual return for SIP calculation (0.12 = 12%). */
+  returnRate: growth.optional(),
 })
 
 export const EventSchema = z.object({
@@ -114,11 +122,11 @@ export const defaultPlanPayload = {
     { id: 'c4', accountId: 'nps', amount: 50000, section: '80CCD1B' },
   ],
   milestones: [
-    { id: 'm1', name: 'Emergency Fund (6 months)', target: 360000, accountId: 'savings', icon: '🛟', achieved: true },
-    { id: 'm2', name: 'First ₹1 Crore Net Worth', target: 10000000, metric: 'netWorth', icon: '💎', achieved: false },
-    { id: 'm3', name: "Child's Education Corpus", target: 5000000, metric: 'investable', icon: '🎓', achieved: false },
-    { id: 'm4', name: 'Retirement Corpus (₹5 Cr FI)', target: 50000000, metric: 'netWorth', icon: '🏝️', achieved: false },
-    { id: 'm5', name: 'Home Loan Free', target: 0, accountId: 'homeloan', icon: '🏠', achieved: false },
+    { id: 'm1', name: 'Emergency Fund (6 months)', target: 360000, accountId: 'savings', icon: '🛟', achieved: true, priority: 1 },
+    { id: 'm2', name: 'First ₹1 Crore Net Worth', target: 10000000, metric: 'netWorth', icon: '💎', achieved: false, startAge: 32, targetAge: 45, priority: 2 },
+    { id: 'm3', name: "Child's Education Corpus", target: 5000000, metric: 'investable', icon: '🎓', achieved: false, startAge: 32, targetAge: 48, priority: 3 },
+    { id: 'm4', name: 'Retirement Corpus (₹5 Cr FI)', target: 50000000, metric: 'netWorth', icon: '🏝️', achieved: false, startAge: 32, targetAge: 60, priority: 4 },
+    { id: 'm5', name: 'Home Loan Free', target: 0, accountId: 'homeloan', icon: '🏠', achieved: false, startAge: 32, targetAge: 52, priority: 5 },
   ],
   events: [
     { id: 'e1', name: 'Buy a car', age: 35, amount: -1200000, icon: '🚗', color: '#f59e0b' },
