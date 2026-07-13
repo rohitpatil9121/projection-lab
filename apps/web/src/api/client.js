@@ -1,13 +1,30 @@
 import { getAccessToken, getRefreshToken, loadSession, saveSession } from '../auth/session.js'
+import { API_BASE, apiConfigError } from './config.js'
 
-// In dev the Vite proxy forwards /v1 → localhost:3001; in APK/production builds
-// set VITE_API_URL to the deployed API origin (e.g. https://projectlab-api.onrender.com).
-const BASE = (import.meta.env.VITE_API_URL || '') + '/v1'
+const FETCH_TIMEOUT_MS = 20000
+
+function networkError(err) {
+  if (err?.name === 'AbortError') return new Error('Server took too long to respond. Check your internet.')
+  if (err?.message === 'Failed to fetch') return new Error('Cannot reach server. Check internet or try again later.')
+  return err
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } catch (err) {
+    throw networkError(err)
+  } finally {
+    clearTimeout(timer)
+  }
+}
 
 async function refreshTokens() {
   const refreshToken = getRefreshToken()
   if (!refreshToken) throw new Error('No refresh token')
-  const res = await fetch(`${BASE}/auth/refresh`, {
+  const res = await fetchWithTimeout(`${API_BASE}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
@@ -20,17 +37,20 @@ async function refreshTokens() {
 }
 
 export async function apiFetch(path, options = {}) {
+  const configErr = apiConfigError()
+  if (configErr) throw new Error(configErr)
+
   const headers = { 'Content-Type': 'application/json', ...options.headers }
   let token = getAccessToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
-  let res = await fetch(`${BASE}${path}`, { ...options, headers })
+  let res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers })
 
   if (res.status === 401 && getRefreshToken()) {
     try {
       token = await refreshTokens()
       headers.Authorization = `Bearer ${token}`
-      res = await fetch(`${BASE}${path}`, { ...options, headers })
+      res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers })
     } catch {
       saveSession(null)
       throw new Error('Session expired')
@@ -92,7 +112,7 @@ export async function verifyPhoneOtp(phone, otp) {
 export async function logoutApi() {
   const refreshToken = getRefreshToken()
   if (refreshToken) {
-    await fetch(`${BASE}/auth/logout`, {
+    await fetchWithTimeout(`${API_BASE}/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),

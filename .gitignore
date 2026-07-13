@@ -13,6 +13,10 @@ apps/web/android/capacitor-cordova-android-plugins/build/
 .DS_Store
 Thumbs.db
 
-# build artifacts & junk
+# build artifacts
+.gradle/
+FinancialBlueprint-debug.apk
+FinancialBlueprint-release.aab
 ProjectLab-debug.apk
 *.apk
+*.aab

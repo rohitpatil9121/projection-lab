@@ -1,4 +1,5 @@
 export { fmtMoney, fmtPct, fmtNum } from './format.js'
+export { evaluateGoal } from './goals.js'
 
 export const CURRENT_YEAR = 2026
 

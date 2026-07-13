@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
@@ -7,6 +10,10 @@ import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePl
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
 import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
+import { withDevFields, isProduction } from './dev.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const privacyPolicyPath = path.join(__dirname, '../../web/public/privacy-policy.html')
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -37,19 +44,29 @@ const authLimiter = rateLimit({
 app.use('/v1/auth', authLimiter)
 
 app.get('/healthz', (_req, res) => {
-  res.json({ ok: true, service: 'projectlab-api', time: new Date().toISOString() })
+  res.json({ ok: true, service: 'financial-blueprint-api', time: new Date().toISOString() })
+})
+
+app.get('/privacy-policy.html', (_req, res) => {
+  try {
+    res.type('html').send(readFileSync(privacyPolicyPath, 'utf8'))
+  } catch {
+    res.status(404).send('Privacy policy not found')
+  }
 })
 
 app.post('/v1/auth/otp/request', async (req, res, next) => {
   try {
+    if (!emailConfigured && isProduction) {
+      return res.status(503).json({ error: 'Email OTP is not configured. Set BREVO_API_KEY or SMTP_* environment variables.' })
+    }
     const code = await requestOtp(req.body.email || '')
-    const body = { ok: true, message: 'OTP sent' }
     if (emailConfigured) {
       await sendOtpEmail(req.body.email.trim().toLowerCase(), code)
+      res.json({ ok: true, message: 'OTP sent' })
     } else {
-      body.devOtp = code
+      res.json(withDevFields({ ok: true, message: 'OTP sent' }, { devOtp: code }))
     }
-    res.json(body)
   } catch (err) { next(err) }
 })
 
@@ -86,8 +103,11 @@ app.post('/v1/auth/password/forgot', async (req, res, next) => {
     const result = await requestPasswordReset(req.body.email || '')
     const body = { ok: true, message: 'If that email exists, a reset code has been sent.' }
     if (result.sent) {
-      if (emailConfigured) await sendCodeEmail(result.email, result.code, 'reset')
-      else body.devCode = result.code
+      if (emailConfigured) {
+        await sendCodeEmail(result.email, result.code, 'reset')
+      } else if (!isProduction) {
+        Object.assign(body, withDevFields({}, { devCode: result.code }))
+      }
     }
     res.json(body)
   } catch (err) { next(err) }
@@ -104,9 +124,7 @@ app.post('/v1/auth/password/reset', async (req, res, next) => {
 app.post('/v1/auth/phone/request', async (req, res, next) => {
   try {
     const { phone, devOtp } = await requestPhoneOtp(req.body.phone || '')
-    const body = { ok: true, message: 'OTP sent', phone }
-    if (devOtp) body.devOtp = devOtp
-    res.json(body)
+    res.json(withDevFields({ ok: true, message: 'OTP sent', phone }, devOtp ? { devOtp } : {}))
   } catch (err) { next(err) }
 })
 
@@ -212,7 +230,7 @@ app.use(errorHandler)
 
 await ready
 app.listen(PORT, () => {
-  console.log(`ProjectLab API listening on http://localhost:${PORT}`)
+  console.log(`Financial Blueprint API listening on http://localhost:${PORT}`)
 })
 
 function publicUser(user) {

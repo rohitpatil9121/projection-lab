@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { verifyOtp, verifyPhoneOtp } from '../api/client.js'
-import { useStore } from '../data/store.js'
+import { useStore, redirectAfterAuth, isAuthenticated } from '../data/store.js'
 
 export default function Otp() {
   const { state } = useLocation()
   const navigate = useNavigate()
   const afterLogin = useStore((s) => s.afterLogin)
+  const onboarded = useStore((s) => s.onboarded)
+
+  if (isAuthenticated()) {
+    return <Navigate to={onboarded ? '/' : '/onboarding'} replace />
+  }
 
   const channel = state?.channel || 'email'
   const email = state?.email || ''
@@ -39,7 +44,7 @@ export default function Otp() {
         ? await verifyPhoneOtp(phone, otp)
         : await verifyOtp(email, otp)
       await afterLogin(data.user)
-      navigate(useStore.getState().onboarded ? '/' : '/onboarding', { replace: true })
+      redirectAfterAuth(navigate)
     } catch (err) {
       setError(err.message)
       setDigits(['', '', '', '', '', ''])
@@ -56,7 +61,7 @@ export default function Otp() {
         <p className="text-sm text-ink-400 mt-1">
           Sent to <span className="font-semibold text-ink-700 dark:text-ink-200">{target}</span>
         </p>
-        {state?.devOtp && (
+        {import.meta.env.DEV && state?.devOtp && (
           <p className="mt-2 text-xs font-mono bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 rounded-lg px-3 py-2">
             Dev OTP: {state.devOtp}
           </p>

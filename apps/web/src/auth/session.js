@@ -21,3 +21,7 @@ export function getAccessToken() {
 export function getRefreshToken() {
   return loadSession()?.refreshToken ?? null
 }
+
+export function isAuthenticated() {
+  return !!(loadSession()?.accessToken && loadSession()?.refreshToken)
+}
