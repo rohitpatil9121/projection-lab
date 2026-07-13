@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { loginUser, registerUser, forgotPassword, resetPassword } from '../api/client.js'
-import { useStore } from '../data/store.js'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, Navigate } from 'react-router-dom'
+import { loginUser, registerUser, forgotPassword, resetPassword, requestOtp, requestPhoneOtp } from '../api/client.js'
+import { apiConfigError } from '../api/config.js'
+import { useStore, redirectAfterAuth, isAuthenticated } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
 import AppLogo from '../components/AppLogo.jsx'
 
@@ -12,11 +13,21 @@ const FEATURES = [
   { icon: '🇮🇳', text: 'EPF · PPF · NPS · SIP · 80C — India-first' },
 ]
 
+
 export default function Login() {
   const navigate = useNavigate()
   const afterLogin = useStore((s) => s.afterLogin)
-  const [view, setView] = useState('auth') // 'auth' | 'forgot' | 'reset'
+  const onboarded = useStore((s) => s.onboarded)
+  const planHydrating = useStore((s) => s.planHydrating)
+
+  // Already signed in — skip login screen
+  if (isAuthenticated() && !planHydrating) {
+    return <Navigate to={onboarded ? '/' : '/onboarding'} replace />
+  }
+  const [view, setView] = useState('auth') // 'auth' | 'forgot' | 'reset' | 'otp'
   const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const [otpChannel, setOtpChannel] = useState('email') // 'email' | 'phone'
+  const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -25,6 +36,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const apiUnavailable = apiConfigError()
 
   async function submit(e) {
     e.preventDefault()
@@ -35,7 +47,7 @@ export default function Login() {
         ? await registerUser(email.trim(), password, name.trim())
         : await loginUser(email.trim(), password)
       await afterLogin(data.user)
-      navigate(useStore.getState().onboarded ? '/' : '/onboarding', { replace: true })
+      redirectAfterAuth(navigate)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -49,7 +61,7 @@ export default function Login() {
     try {
       const res = await forgotPassword(email.trim())
       setView('reset')
-      setNotice(res.devCode
+      setNotice(res.devCode && import.meta.env.DEV
         ? `Dev mode: your reset code is ${res.devCode}`
         : 'If that email exists, a reset code has been sent. Check your inbox.')
     } catch (err) {
@@ -65,7 +77,25 @@ export default function Login() {
     try {
       const data = await resetPassword(email.trim(), code.trim(), password)
       await afterLogin(data.user)
-      navigate(useStore.getState().onboarded ? '/' : '/onboarding', { replace: true })
+      redirectAfterAuth(navigate)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function submitOtpRequest(e) {
+    e.preventDefault()
+    setLoading(true); setError('')
+    try {
+      if (otpChannel === 'phone') {
+        const res = await requestPhoneOtp(phone.trim())
+        navigate('/otp', { state: { channel: 'phone', phone: res.phone, devOtp: import.meta.env.DEV ? res.devOtp : undefined } })
+      } else {
+        const res = await requestOtp(email.trim())
+        navigate('/otp', { state: { channel: 'email', email: email.trim(), devOtp: import.meta.env.DEV ? res.devOtp : undefined } })
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -112,15 +142,21 @@ export default function Login() {
           <div className="text-center mb-6">
             <AppLogo size={56} className="mb-3 shadow-glow" />
             <h1 className="text-2xl font-extrabold tracking-tight">
-              {view === 'forgot' ? 'Reset password' : view === 'reset' ? 'Check your email' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
+              {view === 'forgot' ? 'Reset password' : view === 'reset' ? 'Check your email' : view === 'otp' ? 'Sign in with OTP' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
             </h1>
             <p className="text-sm text-ink-400 mt-1">
               {view === 'forgot' ? "Enter your email and we'll send a reset code"
                 : view === 'reset' ? 'Enter the code and your new password'
+                : view === 'otp' ? 'We will send a 6-digit code to verify you'
                 : mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your Financial Blueprint account'}
             </p>
           </div>
 
+          {apiUnavailable && (
+            <p className="text-sm text-amber-800 dark:text-amber-200 font-medium bg-amber-50 dark:bg-amber-950/40 rounded-lg px-3 py-2 mb-4">
+              {apiUnavailable}
+            </p>
+          )}
           {error && (
             <p className="flex items-start gap-2 text-sm text-rose-600 font-medium bg-rose-50 dark:bg-rose-950/40 rounded-lg px-3 py-2 mb-4 animate-fade-in">
               <span aria-hidden="true">⚠️</span><span>{error}</span>
@@ -167,7 +203,7 @@ export default function Login() {
                       type={showPw ? 'text' : 'password'} required
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       value={password} onChange={(e) => setPassword(e.target.value)}
-                      placeholder={mode === 'signup' ? 'At least 6 characters' : 'Your password'}
+                      placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'}
                       className="input pr-16"
                     />
                     <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">
@@ -175,7 +211,7 @@ export default function Login() {
                     </button>
                   </div>
                 </label>
-                <button type="submit" disabled={loading} className="btn-primary w-full">
+                <button type="submit" disabled={loading || !!apiUnavailable} className="btn-primary w-full">
                   {loading ? <><Spinner size={16} /> Please wait…</> : mode === 'signup' ? 'Create account' : 'Log in'}
                 </button>
               </form>
@@ -193,13 +229,46 @@ export default function Login() {
                 <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
               </div>
 
-              <Link to="/onboarding" className="btn-secondary w-full">Continue as guest</Link>
+              <button type="button" onClick={() => { setView('otp'); setError('') }} className="btn-secondary w-full">Sign in with OTP</button>
+
+              <Link to="/onboarding" className="btn-secondary w-full mt-3 block text-center">Continue as guest</Link>
 
               <p className="text-[11px] text-ink-400 text-center mt-5 leading-relaxed">
                 Illustration only — not investment advice.<br />
                 <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>
               </p>
             </>
+          )}
+
+          {/* ---- OTP request ---- */}
+          {view === 'otp' && (
+            <form onSubmit={submitOtpRequest} className="space-y-4">
+              <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold" role="tablist">
+                <button type="button" role="tab" aria-selected={otpChannel === 'email'}
+                  onClick={() => { setOtpChannel('email'); setError('') }}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${otpChannel === 'email' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}
+                >Email</button>
+                <button type="button" role="tab" aria-selected={otpChannel === 'phone'}
+                  onClick={() => { setOtpChannel('phone'); setError('') }}
+                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${otpChannel === 'phone' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}
+                >Mobile</button>
+              </div>
+              {otpChannel === 'email' ? (
+                <label className="block">
+                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
+                  <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
+                </label>
+              ) : (
+                <label className="block">
+                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Mobile number</span>
+                  <input type="tel" required autoFocus inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit number" className="input mt-1" />
+                </label>
+              )}
+              <button type="submit" disabled={loading} className="btn-primary w-full">
+                {loading ? <><Spinner size={16} /> Sending…</> : 'Send OTP'}
+              </button>
+              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
+            </form>
           )}
 
           {/* ---- FORGOT: enter email ---- */}
@@ -226,7 +295,7 @@ export default function Login() {
               <label className="block">
                 <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">New password</span>
                 <div className="relative mt-1">
-                  <input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 6 characters" className="input pr-16" />
+                  <input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className="input pr-16" />
                   <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">{showPw ? 'Hide' : 'Show'}</button>
                 </div>
               </label>

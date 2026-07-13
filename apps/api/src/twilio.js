@@ -1,5 +1,4 @@
-import crypto from 'node:crypto'
-import { otps } from './db.js'
+import { isProduction } from './dev.js'
 
 // Phone OTP via Twilio Verify. Configure with:
 //   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_VERIFY_SERVICE_SID
@@ -52,7 +51,13 @@ export async function sendPhoneOtp(phone) {
     }
   }
 
-  // Fallback: generate + store our own OTP (reuses the otps table).
+  if (isProduction) {
+    const err = new Error('Phone OTP is not configured. Set TWILIO_* environment variables.')
+    err.status = 503
+    throw err
+  }
+
+  // Dev fallback: generate + store our own OTP (reuses the otps table).
   const now = Date.now()
   const bucket = (await otps.get(phone)) || { attempts: [], code: null, expiresAt: 0 }
   bucket.attempts = bucket.attempts.filter((t) => now - t < 60 * 60 * 1000)
