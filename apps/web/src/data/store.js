@@ -153,10 +153,9 @@ export const useStore = create((set, get) => {
       if (plans.length) {
         plan = await fetchPlan(plans[0].id)
       } else {
-        const local = load()
         plan = await apiFetch('/plans', {
           method: 'POST',
-          body: JSON.stringify({ payload: planPayload(local) }),
+          body: JSON.stringify({ payload: emptyPlanPayload }),
         })
       }
       get().applyServerPlan(plan, user)
@@ -190,7 +189,7 @@ export const useStore = create((set, get) => {
       auth: { user, planId: plan.id, planVersion: plan.version },
       syncStatus: 'synced',
       syncError: null,
-      onboarded: hasData || get().onboarded,
+      onboarded: hasData,
       planHydrating: false,
     })
     saveSession({
@@ -204,35 +203,33 @@ export const useStore = create((set, get) => {
   },
 
   async afterLogin(user) {
-    set({ planHydrating: true, syncStatus: 'syncing' })
+    const session = loadSession()
+    set({
+      planHydrating: true,
+      syncStatus: 'syncing',
+      auth: {
+        user,
+        planId: session?.planId || null,
+        planVersion: session?.planVersion || null,
+      },
+    })
     try {
-      const local = load()
-      const localHasData = planHasData(local)
       const plans = await fetchPlans()
 
       if (plans.length) {
         const plan = await fetchPlan(plans[0].id)
-        const cloudHasData = planHasData(plan.payload)
-        // Returning user → always use cloud when it has data.
-        // New signup with guest data on device → upload local once.
-        if (!cloudHasData && localHasData) {
-          const updated = await syncPlan(plan.id, {
-            payload: planPayload(local),
-            version: plan.version,
-            profile: local.profile,
-            uiPrefs: local.ui,
-          })
-          get().applyServerPlan(updated, user)
-        } else {
-          get().applyServerPlan(plan, user)
-        }
+        get().applyServerPlan(plan, user)
       } else {
         const plan = await apiFetch('/plans', {
           method: 'POST',
-          body: JSON.stringify({ payload: planPayload(localHasData ? local : get()) }),
+          body: JSON.stringify({ payload: emptyPlanPayload }),
         })
         get().applyServerPlan(plan, user)
       }
+    } catch (err) {
+      saveSession(null)
+      set({ auth: null, syncStatus: 'error', syncError: err.message || 'Could not load your plan' })
+      throw err
     } finally {
       set({ planHydrating: false })
     }
@@ -397,6 +394,44 @@ export const useStore = create((set, get) => {
     localStorage.removeItem(KEY)
     set({ ...DEFAULT_STATE, auth: get().auth, syncStatus: get().auth ? 'syncing' : 'idle' })
     get().persist()
+  },
+
+  async resetAccountData() {
+    const s = get()
+    const auth = s.auth
+    const { profile, ui } = applyUserProfile(
+      { profile: { ...emptyProfile }, ui: s.ui || { dark: false, realTerms: true } },
+      auth?.user || {},
+    )
+    set({
+      ...emptyPlanPayload,
+      profile,
+      ui,
+      scenarios: [{ id: 'base', name: 'Base plan', data: null }],
+      activeScenarioId: 'base',
+      snapshots: [],
+      onboarded: false,
+      auth,
+      syncStatus: auth?.planId ? 'syncing' : 'idle',
+      syncError: null,
+    })
+    get().persistLocalOnly()
+
+    if (auth?.planId) {
+      try {
+        const updated = await syncPlan(auth.planId, {
+          payload: emptyPlanPayload,
+          version: auth.planVersion,
+          profile,
+          uiPrefs: ui,
+        })
+        set({ auth: { ...auth, planVersion: updated.version }, syncStatus: 'synced' })
+        saveSession({ ...loadSession(), planVersion: updated.version })
+      } catch (err) {
+        set({ syncStatus: 'error', syncError: err.message || 'Could not reset account data' })
+        throw err
+      }
+    }
   },
 }})
 

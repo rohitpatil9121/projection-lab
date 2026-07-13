@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { Modal } from './ui.jsx'
 import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
+import { registerBackHandler } from '../hooks/backButton.js'
 
 const titles = {
   '/': 'Today',
   '/dashboard': 'Dashboard',
-  '/plan': 'Plan & Timeline',
+  '/plan': 'Financial Plan',
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',
   '/monte-carlo': 'Monte Carlo Simulation',
@@ -52,6 +53,14 @@ export default function Topbar() {
     window.addEventListener('mousedown', onClick)
     return () => window.removeEventListener('mousedown', onClick)
   }, [])
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+    return registerBackHandler(() => {
+      setMenuOpen(false)
+      return true
+    })
+  }, [menuOpen])
 
   const createScenario = () => {
     if (!newName.trim()) return
@@ -119,7 +128,7 @@ export default function Topbar() {
           </span>
         )}
 
-        {!auth && (
+        {!auth?.user && (
           <Link to="/login" className="btn-ghost text-xs sm:text-sm">Sign in</Link>
         )}
 
@@ -145,7 +154,11 @@ export default function Topbar() {
                 <div className="text-sm font-bold truncate">{profile.name || 'Guest'}</div>
                 <div className="text-xs text-ink-400 truncate">{auth?.user?.email || auth?.user?.phone || 'Not signed in'}</div>
               </div>
-              <Link to="/settings" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors">⚙️ Settings</Link>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); navigate('/settings') }}
+                className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+              >⚙️ Settings</button>
               {auth ? (
                 <button onClick={signOut} className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">↩ Sign out</button>
               ) : (
