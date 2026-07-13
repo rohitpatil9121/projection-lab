@@ -1,11 +1,12 @@
 import { useStore } from '../data/store.js'
+import { emptyProfile } from '@projectlab/schema'
 import { Card, SectionTitle } from '../components/ui.jsx'
 import { IconPlus, IconTrash } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
 
 export default function Settings() {
   const navigate = useNavigate()
-  const profile = useStore((s) => s.profile)
+  const profile = useStore((s) => s.profile) || emptyProfile
   const setProfile = useStore((s) => s.setProfile)
   const incomes = useStore((s) => s.incomes) || []
   const expenses = useStore((s) => s.expenses) || []
@@ -13,10 +14,16 @@ export default function Settings() {
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
   const reset = useStore((s) => s.reset)
+  const resetAccountData = useStore((s) => s.resetAccountData)
   const auth = useStore((s) => s.auth)
   const logout = useStore((s) => s.logout)
 
   const signOut = async () => { await logout(); navigate('/login') }
+  const startFresh = async () => {
+    if (!confirm('Clear this account data and start onboarding again?')) return
+    await resetAccountData()
+    navigate('/onboarding', { replace: true })
+  }
 
   return (
     <div className="space-y-6">
@@ -91,6 +98,18 @@ export default function Settings() {
           <IconTrash size={16} /> Reset
         </button>
       </Card>
+
+      {auth && (
+        <Card className="flex items-center justify-between gap-4 border-amber-200 dark:border-amber-900/50">
+          <div>
+            <div className="font-bold">Start fresh for this account</div>
+            <div className="text-xs text-ink-400">Clears this signed-in account's cloud plan and opens onboarding again.</div>
+          </div>
+          <button onClick={startFresh} className="btn bg-amber-50 text-amber-700 hover:bg-amber-100 shrink-0">
+            Clear account
+          </button>
+        </Card>
+      )}
     </div>
   )
 }
@@ -108,11 +127,11 @@ function FlowEditor({ title, collection, items, update, add, remove, color }) {
         }
       />
       <div className="space-y-2">
-        {items.map((it) => (
+        {(items || []).filter((it) => it?.id).map((it) => (
           <div key={it.id} className="group grid grid-cols-[1fr,auto,auto] gap-2 items-center rounded-xl bg-ink-50 dark:bg-ink-800/60 px-3 py-2">
             <input value={it.name} onChange={(e) => update(collection, it.id, { name: e.target.value })} className="bg-transparent font-semibold text-sm outline-none min-w-0" />
             <div className="flex items-center gap-1 text-sm">
-              <span className="text-ink-400">$</span>
+              <span className="text-ink-400">₹</span>
               <input type="number" value={it.amount} onChange={(e) => update(collection, it.id, { amount: Number(e.target.value) })} className="w-24 text-right bg-transparent font-bold outline-none" />
             </div>
             <button onClick={() => remove(collection, it.id)} className="opacity-0 group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition">

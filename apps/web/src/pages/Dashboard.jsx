@@ -129,7 +129,7 @@ export default function Dashboard() {
               <YAxis tickFormatter={(v) => fmtMoney(v, { compact: true })} tick={{ fontSize: 11 }} stroke="currentColor" className="text-ink-400" tickLine={false} axisLine={false} width={54} />
               <Tooltip content={<ChartTooltip />} />
               {assetAccounts.map((a) => (
-                <Area key={a.id} type="monotone" dataKey={a.id} name={a.name} stackId="1" stroke={a.color} fill={`url(#g-${a.id})`} strokeWidth={1.5} />
+                <Area key={a.id} type="linear" dataKey={a.id} name={a.name} stackId="1" stroke={a.color} fill={`url(#g-${a.id})`} strokeWidth={1.5} isAnimationActive={false} />
               ))}
               <ReferenceLine x={retireRow?.year} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#22c55e', fontWeight: 700 }} />
             </AreaChart>
@@ -153,8 +153,8 @@ export default function Dashboard() {
                 <YAxis tickFormatter={(v) => fmtMoney(v, { compact: true })} tick={{ fontSize: 11 }} stroke="currentColor" className="text-ink-400" tickLine={false} axisLine={false} width={54} />
                 <Tooltip formatter={(v, n) => [fmtMoney(v), n]} labelFormatter={(l) => `Year ${l}`} contentStyle={{ borderRadius: 12, fontSize: 12, border: 'none', boxShadow: '0 4px 24px rgba(15,23,42,0.12)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="income" name="Income" stroke="#6366f1" fill="url(#gInc)" strokeWidth={2} />
-                <Area type="monotone" dataKey="expense" name="Expenses" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} />
+                <Area type="linear" dataKey="income" name="Income" stroke="#6366f1" fill="url(#gInc)" strokeWidth={2} isAnimationActive={false} />
+                <Area type="linear" dataKey="expense" name="Expenses" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -201,8 +201,8 @@ export default function Dashboard() {
                 <Tooltip formatter={(v, n) => [fmtMoney(v), n]} labelFormatter={(l) => `Year ${l}`} contentStyle={{ borderRadius: 12, fontSize: 12, border: 'none', boxShadow: '0 4px 24px rgba(15,23,42,0.12)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
                 {scenarioResults.map((sc) => (
-                  <Line key={sc.id} type="monotone" dataKey={sc.id} name={sc.name} stroke={sc.color}
-                    strokeWidth={sc.id === activeScenarioId ? 3 : 2} dot={false}
+                  <Line key={sc.id} type="linear" dataKey={sc.id} name={sc.name} stroke={sc.color}
+                    strokeWidth={sc.id === activeScenarioId ? 3 : 2} dot={false} isAnimationActive={false}
                     strokeDasharray={sc.id === activeScenarioId ? undefined : '6 4'} />
                 ))}
               </LineChart>

@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { useEffect, useState, useCallback } from 'react'
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import MobileNav from './components/MobileNav.jsx'
@@ -14,9 +14,12 @@ import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
 import Otp from './pages/Otp.jsx'
 import Onboarding from './pages/Onboarding.jsx'
+import Landing from './pages/Landing.jsx'
 import { useStore, isAuthenticated } from './data/store.js'
 import { Spinner } from './components/ui.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
+import AndroidBackHandler from './components/AndroidBackHandler.jsx'
+import { shouldShowLanding, markLandingSeen, landingDestination } from './utils/landing.js'
 
 function AppShell() {
   const dark = useStore((s) => s.ui.dark)
@@ -31,16 +34,7 @@ function AppShell() {
         <Topbar />
         <main className="flex-1 px-5 md:px-8 py-6 pb-24 md:pb-8 max-w-[1400px] w-full mx-auto">
           <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={<Today />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/plan" element={<Plan />} />
-              <Route path="/accounts" element={<Accounts />} />
-              <Route path="/cash-flow" element={<CashFlow />} />
-              <Route path="/monte-carlo" element={<MonteCarlo />} />
-              <Route path="/milestones" element={<Milestones />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
+            <Outlet />
           </ErrorBoundary>
         </main>
       </div>
@@ -56,22 +50,19 @@ function OnboardingRoute() {
   return <Onboarding />
 }
 
-function ProtectedApp() {
+function ProtectedLayout() {
   const onboarded = useStore((s) => s.onboarded)
   const planHydrating = useStore((s) => s.planHydrating)
   const hasAuth = isAuthenticated()
 
-  // Signed in but setup not finished → onboarding (not login again)
   if (hasAuth && !onboarded) {
     return <Navigate to="/onboarding" replace />
   }
 
-  // Not signed in and never set up → login / guest entry
   if (!onboarded && !hasAuth) {
     return <Navigate to="/login" replace />
   }
 
-  // Cold start: restore cloud plan before showing dashboard
   if (hasAuth && planHydrating) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-ink-50 dark:bg-ink-950">
@@ -81,12 +72,21 @@ function ProtectedApp() {
     )
   }
 
-  return <AppShell />
+  return <Outlet />
 }
 
 export default function App() {
+  const navigate = useNavigate()
+  const onboarded = useStore((s) => s.onboarded)
   const initFromSession = useStore((s) => s.initFromSession)
   const scheduleSync = useStore((s) => s.scheduleSync)
+  const [showLanding, setShowLanding] = useState(shouldShowLanding)
+
+  const finishLanding = useCallback((action) => {
+    markLandingSeen()
+    setShowLanding(false)
+    navigate(landingDestination(action, { onboarded }), { replace: true })
+  }, [navigate, onboarded])
 
   useEffect(() => {
     initFromSession()
@@ -96,14 +96,28 @@ export default function App() {
     return () => window.removeEventListener('online', onOnline)
   }, [initFromSession, scheduleSync])
 
-  const onboarded = useStore((s) => s.onboarded)
-
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/otp" element={<Otp />} />
-      <Route path="/onboarding" element={<OnboardingRoute />} />
-      <Route path="/*" element={<ProtectedApp />} />
-    </Routes>
+    <ErrorBoundary>
+      {showLanding && <Landing onComplete={finishLanding} />}
+      <AndroidBackHandler />
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/otp" element={<Otp />} />
+        <Route path="/onboarding" element={<OnboardingRoute />} />
+        <Route element={<ProtectedLayout />}>
+          <Route element={<AppShell />}>
+            <Route index element={<Today />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="plan" element={<Plan />} />
+            <Route path="accounts" element={<Accounts />} />
+            <Route path="cash-flow" element={<CashFlow />} />
+            <Route path="monte-carlo" element={<MonteCarlo />} />
+            <Route path="milestones" element={<Milestones />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ErrorBoundary>
   )
 }

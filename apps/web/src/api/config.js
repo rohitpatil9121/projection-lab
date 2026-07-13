@@ -1,6 +1,6 @@
 import { Capacitor } from '@capacitor/core'
 
-/** Deployed API origin without trailing slash, e.g. https://projectlab-api.onrender.com */
+/** Deployed API origin without trailing slash */
 export const API_ORIGIN = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
 export const API_BASE = API_ORIGIN ? `${API_ORIGIN}/v1` : '/v1'
