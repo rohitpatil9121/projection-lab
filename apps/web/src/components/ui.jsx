@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { IconTrend } from './Icons.jsx'
+import { registerBackHandler } from '../hooks/backButton.js'
 
 // Centered modal dialog with backdrop. Portals to body so sticky/filter ancestors don't offset it.
 export function Modal({ open, onClose, title, children }) {
@@ -13,6 +14,14 @@ export function Modal({ open, onClose, title, children }) {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = ''
     }
+  }, [open, onClose])
+
+  useEffect(() => {
+    if (!open || !onClose) return undefined
+    return registerBackHandler(() => {
+      onClose()
+      return true
+    })
   }, [open, onClose])
 
   if (!open) return null

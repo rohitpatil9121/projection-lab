@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: projectlab-api
+    name: projection-lab
     runtime: node
     region: singapore
     plan: free

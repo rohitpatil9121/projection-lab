@@ -63,7 +63,7 @@ Set your deployed API before building:
 
 ```bash
 # Windows PowerShell
-$env:VITE_API_URL = "https://your-api.onrender.com"
+$env:VITE_API_URL = "https://projection-lab.onrender.com"
 npm run apk    # debug APK for testing
 npm run aab    # release AAB for Play Store (requires signing — see below)
 ```

@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { IconDashboard, IconAccounts, IconFlow, IconMilestone } from './Icons.jsx'
+import { IconDashboard, IconAccounts, IconFlow, IconMilestone, IconSettings, IconPlan } from './Icons.jsx'
 
 const links = [
   { to: '/', label: 'Today', Icon: IconAccounts, end: true },
-  { to: '/dashboard', label: 'Charts', Icon: IconDashboard },
+  { to: '/plan', label: 'Plan', Icon: IconPlan },
   { to: '/accounts', label: 'Accounts', Icon: IconAccounts },
-  { to: '/cash-flow', label: 'Flow', Icon: IconFlow },
   { to: '/milestones', label: 'Goals', Icon: IconMilestone },
+  { to: '/settings', label: 'Settings', Icon: IconSettings },
 ]
 
 export default function MobileNav() {
