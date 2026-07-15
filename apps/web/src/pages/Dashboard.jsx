@@ -31,7 +31,7 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
-const SCENARIO_COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ec4899', '#0ea5e9', '#8b5cf6']
+const SCENARIO_COLORS = ['#377cc8', '#469b88', '#eed868', '#e78c9d', '#9da7d0', '#9da7d0']
 
 export default function Dashboard() {
   const { projection, readiness, state } = useProjection()
@@ -134,7 +134,7 @@ export default function Dashboard() {
               {assetAccounts.map((a) => (
                 <Area key={a.id} type="linear" dataKey={a.id} name={a.name} stackId="1" stroke={a.color} fill={`url(#g-${a.id})`} strokeWidth={1.5} isAnimationActive={false} />
               ))}
-              <ReferenceLine x={retireRow?.year} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#22c55e', fontWeight: 700 }} />
+              <ReferenceLine x={retireRow?.year} stroke="#469b88" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#469b88', fontWeight: 700 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -148,16 +148,16 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={projection} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} /><stop offset="100%" stopColor="#6366f1" stopOpacity={0} /></linearGradient>
-                  <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ef4444" stopOpacity={0.5} /><stop offset="100%" stopColor="#ef4444" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gInc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#377cc8" stopOpacity={0.5} /><stop offset="100%" stopColor="#377cc8" stopOpacity={0} /></linearGradient>
+                  <linearGradient id="gExp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e0533d" stopOpacity={0.5} /><stop offset="100%" stopColor="#e0533d" stopOpacity={0} /></linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className="text-ink-200 dark:text-ink-800" vertical={false} />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} stroke="currentColor" className="text-ink-400" tickLine={false} axisLine={false} minTickGap={40} />
                 <YAxis tickFormatter={(v) => fmtMoney(v, { compact: true })} tick={{ fontSize: 11 }} stroke="currentColor" className="text-ink-400" tickLine={false} axisLine={false} width={54} />
                 <Tooltip formatter={(v, n) => [fmtMoney(v), n]} labelFormatter={(l) => `Year ${l}`} contentStyle={{ borderRadius: 12, fontSize: 12, border: 'none', boxShadow: '0 4px 24px rgba(15,23,42,0.12)' }} />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} />
-                <Area type="linear" dataKey="income" name="Income" stroke="#6366f1" fill="url(#gInc)" strokeWidth={2} isAnimationActive={false} />
-                <Area type="linear" dataKey="expense" name="Expenses" stroke="#ef4444" fill="url(#gExp)" strokeWidth={2} isAnimationActive={false} />
+                <Area type="linear" dataKey="income" name="Income" stroke="#377cc8" fill="url(#gInc)" strokeWidth={2} isAnimationActive={false} />
+                <Area type="linear" dataKey="expense" name="Expenses" stroke="#e0533d" fill="url(#gExp)" strokeWidth={2} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -171,7 +171,7 @@ export default function Dashboard() {
               <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
                 <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" className="text-ink-100 dark:text-ink-800" stroke="currentColor" />
                 <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" strokeLinecap="round"
-                  stroke={readiness.success ? '#22c55e' : '#f59e0b'}
+                  stroke={readiness.success ? '#469b88' : '#eed868'}
                   strokeDasharray={2 * Math.PI * 52}
                   strokeDashoffset={2 * Math.PI * 52 * (1 - readiness.score / 100)} />
               </svg>

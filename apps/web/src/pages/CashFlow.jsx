@@ -6,12 +6,12 @@ import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionTitle } from '../components/ui.jsx'
 import { IconPlus, IconTrash, IconChevron } from '../components/Icons.jsx'
 
-const PALETTE = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#f43f5e']
+const PALETTE = ['#377cc8', '#9da7d0', '#469b88', '#9da7d0', '#e78c9d', '#eed868', '#469b88', '#e0533d']
 
 // Custom node renderer with labels + value.
 function SankeyNode({ x, y, width, height, index, payload, containerWidth }) {
   const isRight = x + width + 6 > containerWidth - 120
-  const color = payload.color || '#6366f1'
+  const color = payload.color || '#377cc8'
   return (
     <Layer key={`node-${index}`}>
       <Rectangle x={x} y={y} width={width} height={height} fill={color} radius={3} fillOpacity={0.95} />
@@ -68,7 +68,7 @@ export default function CashFlow() {
     const savings = contributions.map((c) => ({
       name: accounts.find((a) => a.id === c.accountId)?.name || c.accountId,
       amount: c.amount,
-      color: accounts.find((a) => a.id === c.accountId)?.color || '#22c55e',
+      color: accounts.find((a) => a.id === c.accountId)?.color || '#469b88',
     }))
 
     const totalIncome = activeIncomes.reduce((a, b) => a + b.amount, 0)
@@ -89,11 +89,11 @@ export default function CashFlow() {
     }
 
     activeIncomes.forEach((i) => push(i.name, i.color, i.amount))
-    if (deficit > 0) push('From savings (deficit)', '#f59e0b', deficit)
-    const budgetIdx = push('Budget', '#4f46e5', budgetTotal)
+    if (deficit > 0) push('From savings (deficit)', '#eed868', deficit)
+    const budgetIdx = push('Budget', '#377cc8', budgetTotal)
     activeExpenses.forEach((e) => push(e.name, e.color, e.amount))
     savings.forEach((s) => push('→ ' + s.name, s.color, s.amount))
-    if (surplus > 0) push('Surplus cash', '#22c55e', surplus)
+    if (surplus > 0) push('Surplus cash', '#469b88', surplus)
 
     activeIncomes.forEach((i) => links.push({ source: idx[i.name], target: budgetIdx, value: i.amount }))
     if (deficit > 0) links.push({ source: idx['From savings (deficit)'], target: budgetIdx, value: deficit })
@@ -109,10 +109,10 @@ export default function CashFlow() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Mini label="Income" value={fmtMoney(totalIncome)} color="#6366f1" />
-        <Mini label="Expenses" value={fmtMoney(totalExpense)} color="#ef4444" />
-        <Mini label="Investing" value={fmtMoney(totalSavings)} color="#22c55e" />
-        <Mini label="Savings rate" value={`${savingsRate}%`} color="#f59e0b" />
+        <Mini label="Income" value={fmtMoney(totalIncome)} color="#377cc8" />
+        <Mini label="Expenses" value={fmtMoney(totalExpense)} color="#e0533d" />
+        <Mini label="Investing" value={fmtMoney(totalSavings)} color="#469b88" />
+        <Mini label="Savings rate" value={`${savingsRate}%`} color="#eed868" />
       </div>
 
       <Card>
