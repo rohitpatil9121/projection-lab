@@ -2,12 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { registerBackHandler } from '../hooks/backButton.js'
 
 const C = { coral: '#e0533d', teal: '#469b88', blue: '#377cc8', sun: '#eed868', blossom: '#e78c9d', peri: '#9da7d0' }
-const PETAL = [
-  'rounded-tl-[3rem] rounded-br-[3rem] rounded-tr-2xl rounded-bl-2xl',
-  'rounded-tr-[3rem] rounded-bl-[3rem] rounded-tl-2xl rounded-br-2xl',
-  'rounded-bl-[3rem] rounded-tr-[3rem] rounded-tl-2xl rounded-br-2xl',
-  'rounded-br-[3rem] rounded-tl-[3rem] rounded-tr-2xl rounded-bl-2xl',
-]
+// One tile shape everywhere — a uniform squircle.
+const TILE = 'rounded-[1.75rem]'
 
 // Three real onboarding slides — each a distinct brand-tile arrangement + copy.
 const SLIDES = [
@@ -18,8 +14,8 @@ const SLIDES = [
   },
   {
     tiles: [C.blue, C.sun, C.teal, C.peri, C.coral, C.blossom],
-    title: ['Save more', 'on taxes.'],
-    body: 'Compare the old vs new regime and track every 80C rupee.',
+    title: ['See where', 'money goes.'],
+    body: 'Track income against spending each month and grow your savings rate.',
   },
   {
     tiles: [C.teal, C.blossom, C.sun, C.coral, C.peri, C.blue],
@@ -43,7 +39,8 @@ export default function Landing({ onComplete }) {
   const finishRef = useRef(finish)
   finishRef.current = finish
 
-  const next = () => (i < SLIDES.length - 1 ? setI(i + 1) : finish('continue'))
+  // Advance through the slides; the last arrow opens the Login / Sign-up screen.
+  const next = () => (i < SLIDES.length - 1 ? setI(i + 1) : finish('signin'))
 
   useEffect(() => {
     const t = setTimeout(() => setShown(true), 80)
@@ -87,7 +84,7 @@ export default function Landing({ onComplete }) {
           {slide.tiles.map((c, idx) => (
             <div
               key={idx}
-              className={`aspect-square ${PETAL[idx % PETAL.length]} animate-fade-in-up`}
+              className={`aspect-square ${TILE} animate-fade-in-up`}
               style={{ background: c, animationDelay: `${idx * 60}ms` }}
             />
           ))}
@@ -104,7 +101,7 @@ export default function Landing({ onComplete }) {
         </div>
 
         <div className="mt-9 flex items-center justify-between">
-          <div className="flex items-center gap-2" role="tablist" aria-label="Intro slides">
+          <div className="flex items-center -ml-2.5" role="tablist" aria-label="Intro slides">
             {SLIDES.map((_, d) => (
               <button
                 key={d}
@@ -113,8 +110,10 @@ export default function Landing({ onComplete }) {
                 aria-selected={d === i}
                 aria-label={`Slide ${d + 1}`}
                 onClick={() => setI(d)}
-                className={`h-2 rounded-full transition-all duration-300 ${d === i ? 'w-6 bg-white' : 'w-2 bg-white/25 hover:bg-white/50'}`}
-              />
+                className="grid place-items-center h-11 w-8" // ≥44px tap target
+              >
+                <span className={`block h-2 rounded-full transition-all duration-300 ${d === i ? 'w-6 bg-white' : 'w-2 bg-white/25'}`} />
+              </button>
             ))}
           </div>
           <button

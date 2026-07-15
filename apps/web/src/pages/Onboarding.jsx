@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { PERSONAS } from '../data/personas.js'
@@ -7,32 +7,7 @@ import { IconTrend } from '../components/Icons.jsx'
 
 const L = 100000 // ₹1 lakh
 
-// Intro carousel slides (Visily mock p3 — swipe or tap dots).
-const INTRO_SLIDES = [
-  {
-    tag: 'the loop',
-    emoji: '💸',
-    panel: 'from-amber-200 via-amber-100 to-brand-100 dark:from-amber-500/25 dark:via-ink-800 dark:to-brand-500/20',
-    title: 'Build Your Wealth Habit',
-    body: 'Success is a habit. We use a proven feedback loop: track your data, receive expert insights, and take rewarded actions to grow your net worth.',
-  },
-  {
-    tag: 'see your future',
-    emoji: '📈',
-    panel: 'from-brand-200 via-brand-100 to-sky-100 dark:from-brand-500/25 dark:via-ink-800 dark:to-sky-500/20',
-    title: 'Project Every Rupee',
-    body: 'One clean timeline of your net worth to age 85 — salary, SIPs, EPF/PPF/NPS, loans and life events, simulated the moment you change anything.',
-  },
-  {
-    tag: 'stay on track',
-    emoji: '🎯',
-    panel: 'from-emerald-200 via-emerald-100 to-brand-100 dark:from-emerald-500/25 dark:via-ink-800 dark:to-brand-500/20',
-    title: 'Reach Your Life Goals',
-    body: 'Emergency fund, first crore, retirement — track each goal, get quests with a clear next action, and celebrate real milestones as you hit them.',
-  },
-]
-
-// Progress dots — active step is a wide indigo bar (Visily style).
+// Progress dots — active step is a wide brand bar. Tap targets are ≥44px via padding.
 function Dots({ count, index, className = '' }) {
   return (
     <div className={`flex items-center gap-1.5 ${className}`} aria-hidden>
@@ -104,13 +79,12 @@ export default function Onboarding() {
   const isNewScenario = !!state?.newScenario
   const completeOnboarding = useStore((s) => s.completeOnboarding)
 
-  // welcome → (sandbox: persona) | (walkthrough: about → have → income → balances)
-  const [step, setStep] = useState('welcome')
+  // The dark brand-tile Landing is the only splash. The wizard starts straight
+  // at `about` (walkthrough) or `persona` (sandbox / sample data).
+  const [step, setStep] = useState('about')
   const [mode, setMode] = useState('walkthrough')
   const [personaId, setPersonaId] = useState(null)
   const [error, setError] = useState('')
-  const [slide, setSlide] = useState(0)
-  const touchX = useRef(null)
 
   const [name, setName] = useState('')
   const [currentAge, setCurrentAge] = useState('30')
@@ -133,9 +107,13 @@ export default function Onboarding() {
 
   const n = (v) => Math.max(0, Number(v) || 0)
 
-  const WALK_STEPS = ['welcome', 'about', 'have', 'income', 'balances']
-  const stepList = mode === 'sandbox' ? ['welcome', 'persona'] : WALK_STEPS
+  const WALK_STEPS = ['about', 'have', 'income', 'balances']
+  const stepList = mode === 'sandbox' ? ['persona'] : WALK_STEPS
   const stepIndex = Math.max(0, stepList.indexOf(step))
+
+  // Jump into sample-data (sandbox) mode from the first step.
+  const useSampleData = () => { setError(''); setMode('sandbox'); setStep('persona') }
+  const exitSandbox = () => { setError(''); setMode('walkthrough'); setStep('about') }
 
   function goNext() {
     setError('')
@@ -158,11 +136,10 @@ export default function Onboarding() {
 
   function goBack() {
     setError('')
-    if (step === 'persona') setStep('welcome')
-    else {
-      const i = WALK_STEPS.indexOf(step)
-      if (i > 0) setStep(WALK_STEPS[i - 1])
-    }
+    if (step === 'persona') { exitSandbox(); return }
+    const i = WALK_STEPS.indexOf(step)
+    if (i > 0) setStep(WALK_STEPS[i - 1])
+    else navigate(-1) // first step → back to the splash / previous screen
   }
 
   function confirmPersona() {
@@ -233,90 +210,6 @@ export default function Onboarding() {
     income: { badge: 'CASH FLOW', title: 'Income & spending', sub: 'Rough monthly numbers are fine — you can edit everything later.' },
     balances: { badge: 'BALANCES', title: 'What you own & owe', sub: 'Approximate current balances. Leave blank if not applicable.' },
   }
-  // ---- Welcome intro carousel (Visily mock p3) — 3 real slides ----
-  if (step === 'welcome') {
-    const goWizard = () => { setError(''); setMode('walkthrough'); setStep('about') }
-    const next = () => (slide < INTRO_SLIDES.length - 1 ? setSlide(slide + 1) : goWizard())
-    const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
-    const onTouchEnd = (e) => {
-      if (touchX.current == null) return
-      const dx = e.changedTouches[0].clientX - touchX.current
-      touchX.current = null
-      if (dx < -40 && slide < INTRO_SLIDES.length - 1) setSlide(slide + 1)
-      if (dx > 40 && slide > 0) setSlide(slide - 1)
-    }
-
-    return (
-      <div className="min-h-screen flex flex-col bg-ink-50 dark:bg-ink-950 px-5 py-6">
-        <div className="w-full max-w-lg mx-auto flex-1 flex flex-col animate-fade-in-up">
-          {/* Logo dot + SKIP */}
-          <div className="flex items-center justify-between mb-6">
-            <span className="grid place-items-center h-10 w-10 rounded-full bg-brand-600 text-white shadow-glow">
-              <IconTrend size={18} />
-            </span>
-            <button
-              type="button"
-              onClick={() => { setError(''); setMode('sandbox'); setStep('persona') }}
-              className="text-xs font-bold uppercase tracking-wide text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 px-2 py-1"
-            >
-              Skip
-            </button>
-          </div>
-
-          {isNewScenario && <p className="section-label mb-3">New plan setup</p>}
-
-          {/* Sliding track */}
-          <div className="overflow-hidden -mx-5 px-5" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-            <div
-              className="flex transition-transform duration-500 ease-out-expo"
-              style={{ transform: `translateX(-${slide * 100}%)` }}
-            >
-              {INTRO_SLIDES.map((s) => (
-                <div key={s.tag} className="w-full shrink-0 flex flex-col" aria-hidden={INTRO_SLIDES[slide].tag !== s.tag}>
-                  <div className={`rounded-3xl bg-gradient-to-br ${s.panel} h-52 sm:h-64 grid place-items-center mb-8`}>
-                    <span className="text-7xl drop-shadow-sm" aria-hidden>{s.emoji}</span>
-                  </div>
-                  <span className="self-start chip border border-brand-200 dark:border-brand-500/30 bg-white dark:bg-ink-900 text-brand-600 dark:text-brand-300 tracking-wide">
-                    {s.tag}
-                  </span>
-                  <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-3">{s.title}</h1>
-                  <p className="text-base text-ink-500 dark:text-ink-400 mt-3 leading-relaxed">{s.body}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Clickable slide dots */}
-          <div className="flex items-center justify-center gap-2 my-6" role="tablist" aria-label="Intro slides">
-            {INTRO_SLIDES.map((s, i) => (
-              <button
-                key={s.tag}
-                type="button"
-                role="tab"
-                aria-selected={i === slide}
-                aria-label={`Slide ${i + 1}: ${s.title}`}
-                onClick={() => setSlide(i)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i === slide ? 'w-8 bg-brand-600' : 'w-2 bg-ink-200 dark:bg-ink-700 hover:bg-ink-300'
-                }`}
-              />
-            ))}
-          </div>
-
-          <button type="button" onClick={next} className="btn-primary w-full">
-            {slide < INTRO_SLIDES.length - 1 ? 'Continue' : 'Get Started'} <span aria-hidden>›</span>
-          </button>
-          <p className="text-[11px] text-ink-400 text-center mt-4 leading-relaxed">
-            By continuing, you agree to our Terms of Service and{' '}
-            <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>.
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   const h = headings[step]
 
   return (
@@ -442,6 +335,13 @@ export default function Onboarding() {
             <button type="button" onClick={goNext} className="btn-primary px-6">{step === 'have' ? 'Confirm' : 'Continue'}</button>
           )}
         </div>
+
+        {/* First step only: quick way to explore with a ready-made sample plan */}
+        {step === 'about' && mode === 'walkthrough' && (
+          <button type="button" onClick={useSampleData} className="mt-4 w-full text-center text-xs font-semibold text-brand-600 hover:text-brand-700 py-2">
+            Or explore with a sample plan →
+          </button>
+        )}
       </div>
     </div>
   )

@@ -54,7 +54,6 @@ export const PERSONAS = [
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 700000, growth: 0.06, startAge: 29, endAge: 85, color: '#e0533d' },
       { id: 'emi', name: 'Car Loan EMI', amount: 90000, growth: 0, startAge: 29, endAge: 33, color: '#eed868' },
-      { id: 'health', name: 'Health Insurance (80D)', amount: 25000, growth: 0.08, startAge: 29, endAge: 85, section: '80D', color: '#e0533d' },
     ],
     contributions: [
       { id: 'c1', accountId: 'equity', amount: 240000, section: null },
@@ -122,7 +121,6 @@ export const PERSONAS = [
     ],
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 600000, growth: 0.06, startAge: 30, endAge: 85, color: '#e0533d' },
-      { id: 'health', name: 'Health Insurance (80D)', amount: 30000, growth: 0.08, startAge: 30, endAge: 85, section: '80D', color: '#e0533d' },
     ],
     contributions: [
       { id: 'c1', accountId: 'equity', amount: 900000, section: null },
@@ -160,7 +158,6 @@ export const PERSONAS = [
       { id: 'living', name: 'Household & Living', amount: 800000, growth: 0.06, startAge: 40, endAge: 85, color: '#e0533d' },
       { id: 'emi', name: 'Home Loan EMI', amount: 540000, growth: 0, startAge: 40, endAge: 55, color: '#eed868' },
       { id: 'education', name: "Children's Education", amount: 250000, growth: 0.08, startAge: 40, endAge: 58, color: '#e78c9d' },
-      { id: 'health', name: 'Health Insurance (80D)', amount: 35000, growth: 0.08, startAge: 40, endAge: 85, section: '80D', color: '#e0533d' },
     ],
     contributions: [
       { id: 'c1', accountId: 'epf', amount: 180000, section: '80C' },
@@ -200,7 +197,6 @@ export const PERSONAS = [
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 900000, growth: 0.06, startAge: 52, endAge: 85, color: '#e0533d' },
       { id: 'travel', name: 'Travel & Lifestyle', amount: 200000, growth: 0.06, startAge: 52, endAge: 75, color: '#eed868' },
-      { id: 'health', name: 'Health Insurance (80D)', amount: 60000, growth: 0.10, startAge: 52, endAge: 85, section: '80D', color: '#e0533d' },
     ],
     contributions: [
       { id: 'c1', accountId: 'equity', amount: 300000, section: null },

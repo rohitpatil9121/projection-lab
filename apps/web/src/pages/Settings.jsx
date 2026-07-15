@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useStore } from '../data/store.js'
 import { emptyProfile, defaultProfile } from '@projectlab/schema'
 import { Card, SectionLabel, SectionTitle } from '../components/ui.jsx'
-import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconTax, IconShield, IconAccounts } from '../components/Icons.jsx'
+import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
 import { toPct, fromPct, fmtRate } from '../utils/rates.js'
 import ProModal from '../components/ProModal.jsx'
@@ -55,7 +55,6 @@ export default function Settings() {
   const ui = useStore((s) => s.ui)
   const toggleDark = useStore((s) => s.toggleDark)
   const setRealTerms = useStore((s) => s.setRealTerms)
-  const setTaxAware = useStore((s) => s.setTaxAware)
   const [proOpen, setProOpen] = useState(false)
 
   const signOut = async () => { await logout(); navigate('/login') }
@@ -158,23 +157,6 @@ export default function Settings() {
             <Field label="Life Expectancy">
               <input type="number" value={profile.lifeExpectancy} onChange={(e) => setProfile({ lifeExpectancy: Number(e.target.value) })} className="input money" />
             </Field>
-            <Field label="Tax Regime">
-              <select value={profile.taxRegime} onChange={(e) => setProfile({ taxRegime: e.target.value })} className="input">
-                <option value="new">New regime</option>
-                <option value="old">Old regime</option>
-              </select>
-            </Field>
-            <div className="col-span-2">
-              <Field label="Gross Annual Salary (₹)">
-                <input
-                  type="number"
-                  value={profile.grossSalary ?? ''}
-                  placeholder="For tax estimates"
-                  onChange={(e) => setProfile({ grossSalary: e.target.value === '' ? null : Number(e.target.value) })}
-                  className="input money"
-                />
-              </Field>
-            </div>
           </div>
           <p className="mt-4 text-[11px] text-ink-400 italic">* These assumptions are used across all projections and retirement planning modules.</p>
         </Card>
@@ -198,8 +180,6 @@ export default function Settings() {
               right={<Switch checked={!!ui.dark} onChange={toggleDark} />} />
             <Row icon={<IconTrend size={18} />} label="Real Terms" sub="Show projections in today's rupees"
               right={<Switch checked={!!ui.realTerms} onChange={() => setRealTerms(!ui.realTerms)} />} />
-            <Row icon={<IconTax size={18} />} label="Tax-aware Projections" sub="Model income tax inside the projection"
-              right={<Switch checked={!!ui.taxAware} onChange={() => setTaxAware(!ui.taxAware)} />} />
             <Row icon={<IconAccounts size={18} />} label="Subscription Plan" sub="Free plan — Pro coming soon"
               onClick={() => setProOpen(true)}
               right={<span className="flex items-center gap-1.5"><span className="xp-chip !px-2 !py-0.5 text-[10px]">Pro</span><IconChevron size={16} className="text-ink-300" /></span>} />
