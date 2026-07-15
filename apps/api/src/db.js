@@ -52,12 +52,14 @@ if (DATABASE_URL) {
         inflation DOUBLE PRECISION,
         tax_regime TEXT,
         tax_slab DOUBLE PRECISION,
+        gross_salary DOUBLE PRECISION,
         currency TEXT,
         ui_prefs JSONB DEFAULT '{}',
         created_at TEXT
       );
       ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS gross_salary DOUBLE PRECISION;
       ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
       CREATE TABLE IF NOT EXISTS otps (
         email TEXT PRIMARY KEY,
@@ -92,7 +94,7 @@ if (DATABASE_URL) {
   const userFromRow = (r) => r ? {
     id: r.id, email: r.email, phone: r.phone, name: r.name,
     currentAge: r.current_age, retirementAge: r.retirement_age, lifeExpectancy: r.life_expectancy,
-    inflation: r.inflation, taxRegime: r.tax_regime, taxSlab: r.tax_slab, currency: r.currency,
+    inflation: r.inflation, taxRegime: r.tax_regime, taxSlab: r.tax_slab, grossSalary: r.gross_salary, currency: r.currency,
     uiPrefs: r.ui_prefs || {}, createdAt: r.created_at,
   } : null
 
@@ -124,9 +126,9 @@ if (DATABASE_URL) {
     },
     async create(u) {
       await pool.query(
-        `INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-        [u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt],
+        `INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, gross_salary, currency, ui_prefs, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.grossSalary ?? null, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt],
       )
       return u
     },
@@ -135,8 +137,8 @@ if (DATABASE_URL) {
       if (!current) return null
       const next = { ...current, ...patch, uiPrefs: patch.uiPrefs ? { ...current.uiPrefs, ...patch.uiPrefs } : current.uiPrefs }
       await pool.query(
-        `UPDATE users SET name=$1, current_age=$2, retirement_age=$3, life_expectancy=$4, inflation=$5, tax_regime=$6, tax_slab=$7, currency=$8, ui_prefs=$9 WHERE id=$10`,
-        [next.name, next.currentAge, next.retirementAge, next.lifeExpectancy, next.inflation, next.taxRegime, next.taxSlab, next.currency, JSON.stringify(next.uiPrefs || {}), uid],
+        `UPDATE users SET name=$1, current_age=$2, retirement_age=$3, life_expectancy=$4, inflation=$5, tax_regime=$6, tax_slab=$7, gross_salary=$8, currency=$9, ui_prefs=$10 WHERE id=$11`,
+        [next.name, next.currentAge, next.retirementAge, next.lifeExpectancy, next.inflation, next.taxRegime, next.taxSlab, next.grossSalary ?? null, next.currency, JSON.stringify(next.uiPrefs || {}), uid],
       )
       return next
     },
@@ -232,6 +234,7 @@ if (DATABASE_URL) {
       inflation REAL,
       tax_regime TEXT,
       tax_slab REAL,
+      gross_salary REAL,
       currency TEXT,
       ui_prefs TEXT,
       created_at TEXT
@@ -268,11 +271,12 @@ if (DATABASE_URL) {
   const cols = sqlite.prepare('PRAGMA table_info(users)').all().map((c) => c.name)
   if (!cols.includes('phone')) sqlite.exec('ALTER TABLE users ADD COLUMN phone TEXT')
   if (!cols.includes('password_hash')) sqlite.exec('ALTER TABLE users ADD COLUMN password_hash TEXT')
+  if (!cols.includes('gross_salary')) sqlite.exec('ALTER TABLE users ADD COLUMN gross_salary REAL')
 
   const userFromRow = (r) => r ? {
     id: r.id, email: r.email, phone: r.phone, name: r.name,
     currentAge: r.current_age, retirementAge: r.retirement_age, lifeExpectancy: r.life_expectancy,
-    inflation: r.inflation, taxRegime: r.tax_regime, taxSlab: r.tax_slab, currency: r.currency,
+    inflation: r.inflation, taxRegime: r.tax_regime, taxSlab: r.tax_slab, grossSalary: r.gross_salary, currency: r.currency,
     uiPrefs: r.ui_prefs ? JSON.parse(r.ui_prefs) : {}, createdAt: r.created_at,
   } : null
 
@@ -295,17 +299,17 @@ if (DATABASE_URL) {
       sqlite.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, userId)
     },
     create(u) {
-      sqlite.prepare(`INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, currency, ui_prefs, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .run(u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt)
+      sqlite.prepare(`INSERT INTO users (id, email, phone, password_hash, name, current_age, retirement_age, life_expectancy, inflation, tax_regime, tax_slab, gross_salary, currency, ui_prefs, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+        .run(u.id, u.email || null, u.phone || null, u.passwordHash || null, u.name, u.currentAge, u.retirementAge, u.lifeExpectancy, u.inflation, u.taxRegime, u.taxSlab, u.grossSalary ?? null, u.currency, JSON.stringify(u.uiPrefs || {}), u.createdAt)
       return u
     },
     update(uid, patch) {
       const current = users.byId(uid)
       if (!current) return null
       const next = { ...current, ...patch, uiPrefs: patch.uiPrefs ? { ...current.uiPrefs, ...patch.uiPrefs } : current.uiPrefs }
-      sqlite.prepare(`UPDATE users SET name=?, current_age=?, retirement_age=?, life_expectancy=?, inflation=?, tax_regime=?, tax_slab=?, currency=?, ui_prefs=? WHERE id=?`)
-        .run(next.name, next.currentAge, next.retirementAge, next.lifeExpectancy, next.inflation, next.taxRegime, next.taxSlab, next.currency, JSON.stringify(next.uiPrefs || {}), uid)
+      sqlite.prepare(`UPDATE users SET name=?, current_age=?, retirement_age=?, life_expectancy=?, inflation=?, tax_regime=?, tax_slab=?, gross_salary=?, currency=?, ui_prefs=? WHERE id=?`)
+        .run(next.name, next.currentAge, next.retirementAge, next.lifeExpectancy, next.inflation, next.taxRegime, next.taxSlab, next.grossSalary ?? null, next.currency, JSON.stringify(next.uiPrefs || {}), uid)
       return next
     },
   }

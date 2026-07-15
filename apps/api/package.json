@@ -8,6 +8,7 @@
     "start": "node src/index.js"
   },
   "dependencies": {
+    "@projectlab/engine": "*",
     "@projectlab/schema": "*",
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.5",

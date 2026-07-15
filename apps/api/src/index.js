@@ -9,6 +9,7 @@ import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, l
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
+import { TAX_CONFIG, TAX_FY } from '@projectlab/engine'
 import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
 import { withDevFields, isProduction } from './dev.js'
 
@@ -162,7 +163,7 @@ app.get('/v1/me', requireAuth, (req, res) => {
 
 app.patch('/v1/me', requireAuth, async (req, res, next) => {
   try {
-    const allowed = ['name', 'currentAge', 'retirementAge', 'lifeExpectancy', 'inflation', 'taxRegime', 'taxSlab']
+    const allowed = ['name', 'currentAge', 'retirementAge', 'lifeExpectancy', 'inflation', 'taxRegime', 'taxSlab', 'grossSalary']
     const patch = {}
     for (const key of allowed) {
       if (req.body[key] != null) patch[key] = req.body[key]
@@ -210,20 +211,7 @@ app.delete('/v1/plans/:id', requireAuth, async (req, res, next) => {
 })
 
 app.get('/v1/tax/config', (_req, res) => {
-  res.json({
-    fy: '2026-27',
-    config: {
-      old: {
-        deductions: { '80C': 150000, '80CCD1B': 50000, '80D': { self: 25000, senior: 50000 } },
-        slabs: [[250000, 0], [500000, 0.05], [1000000, 0.2], [null, 0.3]],
-      },
-      new: {
-        slabs: [[300000, 0], [700000, 0.05], [1000000, 0.1], [1200000, 0.15], [1500000, 0.2], [null, 0.3]],
-        standardDeduction: 75000,
-      },
-      cess: 0.04,
-    },
-  })
+  res.json({ fy: TAX_FY, config: TAX_CONFIG[TAX_FY] })
 })
 
 app.use(errorHandler)
@@ -245,6 +233,7 @@ function publicUser(user) {
     inflation: user.inflation,
     taxRegime: user.taxRegime,
     taxSlab: user.taxSlab,
+    grossSalary: user.grossSalary,
     currency: user.currency,
     uiPrefs: user.uiPrefs,
   }

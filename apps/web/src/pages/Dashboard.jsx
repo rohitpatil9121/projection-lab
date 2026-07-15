@@ -7,6 +7,9 @@ import { useProjection } from '../data/useProjection.js'
 import { fmtMoney } from '@projectlab/engine'
 import { StatCard, Card, SectionTitle, Pill } from '../components/ui.jsx'
 import { IconTarget, IconCheck } from '../components/Icons.jsx'
+import {
+  GrowthVsContributionsChart, SavingsRateChart, AllocationVsTargetChart, CorpusLongevityChart,
+} from '../components/JourneyCharts.jsx'
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -186,6 +189,14 @@ export default function Dashboard() {
             <Row icon={<IconTarget size={16} />} label="End net worth" value={fmtMoney(readiness.endNetWorth, { compact: true })} ok={readiness.endNetWorth > 0} />
           </div>
         </Card>
+      </div>
+
+      {/* ---- Deeper charts ---- */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <GrowthVsContributionsChart state={state} projection={projection} />
+        <SavingsRateChart state={state} projection={projection} />
+        <AllocationVsTargetChart state={state} />
+        <CorpusLongevityChart state={state} projection={projection} />
       </div>
 
       {/* ---- Scenario comparison (ProjectionLab-style) ---- */}

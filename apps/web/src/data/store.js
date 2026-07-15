@@ -2,7 +2,7 @@
 // Projection engine lives in @projectlab/engine; this file handles persistence + cloud sync.
 
 import { create } from './miniStore.js'
-import { CURRENT_YEAR } from '@projectlab/engine'
+import { CURRENT_YEAR, computeProjection, computeReadiness, computeFitness } from '@projectlab/engine'
 import { defaultPlanPayload, defaultProfile, emptyPlanPayload, emptyProfile } from '@projectlab/schema'
 import { loadSession, saveSession, isAuthenticated } from '../auth/session.js'
 import { fetchPlans, fetchPlan, syncPlan, logoutApi, apiFetch } from '../api/client.js'
@@ -12,6 +12,12 @@ export {
   computeReadiness,
   computeTaxSavings,
   runMonteCarlo,
+  computeTax,
+  compareRegimes,
+  deductionsFromPlan,
+  computeTaxSummary,
+  TAX_CONFIG,
+  TAX_FY,
   CURRENT_YEAR,
 } from '@projectlab/engine'
 
@@ -22,7 +28,7 @@ const DEFAULT_STATE = {
   scenarios: [{ id: 'base', name: 'Base plan', data: null }],
   activeScenarioId: 'base',
   snapshots: [],
-  ui: { dark: false, realTerms: true },
+  ui: { dark: false, realTerms: true, taxAware: false },
 }
 
 function emptyScenarioData() {
@@ -71,6 +77,7 @@ function applyUserProfile(state, user) {
       inflation: user.inflation ?? state.profile.inflation,
       taxRegime: user.taxRegime ?? state.profile.taxRegime,
       taxSlab: user.taxSlab ?? state.profile.taxSlab,
+      grossSalary: user.grossSalary ?? state.profile.grossSalary,
       currency: user.currency ?? state.profile.currency,
     },
     ui: { ...state.ui, ...(user.uiPrefs || {}) },
@@ -125,6 +132,7 @@ export const useStore = create((set, get) => {
           inflation: s.profile.inflation,
           taxRegime: s.profile.taxRegime,
           taxSlab: s.profile.taxSlab,
+          grossSalary: s.profile.grossSalary,
         },
         uiPrefs: s.ui,
       })
@@ -307,8 +315,20 @@ export const useStore = create((set, get) => {
     if (!s.onboarded || !s.accounts.length) return
     const netWorth = s.accounts.reduce((t, a) => t + (a.kind === 'asset' ? a.balance : -a.balance), 0)
     const ym = new Date().toISOString().slice(0, 7)
+    // Also stamp the Financial Fitness score so the Journey sparkline is real over time.
+    let score
+    try {
+      const cs = {
+        profile: s.profile, accounts: s.accounts, incomes: s.incomes, expenses: s.expenses,
+        contributions: s.contributions, events: s.events, currentYear: s.currentYear,
+        realTerms: s.ui.realTerms, taxAware: !!s.ui.taxAware,
+      }
+      const projection = computeProjection(cs)
+      score = computeFitness(cs, projection, computeReadiness(cs, projection)).score
+    } catch { /* keep snapshot even if scoring fails */ }
     const rest = s.snapshots.filter((x) => x.ym !== ym)
-    set({ snapshots: [...rest, { ym, netWorth }].sort((a, b) => (a.ym < b.ym ? -1 : 1)) })
+    const entry = score != null ? { ym, netWorth, score } : { ym, netWorth }
+    set({ snapshots: [...rest, entry].sort((a, b) => (a.ym < b.ym ? -1 : 1)) })
     get().persistLocalOnly()
   },
 
@@ -389,6 +409,8 @@ export const useStore = create((set, get) => {
   },
 
   setRealTerms(realTerms) { set({ ui: { ...get().ui, realTerms } }); get().persist() },
+
+  setTaxAware(taxAware) { set({ ui: { ...get().ui, taxAware } }); get().persist() },
 
   reset() {
     localStorage.removeItem(KEY)

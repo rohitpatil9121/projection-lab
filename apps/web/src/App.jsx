@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
+import Tax from './pages/Tax.jsx'
 import MonteCarlo from './pages/MonteCarlo.jsx'
 import Milestones from './pages/Milestones.jsx'
 import Settings from './pages/Settings.jsx'
@@ -23,6 +24,7 @@ import { shouldShowLanding, markLandingSeen, landingDestination } from './utils/
 
 function AppShell() {
   const dark = useStore((s) => s.ui.dark)
+  const { pathname } = useLocation()
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
@@ -34,7 +36,10 @@ function AppShell() {
         <Topbar />
         <main className="flex-1 px-5 md:px-8 py-6 pb-24 md:pb-8 max-w-[1400px] w-full mx-auto">
           <ErrorBoundary>
-            <Outlet />
+            {/* Keyed on route so each page fades in on navigation. */}
+            <div key={pathname} className="animate-page-in">
+              <Outlet />
+            </div>
           </ErrorBoundary>
         </main>
       </div>
@@ -111,6 +116,7 @@ export default function App() {
             <Route path="plan" element={<Plan />} />
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />
+            <Route path="tax" element={<Tax />} />
             <Route path="monte-carlo" element={<MonteCarlo />} />
             <Route path="milestones" element={<Milestones />} />
             <Route path="settings" element={<Settings />} />

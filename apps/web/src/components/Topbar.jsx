@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
+import { useProjection } from '../data/useProjection.js'
+import { computeFitness } from '@projectlab/engine'
 import { Modal } from './ui.jsx'
+import { FitnessRing } from './Journey.jsx'
 import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
@@ -12,7 +15,7 @@ const titles = {
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',
   '/monte-carlo': 'Monte Carlo Simulation',
-  '/milestones': 'Milestones',
+  '/milestones': 'Goals',
   '/settings': 'Settings',
 }
 
@@ -41,6 +44,12 @@ export default function Topbar() {
   const addScenario = useStore((s) => s.addScenario)
   const deleteScenario = useStore((s) => s.deleteScenario)
   const logout = useStore((s) => s.logout)
+  const onboarded = useStore((s) => s.onboarded)
+  const { projection, readiness, state } = useProjection()
+  const fitness = useMemo(
+    () => (onboarded ? computeFitness(state, projection, readiness) : null),
+    [onboarded, state, projection, readiness],
+  )
 
   const [newOpen, setNewOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -85,7 +94,7 @@ export default function Topbar() {
   const initials = (profile.name || 'U').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50/80 dark:bg-ink-950/80 backdrop-blur px-5 md:px-8 py-4">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-950 supports-[backdrop-filter]:bg-ink-50/80 supports-[backdrop-filter]:dark:bg-ink-950/80 supports-[backdrop-filter]:backdrop-blur px-5 md:px-8 py-4">
       <div className="min-w-0">
         <h1 className="text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'Financial Blueprint'}</h1>
         <div className="flex items-center gap-1 text-xs text-ink-400 font-medium">
@@ -130,6 +139,17 @@ export default function Topbar() {
 
         {!auth?.user && (
           <Link to="/login" className="btn-ghost text-xs sm:text-sm">Sign in</Link>
+        )}
+
+        {fitness && (
+          <Link
+            to="/milestones"
+            className="hidden sm:block shrink-0 hover:opacity-80 transition-opacity"
+            title={`Financial Fitness ${fitness.score} · ${fitness.band}`}
+            aria-label={`Financial Fitness ${fitness.score} out of 100`}
+          >
+            <FitnessRing score={fitness.score} size={34} stroke={11} />
+          </Link>
         )}
 
         <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme" aria-label="Toggle theme">

@@ -51,6 +51,34 @@ export function Card({ className = '', interactive = false, children, ...rest })
   )
 }
 
+// Visily-style uppercase micro-label placed ABOVE a card group.
+export function SectionLabel({ children, action }) {
+  return (
+    <div className="flex items-center justify-between gap-4 mb-2.5 mt-1">
+      <span className="section-label">{children}</span>
+      {action}
+    </div>
+  )
+}
+
+// Dark navy hero card (net worth, streaks) — Visily "institutional" look.
+export function HeroCard({ className = '', children, ...rest }) {
+  return (
+    <div className={`hero-card ${className}`} {...rest}>
+      {children}
+    </div>
+  )
+}
+
+// Floating action button, bottom-right above the tab bar.
+export function Fab({ label = 'Add', children, ...rest }) {
+  return (
+    <button className="fab" aria-label={label} {...rest}>
+      {children}
+    </button>
+  )
+}
+
 export function SectionTitle({ title, subtitle, action }) {
   return (
     <div className="flex items-end justify-between gap-4 mb-4">
