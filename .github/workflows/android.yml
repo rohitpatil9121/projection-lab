@@ -1,0 +1,54 @@
+name: Build Android APK
+
+# main par push par + manually + version tag (v1.2.0 jaisa) par chalega.
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch: # Actions tab se "Run workflow" button
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java (JDK 21)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      # apk script = build web -> cap sync -> gradle assembleDebug -> copy to repo root.
+      # VITE_API_URL yahan set karo taaki app aapke live API ko point kare.
+      - name: Build debug APK
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: npm run apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FinancialBlueprint-debug
+          path: FinancialBlueprint-debug.apk
+          retention-days: 30
+
+      # Sirf tag (v*) push par: APK ko GitHub Release me attach kar do.
+      - name: Attach APK to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: FinancialBlueprint-debug.apk
+          generate_release_notes: true
