@@ -184,8 +184,8 @@ export default function Settings() {
       <div>
         <SectionLabel>Income &amp; Expenses</SectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FlowEditor title="Income Streams" collection="incomes" items={incomes} update={updateItem} add={addItem} remove={removeItem} color="#6366f1" profile={profile} />
-          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#ef4444" profile={profile} />
+          <FlowEditor title="Income Streams" collection="incomes" items={incomes} update={updateItem} add={addItem} remove={removeItem} color="#377cc8" profile={profile} />
+          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#e0533d" profile={profile} />
         </div>
       </div>
 

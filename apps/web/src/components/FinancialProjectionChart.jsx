@@ -15,7 +15,7 @@ function EndLabel({ viewBox, value }) {
   const cy = Math.max(y - 20, 8)
   return (
     <g>
-      <rect x={cx - labelW / 2} y={cy - 14} width={labelW} height={22} rx={11} fill="#4f46e5" />
+      <rect x={cx - labelW / 2} y={cy - 14} width={labelW} height={22} rx={11} fill="#377cc8" />
       <text x={cx} y={cy + 1} textAnchor="middle" fill="#fff" fontSize={11} fontWeight={700}>
         {fmtMoney(value, { compact: true })}
       </text>
@@ -27,7 +27,7 @@ function RetireLabel({ viewBox, value }) {
   if (!viewBox || value == null || viewBox.x == null) return null
   const { x, y } = viewBox
   return (
-    <text x={x} y={(y ?? 0) + 14} textAnchor="middle" fill="#22c55e" fontSize={11} fontWeight={700}>
+    <text x={x} y={(y ?? 0) + 14} textAnchor="middle" fill="#469b88" fontSize={11} fontWeight={700}>
       {fmtMoney(value, { compact: true })}
     </text>
   )
@@ -150,21 +150,21 @@ export default function FinancialProjectionChart({
             />
             <Bar yAxisId="flow" dataKey="savings" barSize={4} radius={[2, 2, 0, 0]} opacity={0.9} isAnimationActive={false}>
               {data.map((row) => (
-                <Cell key={row.age} fill={row.age < retirementAge ? '#14b8a6' : '#6366f1'} />
+                <Cell key={row.age} fill={row.age < retirementAge ? '#469b88' : '#377cc8'} />
               ))}
             </Bar>
             <Line
               yAxisId="nw"
               type="linear"
               dataKey="netWorth"
-              stroke="#4f46e5"
+              stroke="#377cc8"
               strokeWidth={3}
               dot={false}
-              activeDot={{ r: 5, fill: '#4f46e5' }}
+              activeDot={{ r: 5, fill: '#377cc8' }}
               isAnimationActive={false}
             />
             {retireRow && (
-              <ReferenceLine yAxisId="nw" x={retireRow.age} stroke="#22c55e" strokeDasharray="5 5" strokeWidth={2}>
+              <ReferenceLine yAxisId="nw" x={retireRow.age} stroke="#469b88" strokeDasharray="5 5" strokeWidth={2}>
                 <Label content={<RetireLabel value={retireRow.netWorth} />} position="top" />
               </ReferenceLine>
             )}
@@ -188,7 +188,7 @@ export default function FinancialProjectionChart({
               className="absolute -translate-x-1/2 top-0 h-9 w-9 rounded-full grid place-items-center text-base shadow-md border-2 border-white dark:border-ink-900"
               style={{
                 left: `${agePct(m.age)}%`,
-                background: m.kind === 'goal' ? '#8b5cf6' : '#4f46e5',
+                background: m.kind === 'goal' ? '#9da7d0' : '#377cc8',
               }}
               title={m.name}
             >

@@ -6,12 +6,12 @@ import { useProjection } from '../data/useProjection.js'
 import { fmtMoney, computeFitness, evaluateGoal } from '@projectlab/engine'
 import { Card, SectionLabel, HeroCard } from '../components/ui.jsx'
 import { FitnessRing } from '../components/Journey.jsx'
-import { IconBell, IconChevron, IconTrend, IconPlus, IconPlan, IconAccounts, IconMilestone, IconDashboard } from '../components/Icons.jsx'
+import { IconBell, IconChevron, IconTrend, IconPlan, IconAccounts, IconMilestone, IconDashboard } from '../components/Icons.jsx'
 
-// Colour language, single source of truth.
-const GREEN = '#10b981' // money in / assets / positive
-const RED = '#ef4444'   // money out / liabilities / negative
-const BRAND = '#4f46e5' // net worth / neutral
+// Colour language, single source of truth (brand palette).
+const GREEN = '#469b88' // money in / assets / positive (brand teal)
+const RED = '#e0533d'   // money out / liabilities / negative (brand coral)
+const BRAND = '#377cc8' // net worth / neutral (brand blue)
 
 // "₹58.42 Lakh" style hero figure — bigger words than the compact chart format.
 function bigMoney(n) {
@@ -277,7 +277,7 @@ export default function Today() {
                 segments={[
                   { value: cashTotal, color: GREEN },
                   { value: investTotal, color: BRAND },
-                  { value: propertyTotal, color: '#f59e0b' },
+                  { value: propertyTotal, color: '#eed868' },
                 ]}
               />
             </div>
@@ -307,10 +307,6 @@ export default function Today() {
           </PageCard>
         </div>
       </div>
-
-      <Link to="/accounts" className="fab" aria-label="Add account">
-        <IconPlus size={22} />
-      </Link>
     </div>
   )
 }

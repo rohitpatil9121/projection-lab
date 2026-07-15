@@ -2,7 +2,7 @@ import { Card, SectionTitle } from './ui.jsx'
 import { IconCheck } from './Icons.jsx'
 
 // Band → ring colour. Kept calm: indigo for the score, emerald once excellent.
-const ringColor = (score) => (score >= 90 ? '#22c55e' : '#4f46e5')
+const ringColor = (score) => (score >= 90 ? '#469b88' : '#377cc8')
 
 const DIM_STATUS = {
   good: { chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300', word: 'Strong' },
@@ -44,10 +44,10 @@ function Sparkline({ points }) {
   const d = xs.map((x, i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" className="mt-1">
-      <defs><linearGradient id="fitSpark" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f46e5" stopOpacity="0.25" /><stop offset="100%" stopColor="#4f46e5" stopOpacity="0" /></linearGradient></defs>
+      <defs><linearGradient id="fitSpark" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#377cc8" stopOpacity="0.25" /><stop offset="100%" stopColor="#377cc8" stopOpacity="0" /></linearGradient></defs>
       <path d={`${d} L${w},${h} L0,${h} Z`} fill="url(#fitSpark)" />
-      <path d={d} fill="none" stroke="#4f46e5" strokeWidth="2.4" />
-      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="4" fill="#4f46e5" stroke="currentColor" strokeWidth="2" className="text-white dark:text-ink-900" />
+      <path d={d} fill="none" stroke="#377cc8" strokeWidth="2.4" />
+      <circle cx={xs[xs.length - 1]} cy={ys[ys.length - 1]} r="4" fill="#377cc8" stroke="currentColor" strokeWidth="2" className="text-white dark:text-ink-900" />
     </svg>
   )
 }
