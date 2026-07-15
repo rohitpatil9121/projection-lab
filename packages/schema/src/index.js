@@ -89,6 +89,8 @@ export const ProfileSchema = z.object({
   inflation: z.number().min(0).max(0.2).default(0.06),
   taxRegime: z.enum(['old', 'new']).default('old'),
   taxSlab: z.number().min(0).max(0.5).default(0.3),
+  /** Annual gross salary (₹) — used by the tax engine; null = not provided. */
+  grossSalary: z.number().min(0).nullable().optional(),
 }).refine((d) => d.retirementAge > d.currentAge, { message: 'retirementAge must be > currentAge' })
   .refine((d) => d.lifeExpectancy >= d.retirementAge, { message: 'lifeExpectancy must be >= retirementAge' })
 
@@ -146,6 +148,7 @@ export const defaultProfile = {
   inflation: 0.06,
   taxRegime: 'old',
   taxSlab: 0.30,
+  grossSalary: 2400000,
 }
 
 export const emptyPlanPayload = {
@@ -160,6 +163,7 @@ export const emptyPlanPayload = {
 export const emptyProfile = {
   ...defaultProfile,
   name: '',
+  grossSalary: null,
 }
 
 export function parsePlanPayload(data) {

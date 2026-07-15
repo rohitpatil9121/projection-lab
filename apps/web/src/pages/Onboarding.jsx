@@ -1,11 +1,50 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { PERSONAS } from '../data/personas.js'
 import CasImport from '../components/CasImport.jsx'
-import AppLogo from '../components/AppLogo.jsx'
+import { IconTrend } from '../components/Icons.jsx'
 
 const L = 100000 // ₹1 lakh
+
+// Intro carousel slides (Visily mock p3 — swipe or tap dots).
+const INTRO_SLIDES = [
+  {
+    tag: 'the loop',
+    emoji: '💸',
+    panel: 'from-amber-200 via-amber-100 to-brand-100 dark:from-amber-500/25 dark:via-ink-800 dark:to-brand-500/20',
+    title: 'Build Your Wealth Habit',
+    body: 'Success is a habit. We use a proven feedback loop: track your data, receive expert insights, and take rewarded actions to grow your net worth.',
+  },
+  {
+    tag: 'see your future',
+    emoji: '📈',
+    panel: 'from-brand-200 via-brand-100 to-sky-100 dark:from-brand-500/25 dark:via-ink-800 dark:to-sky-500/20',
+    title: 'Project Every Rupee',
+    body: 'One clean timeline of your net worth to age 85 — salary, SIPs, EPF/PPF/NPS, loans and life events, simulated the moment you change anything.',
+  },
+  {
+    tag: 'stay on track',
+    emoji: '🎯',
+    panel: 'from-emerald-200 via-emerald-100 to-brand-100 dark:from-emerald-500/25 dark:via-ink-800 dark:to-brand-500/20',
+    title: 'Reach Your Life Goals',
+    body: 'Emergency fund, first crore, retirement — track each goal, get quests with a clear next action, and celebrate real milestones as you hit them.',
+  },
+]
+
+// Progress dots — active step is a wide indigo bar (Visily style).
+function Dots({ count, index, className = '' }) {
+  return (
+    <div className={`flex items-center gap-1.5 ${className}`} aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <span
+          key={i}
+          className={`rounded-full transition-all duration-300 ${i === index ? 'h-1.5 w-6 bg-brand-600' : 'h-1.5 w-1.5 bg-ink-200 dark:bg-ink-700'}`}
+        />
+      ))}
+    </div>
+  )
+}
 
 function Num({ label, hint, value, onChange, suffix }) {
   return (
@@ -70,6 +109,8 @@ export default function Onboarding() {
   const [mode, setMode] = useState('walkthrough')
   const [personaId, setPersonaId] = useState(null)
   const [error, setError] = useState('')
+  const [slide, setSlide] = useState(0)
+  const touchX = useRef(null)
 
   const [name, setName] = useState('')
   const [currentAge, setCurrentAge] = useState('30')
@@ -93,16 +134,11 @@ export default function Onboarding() {
   const n = (v) => Math.max(0, Number(v) || 0)
 
   const WALK_STEPS = ['welcome', 'about', 'have', 'income', 'balances']
-  const progress = mode === 'sandbox'
-    ? (step === 'welcome' ? 1 : 2) / 2
-    : (WALK_STEPS.indexOf(step) + 1) / WALK_STEPS.length
+  const stepList = mode === 'sandbox' ? ['welcome', 'persona'] : WALK_STEPS
+  const stepIndex = Math.max(0, stepList.indexOf(step))
 
   function goNext() {
     setError('')
-    if (step === 'welcome') {
-      setStep(mode === 'sandbox' ? 'persona' : 'about')
-      return
-    }
     if (step === 'about') {
       const age = n(currentAge), ret = n(retirementAge)
       if (!name.trim()) return setError('Please enter your name')
@@ -191,27 +227,112 @@ export default function Onboarding() {
   }
 
   const headings = {
-    welcome: { badge: 'WELCOME', title: "Let's build a model of your life!", sub: "You'll be looking at projections in just a few minutes." },
     persona: { badge: 'SANDBOX', title: 'Choose an example persona.', sub: 'Each one includes a full plan so you can see how Financial Blueprint works when everything is populated.' },
     about: { badge: 'ABOUT YOU', title: "Let's get started:", sub: "Update your basic information below. On the following screens, you'll begin building your plan for the future." },
     have: { badge: 'CURRENT FINANCES', title: 'Which of these do you have today?', sub: 'This will help refine the initial conditions for your plan — everything can be adjusted later.' },
     income: { badge: 'CASH FLOW', title: 'Income & spending', sub: 'Rough monthly numbers are fine — you can edit everything later.' },
     balances: { badge: 'BALANCES', title: 'What you own & owe', sub: 'Approximate current balances. Leave blank if not applicable.' },
   }
+  // ---- Welcome intro carousel (Visily mock p3) — 3 real slides ----
+  if (step === 'welcome') {
+    const goWizard = () => { setError(''); setMode('walkthrough'); setStep('about') }
+    const next = () => (slide < INTRO_SLIDES.length - 1 ? setSlide(slide + 1) : goWizard())
+    const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
+    const onTouchEnd = (e) => {
+      if (touchX.current == null) return
+      const dx = e.changedTouches[0].clientX - touchX.current
+      touchX.current = null
+      if (dx < -40 && slide < INTRO_SLIDES.length - 1) setSlide(slide + 1)
+      if (dx > 40 && slide > 0) setSlide(slide - 1)
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col bg-ink-50 dark:bg-ink-950 px-5 py-6">
+        <div className="w-full max-w-lg mx-auto flex-1 flex flex-col animate-fade-in-up">
+          {/* Logo dot + SKIP */}
+          <div className="flex items-center justify-between mb-6">
+            <span className="grid place-items-center h-10 w-10 rounded-full bg-brand-600 text-white shadow-glow">
+              <IconTrend size={18} />
+            </span>
+            <button
+              type="button"
+              onClick={() => { setError(''); setMode('sandbox'); setStep('persona') }}
+              className="text-xs font-bold uppercase tracking-wide text-ink-400 hover:text-ink-600 dark:hover:text-ink-200 px-2 py-1"
+            >
+              Skip
+            </button>
+          </div>
+
+          {isNewScenario && <p className="section-label mb-3">New plan setup</p>}
+
+          {/* Sliding track */}
+          <div className="overflow-hidden -mx-5 px-5" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+            <div
+              className="flex transition-transform duration-500 ease-out-expo"
+              style={{ transform: `translateX(-${slide * 100}%)` }}
+            >
+              {INTRO_SLIDES.map((s) => (
+                <div key={s.tag} className="w-full shrink-0 flex flex-col" aria-hidden={INTRO_SLIDES[slide].tag !== s.tag}>
+                  <div className={`rounded-3xl bg-gradient-to-br ${s.panel} h-52 sm:h-64 grid place-items-center mb-8`}>
+                    <span className="text-7xl drop-shadow-sm" aria-hidden>{s.emoji}</span>
+                  </div>
+                  <span className="self-start chip border border-brand-200 dark:border-brand-500/30 bg-white dark:bg-ink-900 text-brand-600 dark:text-brand-300 tracking-wide">
+                    {s.tag}
+                  </span>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-3">{s.title}</h1>
+                  <p className="text-base text-ink-500 dark:text-ink-400 mt-3 leading-relaxed">{s.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Clickable slide dots */}
+          <div className="flex items-center justify-center gap-2 my-6" role="tablist" aria-label="Intro slides">
+            {INTRO_SLIDES.map((s, i) => (
+              <button
+                key={s.tag}
+                type="button"
+                role="tab"
+                aria-selected={i === slide}
+                aria-label={`Slide ${i + 1}: ${s.title}`}
+                onClick={() => setSlide(i)}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  i === slide ? 'w-8 bg-brand-600' : 'w-2 bg-ink-200 dark:bg-ink-700 hover:bg-ink-300'
+                }`}
+              />
+            ))}
+          </div>
+
+          <button type="button" onClick={next} className="btn-primary w-full">
+            {slide < INTRO_SLIDES.length - 1 ? 'Continue' : 'Get Started'} <span aria-hidden>›</span>
+          </button>
+          <p className="text-[11px] text-ink-400 text-center mt-4 leading-relaxed">
+            By continuing, you agree to our Terms of Service and{' '}
+            <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const h = headings[step]
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-ink-50 dark:bg-ink-950">
       <div className={`card w-full shadow-soft ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
-        {/* Header */}
-        <div className="text-center mb-2">
-          <AppLogo size={44} className="mb-2 mx-auto" />
-          <h2 className="text-sm font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
+        {/* Header — logo dot, wizard title, progress dots */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="grid place-items-center h-8 w-8 rounded-full bg-brand-600 text-white">
+              <IconTrend size={15} />
+            </span>
+            <h2 className="text-sm font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
+          </div>
+          <Dots count={stepList.length} index={stepIndex} />
         </div>
-        <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden mb-2">
-          <div className="h-full rounded-full bg-brand-500 transition-all" style={{ width: `${progress * 100}%` }} />
-        </div>
-        <div className="text-center mb-5">
+        <div className="mb-4">
           <span className="chip bg-brand-100 text-brand-700 dark:bg-brand-500/15 text-[10px] tracking-wider">{h.badge}</span>
         </div>
 
@@ -219,25 +340,6 @@ export default function Onboarding() {
         <p className="text-sm text-ink-400 mt-1 mb-5 leading-snug">{h.sub}</p>
 
         {/* ---- Step bodies ---- */}
-        {step === 'welcome' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <ChoiceCard
-              selected={mode === 'walkthrough'}
-              onClick={() => setMode('walkthrough')}
-              icon="⌨️" title="Normal walkthrough"
-              desc="Enter your information on a step-by-step tour."
-              meta="3-5 minutes"
-            />
-            <ChoiceCard
-              selected={mode === 'sandbox'}
-              onClick={() => setMode('sandbox')}
-              icon="🧪" title="Sandbox mode"
-              desc="Explore a pre-populated account based on an example persona."
-              meta="About 1 minute"
-            />
-          </div>
-        )}
-
         {step === 'persona' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[46vh] overflow-y-auto pr-1">
             {PERSONAS.map((p) => (
@@ -331,15 +433,13 @@ export default function Onboarding() {
 
         {/* ---- Footer buttons ---- */}
         <div className="flex justify-end gap-3 mt-6">
-          {step !== 'welcome' && (
-            <button type="button" onClick={goBack} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">Back</button>
-          )}
+          <button type="button" onClick={goBack} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">Back</button>
           {step === 'persona' ? (
             <button type="button" onClick={confirmPersona} className="btn-primary px-6" disabled={!personaId}>Confirm</button>
           ) : step === 'balances' ? (
             <button type="button" onClick={finish} className="btn-primary px-6">Create my plan</button>
           ) : (
-            <button type="button" onClick={goNext} className="btn-primary px-6">{step === 'welcome' ? 'Continue' : step === 'have' ? 'Confirm' : 'Continue'}</button>
+            <button type="button" onClick={goNext} className="btn-primary px-6">{step === 'have' ? 'Confirm' : 'Continue'}</button>
           )}
         </div>
       </div>

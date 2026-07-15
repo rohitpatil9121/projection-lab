@@ -1,9 +1,18 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip } from 'recharts'
 import { useStore } from '../data/store.js'
+import { useProjection } from '../data/useProjection.js'
 import { fmtMoney } from '@projectlab/engine'
-import { Card, SectionTitle } from '../components/ui.jsx'
+import { Card, SectionLabel, Fab } from '../components/ui.jsx'
 import { IconPlus, IconTrash } from '../components/Icons.jsx'
 import CasImport from '../components/CasImport.jsx'
+import { toPct, fromPct } from '../utils/rates.js'
+
+const TYPE_LABELS = {
+  cash: 'Cash', investment: 'Equity', retirement: 'Retirement',
+  'real-estate': 'Property', other: 'Other', loan: 'Loan',
+}
 
 // Lightweight SVG donut ring — segments + centered value (no recharts, no animation race).
 function DonutRing({ segments, value, label, size = 168, thickness = 13, big = false }) {
@@ -27,29 +36,50 @@ function DonutRing({ segments, value, label, size = 168, thickness = 13, big = f
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <div className={`${big ? 'text-3xl' : 'text-2xl'} font-extrabold tracking-tight`}>{value}</div>
-          <div className="text-xs text-ink-400 font-medium mt-0.5">{label}</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-400">{label}</div>
+          <div className={`${big ? 'text-3xl' : 'text-2xl'} font-extrabold tracking-tight money mt-0.5`}>{value}</div>
         </div>
       </div>
     </div>
   )
 }
 
-// Inline-editable account row: name, balance and monthly SIP all editable; delete on hover.
-function EditRow({ a, total, contrib, updateItem, removeItem, onContribChange, onContribRemove, onContribAdd }) {
-  const pct = Math.round((a.balance / (total || 1)) * 100)
+// Inline-editable bank-style account row: name, balance, growth and SIP all editable; delete on hover.
+function EditRow({ a, contrib, updateItem, removeItem, onContribChange, onContribRemove, onContribAdd }) {
+  const isLiab = a.kind === 'liability'
   return (
-    <div className="group flex items-center gap-2">
-      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: a.color }} />
+    <div className="group flex items-center gap-3 py-3">
+      <div className="grid place-items-center h-10 w-10 rounded-xl shrink-0" style={{ background: `${a.color}1f` }}>
+        <span className="h-3 w-3 rounded-full" style={{ background: a.color }} />
+      </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <input
-            value={a.name}
-            onChange={(e) => updateItem('accounts', a.id, { name: e.target.value })}
-            className="text-sm font-medium bg-transparent outline-none min-w-0 flex-1 focus:text-brand-600"
-          />
+        <input
+          value={a.name}
+          onChange={(e) => updateItem('accounts', a.id, { name: e.target.value })}
+          className="w-full text-sm font-bold bg-transparent outline-none focus:text-brand-600"
+        />
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className={`chip !px-2 !py-0.5 text-[10px] ${isLiab
+            ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300'
+            : 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300'}`}>
+            {TYPE_LABELS[a.type] || a.type}
+          </span>
+          <label className="inline-flex items-center gap-1 text-[10px] text-ink-400">
+            {isLiab ? 'interest' : 'return'}
+            <input
+              type="number"
+              step="0.5"
+              min="0"
+              max="50"
+              value={toPct(a.growth)}
+              onChange={(e) => updateItem('accounts', a.id, { growth: fromPct(e.target.value) })}
+              onWheel={(e) => e.currentTarget.blur()}
+              className="w-12 bg-ink-100 dark:bg-ink-800 rounded px-1 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
+            />
+            %
+          </label>
           {contrib ? (
-            <span className="chip bg-emerald-100 text-emerald-700 text-[10px] inline-flex items-center gap-0.5 shrink-0">
+            <span className="chip bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 text-[10px] inline-flex items-center gap-0.5">
               ↑ ₹
               <input
                 type="number"
@@ -62,45 +92,32 @@ function EditRow({ a, total, contrib, updateItem, removeItem, onContribChange, o
               <button onClick={() => onContribRemove(contrib.id)} title="Remove SIP" className="ml-0.5 leading-none text-emerald-500 hover:text-rose-500">×</button>
             </span>
           ) : a.kind === 'asset' ? (
-            <button onClick={() => onContribAdd(a.id)} className="chip border border-dashed border-emerald-300 text-emerald-600 text-[10px] shrink-0 hover:bg-emerald-50 dark:hover:bg-emerald-500/10">
+            <button onClick={() => onContribAdd(a.id)} className="chip !py-0.5 border border-dashed border-emerald-300 text-emerald-600 text-[10px] hover:bg-emerald-50 dark:hover:bg-emerald-500/10">
               + SIP
             </button>
           ) : null}
         </div>
-        <div className="mt-1 flex items-center gap-2">
-          <div className="h-1.5 flex-1 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden">
-            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: a.color }} />
-          </div>
-          <span className="text-[11px] text-ink-400 w-7 text-right">{pct}%</span>
-        </div>
       </div>
       <div className="flex items-center shrink-0">
-        <span className="text-ink-400 text-xs">₹</span>
+        <span className={`text-xs ${isLiab ? 'text-rose-500' : 'text-ink-400'}`}>₹</span>
         <input
           type="number"
           value={a.balance}
           onChange={(e) => updateItem('accounts', a.id, { balance: Number(e.target.value) })}
           onWheel={(e) => e.currentTarget.blur()}
-          className={`w-[82px] text-right bg-transparent text-sm font-bold outline-none focus:text-brand-600 ${a.kind === 'liability' ? 'text-rose-600' : ''}`}
+          className={`money w-[92px] text-right bg-transparent text-sm font-bold outline-none focus:text-brand-600 ${isLiab ? 'text-rose-600 dark:text-rose-400' : ''}`}
         />
       </div>
-      <button onClick={() => removeItem('accounts', a.id)} className="opacity-0 group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition shrink-0">
+      <button onClick={() => removeItem('accounts', a.id)} className="opacity-60 sm:opacity-0 sm:group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition shrink-0">
         <IconTrash size={14} />
       </button>
     </div>
   )
 }
 
-function StatBlock({ label, value, tone = '', suffix = '' }) {
-  return (
-    <div className="rounded-xl bg-ink-50 dark:bg-ink-800/60 px-4 py-3 text-center">
-      <div className={`text-xl font-extrabold ${tone}`}>{value}{suffix}</div>
-      <div className="text-xs text-ink-400 font-medium mt-0.5">{label}</div>
-    </div>
-  )
-}
-
 export default function Accounts() {
+  const { projection, state } = useProjection()
+  const profile = useStore((s) => s.profile)
   const accounts = useStore((s) => s.accounts)
   const contributions = useStore((s) => s.contributions)
   const updateItem = useStore((s) => s.updateItem)
@@ -108,7 +125,8 @@ export default function Accounts() {
   const removeItem = useStore((s) => s.removeItem)
   const [addingKind, setAddingKind] = useState(null) // 'asset' | 'liability' | null
   const [showCas, setShowCas] = useState(false)
-  const [draft, setDraft] = useState({ name: '', balance: 100000, growth: 0.08, color: '#6366f1' })
+  const [draft, setDraft] = useState({ name: '', balance: 100000, growthPct: 8, color: '#6366f1' })
+  const accountsRef = useRef(null)
 
   const FUND_COLORS = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#06b6d4']
   const importCasFunds = (funds) => {
@@ -126,44 +144,64 @@ export default function Accounts() {
   const totalLiab = liabilities.reduce((s, a) => s + a.balance, 0)
   const netWorth = totalAssets - totalLiab
 
-  const totalMonthly = contributions.reduce((s, c) => s + c.amount / 12, 0)
+  // Stat cells — real figures only.
+  const cashTotal = assets.filter((a) => a.type === 'cash').reduce((s, a) => s + a.balance, 0)
+  const avgGrowthWtd = totalAssets > 0
+    ? assets.reduce((s, a) => s + a.balance * (a.growth || 0), 0) / totalAssets
+    : 0
+
   // First contribution routed to each account (editable inline as the SIP chip).
   const contribByAccount = {}
   contributions.forEach((c) => { if (!contribByAccount[c.accountId]) contribByAccount[c.accountId] = c })
+  const accountById = Object.fromEntries(accounts.map((a) => [a.id, a]))
+  const sips = contributions.filter((c) => accountById[c.accountId])
 
   const onContribChange = (id, monthly) => updateItem('contributions', id, { amount: Math.max(0, Math.round(monthly) * 12) })
   const onContribRemove = (id) => removeItem('contributions', id)
   const onContribAdd = (accountId) => addItem('contributions', { accountId, amount: 120000, section: null })
 
-  const bucket = (pred) => accounts.filter(pred).reduce((s, a) => s + a.balance, 0)
-  const assetCats = [
-    { label: 'Savings', value: bucket((a) => a.type === 'cash') },
-    { label: 'Investments', value: bucket((a) => a.type === 'investment' || a.type === 'retirement') },
-    { label: 'Real Assets', value: bucket((a) => a.type === 'real-estate') },
-  ]
+  // Allocation buckets by account type.
+  const bucket = (pred) => assets.filter(pred).reduce((s, a) => s + a.balance, 0)
+  const allocation = [
+    { label: 'Equity', color: '#6366f1', value: bucket((a) => a.type === 'investment') },
+    { label: 'Retirement', color: '#0ea5e9', value: bucket((a) => a.type === 'retirement') },
+    { label: 'Cash & FD', color: '#22c55e', value: bucket((a) => a.type === 'cash') },
+    { label: 'Property & Other', color: '#f59e0b', value: bucket((a) => a.type === 'real-estate' || a.type === 'other') },
+  ].filter((b) => b.value > 0)
+
+  // Next 5 years of projected net worth (current year + 5).
+  const fiveYear = projection.slice(0, 6)
+
+  const initials = (profile.name || '')
+    .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '₹'
 
   const startAdd = (kind) => {
     setAddingKind(kind)
-    setDraft({ name: '', balance: kind === 'liability' ? 200000 : 100000, growth: kind === 'liability' ? 0.09 : 0.08, color: kind === 'liability' ? '#ef4444' : '#6366f1' })
+    setDraft({ name: '', balance: kind === 'liability' ? 200000 : 100000, growthPct: kind === 'liability' ? 9 : 8, color: kind === 'liability' ? '#ef4444' : '#6366f1' })
   }
   const saveAdd = (kind) => {
     if (!draft.name.trim()) return
     addItem('accounts', {
-      name: draft.name, balance: Number(draft.balance), growth: Number(draft.growth), color: draft.color,
+      name: draft.name, balance: Number(draft.balance), growth: fromPct(draft.growthPct), color: draft.color,
       kind, type: kind === 'liability' ? 'loan' : 'investment',
     })
     setAddingKind(null)
   }
+  const fabAdd = () => {
+    startAdd('asset')
+    accountsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  const scrollToAccounts = () => accountsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   const renderAddForm = (kind, label) => (
-    <div className="mb-3 rounded-xl border border-dashed border-brand-300 bg-brand-50/50 dark:bg-brand-500/5 p-3 space-y-2">
+    <div className="my-3 rounded-xl border border-dashed border-brand-300 bg-brand-50/50 dark:bg-brand-500/5 p-3 space-y-2">
       <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder={`${label} name`} className="input !py-1.5 text-sm" />
       <div className="flex gap-2">
         <label className="flex-1 text-[11px] font-semibold text-ink-400">Balance ₹
           <input type="number" value={draft.balance} onChange={(e) => setDraft({ ...draft, balance: e.target.value })} className="input !py-1.5 mt-0.5 text-sm" />
         </label>
-        <label className="w-16 text-[11px] font-semibold text-ink-400">Growth
-          <input type="number" step="0.01" value={draft.growth} onChange={(e) => setDraft({ ...draft, growth: e.target.value })} className="input !py-1.5 mt-0.5 text-sm" />
+        <label className="w-20 text-[11px] font-semibold text-ink-400">Growth %
+          <input type="number" step="0.5" min="0" max="50" value={draft.growthPct} onChange={(e) => setDraft({ ...draft, growthPct: e.target.value })} className="input !py-1.5 mt-0.5 text-sm" />
         </label>
         <label className="text-[11px] font-semibold text-ink-400">Colour
           <input type="color" value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })} className="block h-9 w-9 mt-0.5 rounded-lg border border-ink-200 dark:border-ink-700" />
@@ -177,94 +215,145 @@ export default function Accounts() {
   )
 
   return (
-    <div className="space-y-6">
-      {/* ---- Net Worth card ---- */}
-      <Card>
-        <SectionTitle title="Net Worth" subtitle="Your complete balance sheet" />
-        <div className="flex flex-col md:flex-row items-center gap-6 mt-2">
-          <div className="md:w-56 shrink-0">
-            <DonutRing big size={196} value={fmtMoney(netWorth, { compact: true })} label="Net Worth"
-              segments={assets.map((a) => ({ value: a.balance, color: a.color }))} />
-          </div>
-          <div className="flex-1 w-full">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <StatBlock label="Total Assets" value={fmtMoney(totalAssets, { compact: true })} tone="text-emerald-600" />
-              <StatBlock label="Total Liabilities" value={fmtMoney(totalLiab, { compact: true })} tone="text-rose-600" />
-              <StatBlock label="Monthly Investing" value={fmtMoney(totalMonthly, { compact: true })} tone="text-brand-600" suffix="/mo" />
-            </div>
-            <p className="mt-4 text-xs text-ink-400 text-center sm:text-left">Net Worth = Total Assets − Total Liabilities</p>
+    <div className="space-y-6 max-w-2xl mx-auto">
+      {/* ---- Portfolio header ---- */}
+      <div className="flex items-center gap-3 animate-fade-in-up">
+        <div className="grid place-items-center h-11 w-11 rounded-full bg-brand-600 text-white font-bold text-sm shrink-0">{initials}</div>
+        <div className="min-w-0">
+          <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-400">Portfolio Value</div>
+          <div className="text-3xl font-extrabold money text-emerald-600 dark:text-emerald-400 leading-tight">
+            {fmtMoney(totalAssets, { compact: true })}
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* ---- Assets card ---- */}
-      <Card>
-        <SectionTitle title="Assets" subtitle={`${assets.length} accounts`}
-          action={
-            <div className="flex gap-2">
-              <button onClick={() => setShowCas(!showCas)} className="btn-ghost !py-1.5 text-sm">📄 Import CAS</button>
-              <button onClick={() => startAdd('asset')} className="btn-primary !py-1.5"><IconPlus size={16} /> Add</button>
-            </div>
-          } />
-        {showCas && <div className="mb-4"><CasImport onImport={importCasFunds} /></div>}
-        <div className="flex flex-col md:flex-row gap-6 mt-2">
-          <div className="md:w-56 shrink-0 flex flex-col items-center">
-            <DonutRing size={168} value={fmtMoney(totalAssets, { compact: true })} label="Assets"
-              segments={assets.map((a) => ({ value: a.balance, color: a.color }))} />
-            <div className="mt-3 grid grid-cols-3 gap-2 w-full">
-              {assetCats.map((c) => (
-                <div key={c.label} className="rounded-lg bg-ink-50 dark:bg-ink-800/60 py-1.5 text-center">
-                  <div className="text-sm font-extrabold">{fmtMoney(c.value, { compact: true })}</div>
-                  <div className="text-[10px] text-ink-400 font-medium">{c.label}</div>
+      {/* ---- Stat cells ---- */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="!p-4">
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-400">Liquidity (Cash)</div>
+          <div className="mt-1 text-xl font-extrabold money">{fmtMoney(cashTotal, { compact: true })}</div>
+          <div className="mt-1 text-[11px] text-ink-400 font-medium">savings + FD balances</div>
+        </Card>
+        <Card className="!p-4">
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-400">Avg Growth (Wtd)</div>
+          <div className="mt-1 text-xl font-extrabold money">{(avgGrowthWtd * 100).toFixed(1)}%</div>
+          <div className="mt-1 text-[11px] text-ink-400 font-medium">balance-weighted, {assets.length} assets</div>
+        </Card>
+      </div>
+
+      {/* ---- Asset allocation donut ---- */}
+      <div>
+        <SectionLabel action={
+          <button onClick={scrollToAccounts} className="text-xs font-bold text-brand-600 hover:text-brand-700">rebalance</button>
+        }>Asset Allocation</SectionLabel>
+        <Card>
+          <DonutRing big size={192} value={fmtMoney(netWorth, { compact: true })} label="Net Worth"
+            segments={allocation.length ? allocation.map((b) => ({ value: b.value, color: b.color })) : [{ value: 1, color: '#94a3b8' }]} />
+          <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3">
+            {allocation.map((b) => (
+              <div key={b.label} className="flex items-start gap-2">
+                <span className="h-2.5 w-2.5 rounded-full mt-1 shrink-0" style={{ background: b.color }} />
+                <div className="min-w-0">
+                  <div className="text-[11px] text-ink-400 font-medium">{b.label}</div>
+                  <div className="text-sm font-extrabold money">{fmtMoney(b.value, { compact: true })}</div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+            {!allocation.length && <div className="text-sm text-ink-400 col-span-2">No assets yet — add your first account below.</div>}
           </div>
-          <div className="flex-1">
-            {addingKind === 'asset' && renderAddForm('asset', 'Asset')}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-              {assets.map((a) => (
-                <EditRow key={a.id} a={a} total={totalAssets} contrib={contribByAccount[a.id]}
-                  updateItem={updateItem} removeItem={removeItem}
-                  onContribChange={onContribChange} onContribRemove={onContribRemove} onContribAdd={onContribAdd} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      </div>
 
-      {/* ---- Liabilities card ---- */}
-      <Card>
-        <SectionTitle title="Liabilities" subtitle={`${liabilities.length} loans`}
-          action={<button onClick={() => startAdd('liability')} className="btn-primary !py-1.5"><IconPlus size={16} /> Add</button>} />
-        <div className="flex flex-col md:flex-row gap-6 mt-2">
-          <div className="md:w-56 shrink-0 flex flex-col items-center">
-            <DonutRing size={168} value={fmtMoney(totalLiab, { compact: true })} label="Liabilities"
-              segments={liabilities.length ? liabilities.map((a) => ({ value: a.balance, color: a.color })) : [{ value: 1, color: '#94a3b8' }]} />
-            <div className="mt-3 grid grid-cols-2 gap-2 w-full">
-              <div className="rounded-lg bg-ink-50 dark:bg-ink-800/60 py-1.5 text-center">
-                <div className="text-sm font-extrabold text-rose-600">{fmtMoney(totalLiab, { compact: true })}</div>
-                <div className="text-[10px] text-ink-400 font-medium">Total Debt</div>
-              </div>
-              <div className="rounded-lg bg-ink-50 dark:bg-ink-800/60 py-1.5 text-center">
-                <div className="text-sm font-extrabold">{totalAssets ? Math.round((totalLiab / totalAssets) * 100) : 0}%</div>
-                <div className="text-[10px] text-ink-400 font-medium">Debt / Assets</div>
-              </div>
-            </div>
-          </div>
-          <div className="flex-1">
-            {addingKind === 'liability' && renderAddForm('liability', 'Liability')}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-              {liabilities.map((a) => (
-                <EditRow key={a.id} a={a} total={totalLiab} contrib={contribByAccount[a.id]}
-                  updateItem={updateItem} removeItem={removeItem}
-                  onContribChange={onContribChange} onContribRemove={onContribRemove} onContribAdd={onContribAdd} />
-              ))}
-              {liabilities.length === 0 && <div className="text-sm text-ink-400 py-2">Debt free! 🎉</div>}
-            </div>
+      {/* ---- Active investments (SIP) rail ---- */}
+      {sips.length > 0 && (
+        <div>
+          <SectionLabel action={
+            <button onClick={scrollToAccounts} className="text-xs font-bold text-brand-600 uppercase tracking-wide">view all</button>
+          }>Active Investments (SIP)</SectionLabel>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+            {sips.map((c) => {
+              const acct = accountById[c.accountId]
+              return (
+                <Card key={c.id} className="!p-4 min-w-[200px] shrink-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="xp-chip !px-2 !py-0.5 text-[10px]">{c.section || TYPE_LABELS[acct.type] || 'SIP'}</span>
+                    <span className="chip !px-2 !py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 text-[10px]">
+                      +{toPct(acct.growth)}%
+                    </span>
+                  </div>
+                  <div className="mt-2 text-sm font-bold truncate">{acct.name}</div>
+                  <div className="mt-1 text-lg font-extrabold money">{fmtMoney(c.amount / 12, { compact: true })}<span className="text-xs text-ink-400 font-semibold">/mo</span></div>
+                  <div className="mt-1 text-[10px] font-bold uppercase tracking-wide text-ink-400">{fmtMoney(c.amount, { compact: true })} / year</div>
+                </Card>
+              )
+            })}
           </div>
         </div>
-      </Card>
+      )}
+
+      {/* ---- 5-year projection ---- */}
+      <div>
+        <SectionLabel action={
+          <Link to="/settings" className="text-xs font-bold text-brand-600 uppercase tracking-wide">Config Rates</Link>
+        }>Wealth Projection (5Y)</SectionLabel>
+        <Card className="!p-4">
+          <div className="h-[150px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={fiveYear} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="acc5y" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(v) => fmtMoney(v, { compact: true })} labelFormatter={(y) => `Year ${y}`} />
+                <Area type="monotone" dataKey="netWorth" name="Net worth" stroke="#6366f1" strokeWidth={2.5} fill="url(#acc5y)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] text-ink-400 font-medium">
+            <span>Projected net worth · from your plan assumptions</span>
+            <span className="money font-bold text-ink-500 dark:text-ink-300">{fiveYear.length ? fmtMoney(fiveYear[fiveYear.length - 1].netWorth, { compact: true }) : '—'}</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* ---- Accounts list (inline editing preserved) ---- */}
+      <div ref={accountsRef} className="scroll-mt-20">
+        <SectionLabel action={
+          <button onClick={() => setShowCas(!showCas)} className="text-xs font-bold text-brand-600 uppercase tracking-wide">Import CAS</button>
+        }>Accounts</SectionLabel>
+        <Card className="!py-2">
+          {showCas && <div className="my-3"><CasImport onImport={importCasFunds} /></div>}
+          {addingKind === 'asset' && renderAddForm('asset', 'Asset')}
+          <div className="divide-y divide-ink-100 dark:divide-ink-800">
+            {assets.map((a) => (
+              <EditRow key={a.id} a={a} contrib={contribByAccount[a.id]}
+                updateItem={updateItem} removeItem={removeItem}
+                onContribChange={onContribChange} onContribRemove={onContribRemove} onContribAdd={onContribAdd} />
+            ))}
+            {liabilities.map((a) => (
+              <EditRow key={a.id} a={a} contrib={contribByAccount[a.id]}
+                updateItem={updateItem} removeItem={removeItem}
+                onContribChange={onContribChange} onContribRemove={onContribRemove} onContribAdd={onContribAdd} />
+            ))}
+            {accounts.length === 0 && <div className="text-sm text-ink-400 py-4 text-center">No accounts yet.</div>}
+          </div>
+          {addingKind === 'liability' && renderAddForm('liability', 'Liability')}
+          <div className="flex items-center justify-center gap-4 py-3 border-t border-ink-100 dark:border-ink-800">
+            <button onClick={() => startAdd('asset')} className="inline-flex items-center gap-1 text-sm font-bold text-brand-600 hover:text-brand-700">
+              <IconPlus size={15} /> Add Asset
+            </button>
+            <span className="text-ink-200 dark:text-ink-700">|</span>
+            <button onClick={() => startAdd('liability')} className="inline-flex items-center gap-1 text-sm font-bold text-rose-500 hover:text-rose-600">
+              <IconPlus size={15} /> Add Liability
+            </button>
+          </div>
+        </Card>
+      </div>
+
+      <Fab label="Add account" onClick={fabAdd}><IconPlus size={24} /></Fab>
     </div>
   )
 }

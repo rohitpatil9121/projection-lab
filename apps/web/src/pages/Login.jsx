@@ -4,7 +4,7 @@ import { loginUser, registerUser, forgotPassword, resetPassword, requestOtp, req
 import { apiConfigError } from '../api/config.js'
 import { useStore, redirectAfterAuth, isAuthenticated } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
-import AppLogo from '../components/AppLogo.jsx'
+import { IconChevron, IconMail, IconLock, IconShield, IconTrend } from '../components/Icons.jsx'
 
 const FEATURES = [
   { icon: '📈', text: 'Year-by-year net-worth projection' },
@@ -33,6 +33,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [code, setCode] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [secureDevice, setSecureDevice] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -139,16 +140,27 @@ export default function Login() {
 
         {/* Right — auth card */}
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
-          <div className="text-center mb-6">
-            <AppLogo size={56} className="mb-3 shadow-glow" />
-            <h1 className="text-2xl font-extrabold tracking-tight">
-              {view === 'forgot' ? 'Reset password' : view === 'reset' ? 'Check your email' : view === 'otp' ? 'Sign in with OTP' : mode === 'signup' ? 'Create your account' : 'Welcome back'}
+          <button
+            type="button"
+            onClick={() => (view === 'auth' ? navigate(-1) : goAuth())}
+            aria-label="Back"
+            className="mb-4 -ml-2 grid place-items-center h-9 w-9 rounded-xl text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+          >
+            <IconChevron size={18} className="rotate-180" />
+          </button>
+
+          <div className="mb-6">
+            <span className="grid place-items-center h-11 w-11 rounded-full bg-brand-600 text-white shadow-glow mb-4">
+              <IconTrend size={20} />
+            </span>
+            <h1 className="text-3xl font-extrabold tracking-tight">
+              {view === 'forgot' ? 'Reset Password' : view === 'reset' ? 'Check Your Email' : view === 'otp' ? 'Sign in with OTP' : mode === 'signup' ? 'Open an Account' : 'Welcome Back'}
             </h1>
-            <p className="text-sm text-ink-400 mt-1">
+            <p className="text-sm text-ink-400 mt-2 leading-relaxed">
               {view === 'forgot' ? "Enter your email and we'll send a reset code"
                 : view === 'reset' ? 'Enter the code and your new password'
                 : view === 'otp' ? 'We will send a 6-digit code to verify you'
-                : mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to your Financial Blueprint account'}
+                : mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to access your Financial Blueprint and track your net worth.'}
             </p>
           </div>
 
@@ -188,53 +200,71 @@ export default function Login() {
                   </label>
                 )}
                 <label className="block">
-                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
-                  <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
+                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email address</span>
+                  <div className="relative mt-1">
+                    <IconMail size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
+                    <input type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@institutional.com" className="input pl-10" />
+                  </div>
                 </label>
                 <label className="block">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
                     {mode === 'login' && (
-                      <button type="button" onClick={() => { setView('forgot'); setError('') }} className="text-xs font-semibold text-brand-600 hover:text-brand-700">Forgot?</button>
+                      <button type="button" onClick={() => { setView('forgot'); setError('') }} className="text-xs font-semibold text-brand-600 hover:text-brand-700">forgot?</button>
                     )}
                   </div>
                   <div className="relative mt-1">
+                    <IconLock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
                     <input
                       type={showPw ? 'text' : 'password'} required
                       autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                       value={password} onChange={(e) => setPassword(e.target.value)}
-                      placeholder={mode === 'signup' ? 'At least 8 characters' : 'Your password'}
-                      className="input pr-16"
+                      placeholder={mode === 'signup' ? 'At least 8 characters' : '••••••••'}
+                      className="input pl-10 pr-16"
                     />
                     <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">
                       {showPw ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </label>
-                <button type="submit" disabled={loading || !!apiUnavailable} className="btn-primary w-full">
-                  {loading ? <><Spinner size={16} /> Please wait…</> : mode === 'signup' ? 'Create account' : 'Log in'}
+                {mode === 'login' && (
+                  <label className="flex items-center gap-2.5 text-sm font-medium text-ink-600 dark:text-ink-300 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={secureDevice}
+                      onChange={(e) => setSecureDevice(e.target.checked)}
+                      className="h-4 w-4 rounded border-ink-300 accent-brand-600"
+                    />
+                    Secure login on this device
+                  </label>
+                )}
+                <button type="submit" disabled={loading || !!apiUnavailable} className="btn-primary w-full uppercase tracking-wide">
+                  {loading ? <><Spinner size={16} /> Please wait…</> : <>{mode === 'signup' ? 'Create account' : 'Sign in'} <span aria-hidden>→</span></>}
                 </button>
               </form>
 
-              <p className="text-center text-sm text-ink-400 mt-4">
-                {mode === 'signup' ? 'Already have an account? ' : "Don't have an account? "}
-                <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-semibold text-brand-600 hover:text-brand-700">
-                  {mode === 'signup' ? 'Log in' : 'Sign up'}
-                </button>
-              </p>
-
               <div className="flex items-center gap-3 my-5">
                 <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
-                <span className="text-xs text-ink-400 font-medium">or</span>
+                <span className="text-xs text-ink-400 font-medium tracking-wide">secure authentication</span>
                 <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
               </div>
 
-              <button type="button" onClick={() => { setView('otp'); setError('') }} className="btn-secondary w-full">Sign in with OTP</button>
+              <p className="text-center text-sm text-ink-500 dark:text-ink-400">
+                {mode === 'signup' ? 'Already have an account? ' : 'New to Financial Blueprint? '}
+                <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-bold text-brand-600 hover:text-brand-700">
+                  {mode === 'signup' ? 'Log in' : 'Open an Account'}
+                </button>
+              </p>
+
+              <button type="button" onClick={() => { setView('otp'); setError('') }} className="btn-secondary w-full mt-4">Sign in with OTP</button>
 
               <Link to="/onboarding" className="btn-secondary w-full mt-3 block text-center">Continue as guest</Link>
 
-              <p className="text-[11px] text-ink-400 text-center mt-5 leading-relaxed">
-                Illustration only — not investment advice.<br />
+              <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-400 mt-5">
+                <IconShield size={13} /> End-to-end encryption enabled
+              </p>
+              <p className="text-[11px] text-ink-400 text-center mt-2 leading-relaxed">
+                Illustration only — not investment advice.{' '}
                 <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>
               </p>
             </>

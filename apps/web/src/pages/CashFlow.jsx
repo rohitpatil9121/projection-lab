@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts'
-import { useStore } from '../data/store.js'
+import { useStore, computeTaxSummary } from '../data/store.js'
 import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionTitle } from '../components/ui.jsx'
-import { IconPlus, IconTrash } from '../components/Icons.jsx'
+import { IconPlus, IconTrash, IconChevron } from '../components/Icons.jsx'
 
 const PALETTE = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#f43f5e']
 
@@ -147,7 +148,51 @@ export default function CashFlow() {
         <BreakdownCard title="Income Sources" collection="incomes" items={incomes} total={totalIncome} kind="income" />
         <BreakdownCard title="Expense Categories" collection="expenses" items={expenses} total={totalExpense} kind="expense" />
       </div>
+
+      <TaxSnapshotCard profile={profile} contributions={contributions} expenses={expenses} />
     </div>
+  )
+}
+
+function TaxSnapshotCard({ profile, contributions, expenses }) {
+  const summary = useMemo(
+    () => computeTaxSummary({ profile, contributions, expenses }),
+    [profile, contributions, expenses],
+  )
+  return (
+    <Card>
+      <SectionTitle
+        title="Income Tax"
+        subtitle={summary.ready ? `Estimated under the ${summary.regime} regime` : 'Set your gross salary to estimate tax'}
+        action={
+          <Link to="/tax" className="btn-ghost !py-1.5 text-sm flex items-center gap-0.5">
+            Details <IconChevron size={14} />
+          </Link>
+        }
+      />
+      {summary.ready ? (
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div>
+            <div className="text-2xl font-extrabold tracking-tight tabular-nums">{fmtMoney(summary.current.tax)}</div>
+            <div className="text-xs text-ink-400">this year · effective {(summary.current.effectiveRate * 100).toFixed(1)}%</div>
+          </div>
+          {summary.switchSavings > 0 && (
+            <div className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+              Switching to the {summary.comparison.recommended} regime would save {fmtMoney(summary.switchSavings)}
+            </div>
+          )}
+          {summary.nudges[0] && (
+            <div className="text-sm text-ink-500">
+              Invest {fmtMoney(summary.nudges[0].headroom)} more in {summary.nudges[0].hint} by {summary.nudges[0].deadline} → save {fmtMoney(summary.nudges[0].taxSaved)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-sm text-ink-400">
+          Add your gross annual salary on the <Link to="/tax" className="text-brand-600 font-semibold">Tax page</Link> to compare the old vs new regime and track 80C/80D deductions.
+        </div>
+      )}
+    </Card>
   )
 }
 
