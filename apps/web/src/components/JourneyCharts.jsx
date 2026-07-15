@@ -38,14 +38,14 @@ export function GrowthVsContributionsChart({ state, projection }) {
     <Card>
       <SectionTitle title="Who's building your corpus?" subtitle="Your deposits vs market growth over time" />
       <div className="mb-3 flex flex-wrap gap-4 text-xs font-semibold">
-        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#4f46e5' }} /> Market growth · {growthPct}%</span>
+        <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#377cc8' }} /> Market growth · {growthPct}%</span>
         <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: '#94a3b8' }} /> Your contributions · {100 - growthPct}%</span>
       </div>
       <div className="h-[260px] -ml-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
             <defs>
-              <linearGradient id="gGrow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#4f46e5" stopOpacity={0.8} /><stop offset="100%" stopColor="#4f46e5" stopOpacity={0.2} /></linearGradient>
+              <linearGradient id="gGrow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#377cc8" stopOpacity={0.8} /><stop offset="100%" stopColor="#377cc8" stopOpacity={0.2} /></linearGradient>
               <linearGradient id="gContrib" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#94a3b8" stopOpacity={0.5} /><stop offset="100%" stopColor="#94a3b8" stopOpacity={0.15} /></linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className={gridCls} vertical={false} />
@@ -53,7 +53,7 @@ export function GrowthVsContributionsChart({ state, projection }) {
             <YAxis tickFormatter={(v) => fmtMoney(v, { compact: true })} width={54} {...axis} className="text-ink-400" />
             <Tooltip content={<MoneyTooltip />} />
             <Area type="monotone" dataKey="contributed" name="Your contributions" stackId="1" stroke="#94a3b8" fill="url(#gContrib)" strokeWidth={1.5} isAnimationActive={false} />
-            <Area type="monotone" dataKey="growth" name="Market growth" stackId="1" stroke="#4f46e5" fill="url(#gGrow)" strokeWidth={2} isAnimationActive={false} />
+            <Area type="monotone" dataKey="growth" name="Market growth" stackId="1" stroke="#377cc8" fill="url(#gGrow)" strokeWidth={2} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -77,10 +77,10 @@ export function SavingsRateChart({ state, projection }) {
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className={gridCls} vertical={false} />
             <XAxis dataKey="year" {...axis} className="text-ink-400" minTickGap={40} />
             <YAxis tickFormatter={(v) => `${v}%`} width={40} domain={[0, 'dataMax + 10']} {...axis} className="text-ink-400" />
-            <ReferenceArea y1={20} y2={30} fill="#22c55e" fillOpacity={0.1} />
-            <ReferenceLine y={20} stroke="#22c55e" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: 'healthy band', position: 'insideTopLeft', fontSize: 10, fill: '#15803d', fontWeight: 700 }} />
+            <ReferenceArea y1={20} y2={30} fill="#469b88" fillOpacity={0.1} />
+            <ReferenceLine y={20} stroke="#469b88" strokeDasharray="4 4" strokeOpacity={0.6} label={{ value: 'healthy band', position: 'insideTopLeft', fontSize: 10, fill: '#15803d', fontWeight: 700 }} />
             <Tooltip content={<MoneyTooltip title="Age" />} />
-            <Line type="monotone" dataKey="rate" name="Savings rate" unit="%" stroke="#4f46e5" strokeWidth={2.6} dot={false} isAnimationActive={false} />
+            <Line type="monotone" dataKey="rate" name="Savings rate" unit="%" stroke="#377cc8" strokeWidth={2.6} dot={false} isAnimationActive={false} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -143,14 +143,14 @@ export function CorpusLongevityChart({ state, projection }) {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
             <defs>
-              <linearGradient id="gCorpus" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#22c55e" stopOpacity={0.4} /><stop offset="100%" stopColor="#22c55e" stopOpacity={0} /></linearGradient>
+              <linearGradient id="gCorpus" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#469b88" stopOpacity={0.4} /><stop offset="100%" stopColor="#469b88" stopOpacity={0} /></linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" className={gridCls} vertical={false} />
             <XAxis dataKey="year" {...axis} className="text-ink-400" minTickGap={40} />
             <YAxis tickFormatter={(v) => fmtMoney(v, { compact: true })} width={54} {...axis} className="text-ink-400" />
             <Tooltip content={<MoneyTooltip title="Age" />} />
-            {retireRow && <ReferenceLine x={retireRow.year} stroke="#4f46e5" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#4f46e5', fontWeight: 700 }} />}
-            <Area type="monotone" dataKey="corpus" name="Investable corpus" stroke="#22c55e" fill="url(#gCorpus)" strokeWidth={2.4} isAnimationActive={false} />
+            {retireRow && <ReferenceLine x={retireRow.year} stroke="#377cc8" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#377cc8', fontWeight: 700 }} />}
+            <Area type="monotone" dataKey="corpus" name="Investable corpus" stroke="#469b88" fill="url(#gCorpus)" strokeWidth={2.4} isAnimationActive={false} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

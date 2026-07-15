@@ -174,7 +174,7 @@ export default function Tax() {
                   </span>
                   <span className="font-bold tabular-nums">{fmtMoney(s.used)} <span className="text-xs text-ink-400 font-normal">/ {fmtMoney(s.cap, { compact: true })}</span></span>
                 </div>
-                <ProgressBar value={s.used} max={s.cap} color={s.used >= s.cap ? '#22c55e' : '#6366f1'} />
+                <ProgressBar value={s.used} max={s.cap} color={s.used >= s.cap ? '#469b88' : '#377cc8'} />
               </div>
             )
           })}

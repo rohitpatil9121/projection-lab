@@ -54,7 +54,7 @@ export default function Plan() {
 
   const add = () => {
     if (!draft.name.trim()) return
-    addItem('events', { ...draft, age: Number(draft.age), amount: Number(draft.amount), color: '#6366f1' })
+    addItem('events', { ...draft, age: Number(draft.age), amount: Number(draft.amount), color: '#377cc8' })
     setDraft({ name: '', age: 40, amount: 0, icon: '⭐' })
   }
 

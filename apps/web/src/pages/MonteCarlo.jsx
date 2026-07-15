@@ -35,7 +35,7 @@ export default function MonteCarlo() {
 
   const success = Math.round(mc.successRate * 100)
   const verdict = success >= 85 ? 'Very likely' : success >= 70 ? 'On track' : success >= 50 ? 'At risk' : 'Unlikely'
-  const verdictColor = success >= 85 ? '#22c55e' : success >= 70 ? '#84cc16' : success >= 50 ? '#f59e0b' : '#ef4444'
+  const verdictColor = success >= 85 ? '#469b88' : success >= 70 ? '#469b88' : success >= 50 ? '#eed868' : '#e0533d'
 
   return (
     <div className="space-y-6">
@@ -69,9 +69,9 @@ export default function MonteCarlo() {
           }
         />
         <div className="flex flex-wrap gap-3 mb-3 text-xs font-medium text-ink-500">
-          <Legend color="#a5b4fc" label="10th–90th percentile" />
-          <Legend color="#6366f1" label="25th–75th percentile" />
-          <Legend color="#4f46e5" label="Median" line />
+          <Legend color="#377cc8" label="10th–90th percentile" />
+          <Legend color="#377cc8" label="25th–75th percentile" />
+          <Legend color="#377cc8" label="Median" line />
         </div>
         <div className="h-[380px] -ml-2">
           <ResponsiveContainer width="100%" height="100%">
@@ -82,11 +82,11 @@ export default function MonteCarlo() {
               <Tooltip content={<FanTooltip />} />
               {/* Stacked bands: invisible base, then the fan widths */}
               <Area dataKey="base" stackId="f" stroke="none" fill="transparent" isAnimationActive={false} />
-              <Area dataKey="b1" stackId="f" stroke="none" fill="#a5b4fc" fillOpacity={0.35} isAnimationActive={false} />
-              <Area dataKey="b2" stackId="f" stroke="none" fill="#6366f1" fillOpacity={0.35} isAnimationActive={false} />
-              <Area dataKey="b3" stackId="f" stroke="none" fill="#a5b4fc" fillOpacity={0.35} isAnimationActive={false} />
-              <Line dataKey="p50" stroke="#4f46e5" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-              <ReferenceLine x={retireYear} stroke="#22c55e" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#22c55e', fontWeight: 700 }} />
+              <Area dataKey="b1" stackId="f" stroke="none" fill="#377cc8" fillOpacity={0.35} isAnimationActive={false} />
+              <Area dataKey="b2" stackId="f" stroke="none" fill="#377cc8" fillOpacity={0.35} isAnimationActive={false} />
+              <Area dataKey="b3" stackId="f" stroke="none" fill="#377cc8" fillOpacity={0.35} isAnimationActive={false} />
+              <Line dataKey="p50" stroke="#377cc8" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+              <ReferenceLine x={retireYear} stroke="#469b88" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 11, fill: '#469b88', fontWeight: 700 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

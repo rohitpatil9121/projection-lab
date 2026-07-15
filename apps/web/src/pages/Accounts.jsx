@@ -125,10 +125,10 @@ export default function Accounts() {
   const removeItem = useStore((s) => s.removeItem)
   const [addingKind, setAddingKind] = useState(null) // 'asset' | 'liability' | null
   const [showCas, setShowCas] = useState(false)
-  const [draft, setDraft] = useState({ name: '', balance: 100000, growthPct: 8, color: '#6366f1' })
+  const [draft, setDraft] = useState({ name: '', balance: 100000, growthPct: 8, color: '#377cc8' })
   const accountsRef = useRef(null)
 
-  const FUND_COLORS = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#06b6d4']
+  const FUND_COLORS = ['#377cc8', '#9da7d0', '#469b88', '#9da7d0', '#e78c9d', '#eed868', '#469b88', '#06b6d4']
   const importCasFunds = (funds) => {
     funds.forEach((f, i) => {
       // Update balance if a fund with the same name already exists, else add it.
@@ -163,10 +163,10 @@ export default function Accounts() {
   // Allocation buckets by account type.
   const bucket = (pred) => assets.filter(pred).reduce((s, a) => s + a.balance, 0)
   const allocation = [
-    { label: 'Equity', color: '#6366f1', value: bucket((a) => a.type === 'investment') },
-    { label: 'Retirement', color: '#0ea5e9', value: bucket((a) => a.type === 'retirement') },
-    { label: 'Cash & FD', color: '#22c55e', value: bucket((a) => a.type === 'cash') },
-    { label: 'Property & Other', color: '#f59e0b', value: bucket((a) => a.type === 'real-estate' || a.type === 'other') },
+    { label: 'Equity', color: '#377cc8', value: bucket((a) => a.type === 'investment') },
+    { label: 'Retirement', color: '#9da7d0', value: bucket((a) => a.type === 'retirement') },
+    { label: 'Cash & FD', color: '#469b88', value: bucket((a) => a.type === 'cash') },
+    { label: 'Property & Other', color: '#eed868', value: bucket((a) => a.type === 'real-estate' || a.type === 'other') },
   ].filter((b) => b.value > 0)
 
   // Next 5 years of projected net worth (current year + 5).
@@ -177,7 +177,7 @@ export default function Accounts() {
 
   const startAdd = (kind) => {
     setAddingKind(kind)
-    setDraft({ name: '', balance: kind === 'liability' ? 200000 : 100000, growthPct: kind === 'liability' ? 9 : 8, color: kind === 'liability' ? '#ef4444' : '#6366f1' })
+    setDraft({ name: '', balance: kind === 'liability' ? 200000 : 100000, growthPct: kind === 'liability' ? 9 : 8, color: kind === 'liability' ? '#e0533d' : '#377cc8' })
   }
   const saveAdd = (kind) => {
     if (!draft.name.trim()) return
@@ -302,13 +302,13 @@ export default function Accounts() {
               <AreaChart data={fiveYear} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
                 <defs>
                   <linearGradient id="acc5y" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor="#377cc8" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#377cc8" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="year" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                 <Tooltip formatter={(v) => fmtMoney(v, { compact: true })} labelFormatter={(y) => `Year ${y}`} />
-                <Area type="monotone" dataKey="netWorth" name="Net worth" stroke="#6366f1" strokeWidth={2.5} fill="url(#acc5y)" />
+                <Area type="monotone" dataKey="netWorth" name="Net worth" stroke="#377cc8" strokeWidth={2.5} fill="url(#acc5y)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

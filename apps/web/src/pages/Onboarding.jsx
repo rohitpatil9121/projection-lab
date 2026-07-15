@@ -182,29 +182,29 @@ export default function Onboarding() {
     const loanBal = have.debt ? n(loan) : 0
     const yearlyEmi = have.debt ? n(emi) * 12 : 0
 
-    const FUND_COLORS = ['#6366f1', '#0ea5e9', '#14b8a6', '#a855f7', '#ec4899', '#f97316', '#84cc16', '#06b6d4']
+    const FUND_COLORS = ['#377cc8', '#9da7d0', '#469b88', '#9da7d0', '#e78c9d', '#eed868', '#469b88', '#06b6d4']
     const accounts = []
-    if (have.savings && n(savings) > 0) accounts.push({ id: 'savings', name: 'Savings + FD', type: 'cash', kind: 'asset', balance: n(savings), growth: 0.04, color: '#22c55e' })
+    if (have.savings && n(savings) > 0) accounts.push({ id: 'savings', name: 'Savings + FD', type: 'cash', kind: 'asset', balance: n(savings), growth: 0.04, color: '#469b88' })
     if (have.investments && casFunds?.length) {
       // One account per fund imported from the CAS statement (SIP routes to the largest).
       casFunds.forEach((f, i) => {
         accounts.push({ id: i === 0 ? 'equity' : 'mf' + i, name: f.name, type: 'investment', kind: 'asset', balance: f.value, growth: 0.12, color: FUND_COLORS[i % FUND_COLORS.length] })
       })
     } else if ((have.investments && n(equity) > 0) || yearlySip > 0) {
-      accounts.push({ id: 'equity', name: 'Mutual Funds / Stocks', type: 'investment', kind: 'asset', balance: have.investments ? n(equity) : 0, growth: 0.12, color: '#6366f1' })
+      accounts.push({ id: 'equity', name: 'Mutual Funds / Stocks', type: 'investment', kind: 'asset', balance: have.investments ? n(equity) : 0, growth: 0.12, color: '#377cc8' })
     }
-    if (have.investments && n(retirementBal) > 0) accounts.push({ id: 'retirement', name: 'EPF / PPF / NPS', type: 'retirement', kind: 'asset', balance: n(retirementBal), growth: 0.08, color: '#8b5cf6' })
-    if (have.realAssets && n(property) > 0) accounts.push({ id: 'property', name: 'House / Property', type: 'real-estate', kind: 'asset', balance: n(property), growth: 0.06, color: '#f59e0b' })
-    if (loanBal > 0) accounts.push({ id: 'loan', name: 'Loans', type: 'loan', kind: 'liability', balance: loanBal, growth: 0.09, payoff: yearlyEmi > 0 ? Math.min(1, yearlyEmi / loanBal) : 0.1, color: '#ef4444' })
+    if (have.investments && n(retirementBal) > 0) accounts.push({ id: 'retirement', name: 'EPF / PPF / NPS', type: 'retirement', kind: 'asset', balance: n(retirementBal), growth: 0.08, color: '#9da7d0' })
+    if (have.realAssets && n(property) > 0) accounts.push({ id: 'property', name: 'House / Property', type: 'real-estate', kind: 'asset', balance: n(property), growth: 0.06, color: '#eed868' })
+    if (loanBal > 0) accounts.push({ id: 'loan', name: 'Loans', type: 'loan', kind: 'liability', balance: loanBal, growth: 0.09, payoff: yearlyEmi > 0 ? Math.min(1, yearlyEmi / loanBal) : 0.1, color: '#e0533d' })
 
     const incomes = [
-      { id: 'salary', name: 'Salary (take-home)', amount: yearlySalary, growth: 0.07, startAge: age, endAge: ret, color: '#6366f1' },
+      { id: 'salary', name: 'Salary (take-home)', amount: yearlySalary, growth: 0.07, startAge: age, endAge: ret, color: '#377cc8' },
     ]
 
     const expenses = [
-      { id: 'living', name: 'Household & Living', amount: yearlyExpense, growth: 0.06, startAge: age, endAge: 85, color: '#ef4444' },
+      { id: 'living', name: 'Household & Living', amount: yearlyExpense, growth: 0.06, startAge: age, endAge: 85, color: '#e0533d' },
     ]
-    if (yearlyEmi > 0) expenses.push({ id: 'emi', name: 'Loan EMI', amount: yearlyEmi, growth: 0, startAge: age, endAge: age + n(emiYears), color: '#f59e0b' })
+    if (yearlyEmi > 0) expenses.push({ id: 'emi', name: 'Loan EMI', amount: yearlyEmi, growth: 0, startAge: age, endAge: age + n(emiYears), color: '#eed868' })
 
     const contributions = []
     if (yearlySip > 0) contributions.push({ id: 'c-sip', accountId: 'equity', amount: yearlySip, section: null })
@@ -216,7 +216,7 @@ export default function Onboarding() {
     if (loanBal > 0) milestones.push({ id: 'm-loanfree', name: 'Loan Free', target: 0, accountId: 'loan', icon: '🏠', achieved: false })
 
     const events = [
-      { id: 'e-retire', name: 'Retire', age: ret, amount: 0, icon: '🌴', color: '#22c55e' },
+      { id: 'e-retire', name: 'Retire', age: ret, amount: 0, icon: '🌴', color: '#469b88' },
     ]
 
     completeOnboarding(

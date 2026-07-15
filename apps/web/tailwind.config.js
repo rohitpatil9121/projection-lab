@@ -5,17 +5,34 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Brand primary — built around #377CC8 (brand blue). brand-600 = exact.
         brand: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
+          50: '#eef5fb',
+          100: '#d8e8f6',
+          200: '#b3d0ec',
+          300: '#85b4e0',
+          400: '#5695d4',
+          500: '#3f83cd',
+          600: '#377cc8',
+          700: '#2f6aac',
+          800: '#2a578c',
+          900: '#274a75',
+        },
+        // Brand palette (charts, categories, accents) — from the brand guide.
+        coral: '#e0533d',      // negative / money out / liabilities
+        teal: '#469b88',       // positive / money in / assets
+        periwinkle: '#9da7d0',
+        sun: '#eed868',
+        blossom: '#e78c9d',
+        // Money language rebranded to the brand palette: every existing
+        // emerald-* (positive/green) → brand teal, rose-* (negative/red) → coral.
+        emerald: {
+          50: '#edf6f4', 100: '#d3e9e4', 200: '#a9d3c9', 300: '#7bbaac', 400: '#5aa695',
+          500: '#469b88', 600: '#3c8778', 700: '#326e63', 800: '#2b574f', 900: '#264942',
+        },
+        rose: {
+          50: '#fdf0ed', 100: '#fadbd4', 200: '#f4b8ab', 300: '#ec8d79', 400: '#e56b52',
+          500: '#e0533d', 600: '#c9412c', 700: '#a83323', 800: '#8a2c20', 900: '#73281f',
         },
         ink: {
           50: '#f8fafc',
@@ -25,17 +42,16 @@ export default {
           400: '#94a3b8',
           500: '#64748b',
           600: '#475569',
-          700: '#334155',
-          // Dark-end retuned to a deep navy palette (matches the reference mock).
-          // Only 800/900/950 changed — these back dark-mode surfaces; light mode
-          // uses 50–700 and is unaffected.
-          800: '#232c44', // borders / hover surfaces in dark
-          900: '#141b2e', // card surface — navy, lifted above the app bg
-          950: '#090c17', // app background — deep navy-black
+          700: '#3a3f47',
+          // Dark base retuned to the brand's #242424 charcoal (base colour).
+          // Only 800/900/950 back dark-mode surfaces + light-mode darkest text.
+          800: '#3a3a3a', // borders / hover surfaces in dark
+          900: '#242424', // card surface — exact brand dark base
+          950: '#181818', // app background — a hair darker than base
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', '"Roboto Mono"', 'monospace'],
       },
       // 8px-grid-friendly extra sizes
