@@ -3,11 +3,11 @@ import { useStore } from '../data/store.js'
 import { useProjection } from '../data/useProjection.js'
 import {
   fmtMoney, evaluateGoal, CURRENT_YEAR,
-  computeFitness, computeStages, computeQuests, computeMoments, consistencyCells,
+  computeMoments, consistencyCells,
 } from '@projectlab/engine'
 import { Card, SectionLabel } from '../components/ui.jsx'
 import { IconCheck, IconPlus, IconTrash, IconTarget, IconTrend } from '../components/Icons.jsx'
-import { FitnessCard, StagesStrip, QuestsCard, ConsistencyCard } from '../components/Journey.jsx'
+import { ConsistencyCard } from '../components/Journey.jsx'
 import GoalGraphic, { MOMENT_KIND, kindFromText } from '../components/GoalGraphic.jsx'
 
 // ---- Goal status (from evaluateGoal track) ---------------------------------
@@ -37,16 +37,16 @@ function goalCategory(m, accounts) {
 }
 
 const CATEGORY_STYLE = {
-  'REAL ESTATE': { band: 'from-rose-300 via-orange-300 to-amber-200', pill: 'text-rose-600' },
-  EDUCATION: { band: 'from-teal-500 via-emerald-400 to-cyan-300', pill: 'text-teal-700' },
-  'FINANCIAL FREEDOM': { band: 'from-violet-400 via-purple-400 to-indigo-300', pill: 'text-violet-600' },
-  RETIREMENT: { band: 'from-violet-400 via-purple-400 to-indigo-300', pill: 'text-violet-600' },
-  'DEBT PAYOFF': { band: 'from-amber-300 via-orange-300 to-yellow-200', pill: 'text-amber-700' },
-  SAVINGS: { band: 'from-sky-400 via-cyan-300 to-blue-200', pill: 'text-sky-700' },
-  INVESTMENT: { band: 'from-indigo-400 via-blue-400 to-sky-300', pill: 'text-indigo-600' },
-  VEHICLE: { band: 'from-slate-400 via-zinc-300 to-gray-200', pill: 'text-slate-600' },
-  'LIFE EVENT': { band: 'from-fuchsia-400 via-pink-300 to-rose-200', pill: 'text-fuchsia-600' },
-  'NET WORTH': { band: 'from-brand-500 via-indigo-400 to-violet-300', pill: 'text-brand-600' },
+  'REAL ESTATE': { band: 'from-[#e0533d] via-[#e78c9d] to-[#eed868]', pill: 'text-[#e0533d]' },
+  EDUCATION: { band: 'from-[#469b88] via-[#469b88] to-[#9da7d0]', pill: 'text-[#469b88]' },
+  'FINANCIAL FREEDOM': { band: 'from-[#377cc8] via-[#9da7d0] to-[#e78c9d]', pill: 'text-[#377cc8]' },
+  RETIREMENT: { band: 'from-[#377cc8] via-[#9da7d0] to-[#469b88]', pill: 'text-[#377cc8]' },
+  'DEBT PAYOFF': { band: 'from-[#eed868] via-[#eed868] to-[#e78c9d]', pill: 'text-[#b8860b]' },
+  SAVINGS: { band: 'from-[#377cc8] via-[#9da7d0] to-[#eed868]', pill: 'text-[#377cc8]' },
+  INVESTMENT: { band: 'from-[#377cc8] via-[#469b88] to-[#9da7d0]', pill: 'text-[#377cc8]' },
+  VEHICLE: { band: 'from-[#9da7d0] via-[#9da7d0] to-[#377cc8]', pill: 'text-[#377cc8]' },
+  'LIFE EVENT': { band: 'from-[#e78c9d] via-[#e78c9d] to-[#eed868]', pill: 'text-[#e0533d]' },
+  'NET WORTH': { band: 'from-[#377cc8] via-[#469b88] to-[#eed868]', pill: 'text-brand-600' },
 }
 
 export default function Milestones() {
@@ -59,12 +59,9 @@ export default function Milestones() {
   const removeItem = useStore((s) => s.removeItem)
   const moveMilestone = useStore((s) => s.moveMilestone)
   const snapshots = useStore((s) => s.snapshots)
-  const { projection, readiness, state } = useProjection()
+  const { projection, state } = useProjection()
 
-  // ---- Journey layer: fitness, stages, quests, moments, consistency ----
-  const fitness = computeFitness(state, projection, readiness)
-  const stages = computeStages(state, projection, readiness)
-  const quests = computeQuests(state, fitness)
+  // ---- Input-derived milestones + check-in consistency ----
   const moments = computeMoments(state, snapshots, projection)
   const consistency = consistencyCells(snapshots)
 
@@ -117,7 +114,7 @@ export default function Milestones() {
       </div>
 
       {/* ---- Streak hero (brand-indigo gradient) ---- */}
-      <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white bg-gradient-to-br from-brand-600 via-indigo-600 to-violet-600 shadow-card">
+      <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white bg-gradient-to-br from-brand-600 via-brand-500 to-[#469b88] shadow-card">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
           className="absolute -right-4 -top-4 h-36 w-36 text-white/10" aria-hidden="true">
           <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v4M16 3v4" />
@@ -383,7 +380,7 @@ export default function Milestones() {
       </div>
 
       {/* ---- Goal stats (kept from previous layout) ---- */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card className="bg-gradient-to-br from-brand-500 to-brand-700 text-white border-0">
           <div className="text-sm font-semibold text-brand-100">Goals achieved</div>
           <div className="text-4xl font-extrabold mt-1 money">{done}<span className="text-brand-200 text-2xl">/{milestones.length}</span></div>
@@ -394,26 +391,12 @@ export default function Milestones() {
           <div className="text-4xl font-extrabold mt-1 text-amber-600 money">{behind}</div>
           <div className="text-xs text-ink-400 mt-1">Goals where funding lags the timeline</div>
         </Card>
-        <Card>
-          <div className="text-sm font-semibold text-ink-400">Financial Independence</div>
-          <div className="text-lg font-extrabold mt-1 money">
-            {rows.find((r) => r.m.metric === 'netWorth' && r.m.target >= 30000000)?.achievedYear || '—'}
-          </div>
-          <div className="text-xs text-ink-400 mt-1">Projected year you hit FI</div>
-        </Card>
       </div>
 
-      {/* ---- Financial fitness (kept below the mock layout) ---- */}
+      {/* ---- Check-in consistency (from your recorded snapshots) ---- */}
       <div>
-        <SectionLabel>Financial Fitness</SectionLabel>
-        <div className="space-y-6">
-          <FitnessCard fitness={fitness} stage={stages} scoreHistory={snapshots} />
-          <StagesStrip stages={stages.stages} currentIndex={stages.currentIndex} next={stages.next} coastAge={stages.coastAge} />
-          <div className="grid gap-6 lg:grid-cols-2">
-            <QuestsCard quests={quests} />
-            <ConsistencyCard cells={consistency.cells} steady={consistency.steady} />
-          </div>
-        </div>
+        <SectionLabel>Check-in Consistency</SectionLabel>
+        <ConsistencyCard cells={consistency.cells} steady={consistency.steady} />
       </div>
     </div>
   )

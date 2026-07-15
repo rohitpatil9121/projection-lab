@@ -78,10 +78,10 @@ const House = (p) => (
 // Car — vehicle
 const Car = (p) => (
   <S {...p}>
-    <path d="M8 40c0-3 2-5 4-6l6-9c1-2 3-3 5-3h14c2 0 4 1 5 3l6 9c2 1 3 3 3 6v5H8z" fill="#6366f1" />
-    <path d="M23 24h8v9H17z" fill="#c7d2fe" />
-    <path d="M35 24h6l4 9H35z" fill="#c7d2fe" />
-    <rect x="6" y="42" width="52" height="6" rx="3" fill="#4338ca" />
+    <path d="M8 40c0-3 2-5 4-6l6-9c1-2 3-3 5-3h14c2 0 4 1 5 3l6 9c2 1 3 3 3 6v5H8z" fill="#377cc8" />
+    <path d="M23 24h8v9H17z" fill="#b3d0ec" />
+    <path d="M35 24h6l4 9H35z" fill="#b3d0ec" />
+    <rect x="6" y="42" width="52" height="6" rx="3" fill="#274a75" />
     <circle cx="19" cy="48" r="6" fill="#1e293b" /><circle cx="19" cy="48" r="2.5" fill="#94a3b8" />
     <circle cx="45" cy="48" r="6" fill="#1e293b" /><circle cx="45" cy="48" r="2.5" fill="#94a3b8" />
     <rect x="50" y="36" width="5" height="4" rx="1" fill="#fde68a" />
@@ -101,9 +101,9 @@ const Rings = (p) => (
 // Rising bars + arrow — investment
 const Chart = (p) => (
   <S {...p}>
-    <rect x="10" y="38" width="9" height="16" rx="2" fill="#a5b4fc" />
-    <rect x="24" y="30" width="9" height="24" rx="2" fill="#818cf8" />
-    <rect x="38" y="20" width="9" height="34" rx="2" fill="#6366f1" />
+    <rect x="10" y="38" width="9" height="16" rx="2" fill="#85b4e0" />
+    <rect x="24" y="30" width="9" height="24" rx="2" fill="#5695d4" />
+    <rect x="38" y="20" width="9" height="34" rx="2" fill="#377cc8" />
     <path d="M12 34l12-8 10 5 14-14" stroke="#22c55e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M42 17h8v8" stroke="#22c55e" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
   </S>
@@ -158,9 +158,9 @@ const Bird = (p) => (
 const Target = (p) => (
   <S {...p}>
     <circle cx="32" cy="32" r="22" fill="#e0e7ff" />
-    <circle cx="32" cy="32" r="22" stroke="#6366f1" strokeWidth="3" />
-    <circle cx="32" cy="32" r="14" fill="#c7d2fe" stroke="#6366f1" strokeWidth="3" />
-    <circle cx="32" cy="32" r="6" fill="#6366f1" />
+    <circle cx="32" cy="32" r="22" stroke="#377cc8" strokeWidth="3" />
+    <circle cx="32" cy="32" r="14" fill="#b3d0ec" stroke="#377cc8" strokeWidth="3" />
+    <circle cx="32" cy="32" r="6" fill="#377cc8" />
     <path d="M32 32l16-16M46 12h4v4" stroke="#ef4444" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
   </S>
 )

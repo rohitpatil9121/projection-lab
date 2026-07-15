@@ -115,7 +115,6 @@ export const defaultPlanPayload = {
     { id: 'emi', name: 'Home Loan EMI', amount: 540000, growth: 0, startAge: 32, endAge: 52, color: '#f59e0b' },
     { id: 'education', name: "Children's Education", amount: 180000, growth: 0.08, startAge: 32, endAge: 55, color: '#ec4899' },
     { id: 'travel', name: 'Travel & Lifestyle', amount: 150000, growth: 0.06, startAge: 32, endAge: 75, color: '#f97316' },
-    { id: 'health', name: 'Health Insurance (80D)', amount: 30000, growth: 0.08, startAge: 32, endAge: 85, section: '80D', color: '#f43f5e' },
   ],
   contributions: [
     { id: 'c1', accountId: 'epf', amount: 180000, section: '80C' },

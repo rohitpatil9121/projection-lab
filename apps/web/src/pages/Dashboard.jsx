@@ -88,11 +88,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Stat row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Net Worth Today" value={fmtMoney(today.netWorth, { compact: true })} sub="across all accounts" trend={8} accent="brand" />
         <StatCard label={`At Retirement (${profile.retirementAge})`} value={fmtMoney(retireRow?.netWorth || 0, { compact: true })} sub={`+${netWorthGrowth}% projected`} accent="green" />
         <StatCard label="Peak Net Worth" value={fmtMoney(peak, { compact: true })} sub="lifetime maximum" accent="amber" />
-        <StatCard label="Plan Success" value={`${readiness.score}%`} sub={readiness.success ? 'on track' : 'needs attention'} accent={readiness.success ? 'green' : 'rose'} />
       </div>
 
       {/* Main projection chart */}
@@ -163,26 +162,9 @@ export default function Dashboard() {
           </div>
         </Card>
 
-        {/* Readiness card */}
+        {/* Plan outcomes (real projection figures — no score) */}
         <Card className="flex flex-col">
-          <SectionTitle title="Retirement Readiness" />
-          <div className="grid place-items-center py-2">
-            <div className="relative h-40 w-40">
-              <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
-                <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" className="text-ink-100 dark:text-ink-800" stroke="currentColor" />
-                <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" strokeLinecap="round"
-                  stroke={readiness.success ? '#469b88' : '#eed868'}
-                  strokeDasharray={2 * Math.PI * 52}
-                  strokeDashoffset={2 * Math.PI * 52 * (1 - readiness.score / 100)} />
-              </svg>
-              <div className="absolute inset-0 grid place-items-center">
-                <div className="text-center">
-                  <div className="text-3xl font-extrabold">{readiness.score}%</div>
-                  <div className="text-[11px] text-ink-400 font-semibold uppercase">success</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <SectionTitle title="Plan Outcomes" subtitle="Key figures from your projection" />
           <div className="mt-2 space-y-2 text-sm">
             <Row icon={<IconCheck size={16} />} label="Money lasts to age" value={profile.lifeExpectancy} ok />
             <Row icon={<IconTarget size={16} />} label="Lowest investable" value={fmtMoney(readiness.lowestInvestable, { compact: true })} ok={readiness.lowestInvestable > 0} />
@@ -226,8 +208,7 @@ export default function Dashboard() {
                   <th className="py-1.5 pr-4 font-semibold">Scenario</th>
                   <th className="py-1.5 pr-4 font-semibold">At retirement</th>
                   <th className="py-1.5 pr-4 font-semibold">Peak</th>
-                  <th className="py-1.5 pr-4 font-semibold">End of plan</th>
-                  <th className="py-1.5 font-semibold">Success</th>
+                  <th className="py-1.5 font-semibold">End of plan</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,8 +223,7 @@ export default function Dashboard() {
                       </td>
                       <td className="py-2 pr-4">{fmtMoney(retire?.netWorth || 0, { compact: true })}</td>
                       <td className="py-2 pr-4">{fmtMoney(peakNw, { compact: true })}</td>
-                      <td className="py-2 pr-4">{fmtMoney(sc.ready.endNetWorth, { compact: true })}</td>
-                      <td className="py-2 font-bold">{sc.ready.score}%</td>
+                      <td className="py-2">{fmtMoney(sc.ready.endNetWorth, { compact: true })}</td>
                     </tr>
                   )
                 })}
