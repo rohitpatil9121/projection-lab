@@ -8,7 +8,6 @@ import Dashboard from './pages/Dashboard.jsx'
 import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
-import Tax from './pages/Tax.jsx'
 import MonteCarlo from './pages/MonteCarlo.jsx'
 import Milestones from './pages/Milestones.jsx'
 import Settings from './pages/Settings.jsx'
@@ -116,7 +115,6 @@ export default function App() {
             <Route path="plan" element={<Plan />} />
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />
-            <Route path="tax" element={<Tax />} />
             <Route path="monte-carlo" element={<MonteCarlo />} />
             <Route path="milestones" element={<Milestones />} />
             <Route path="settings" element={<Settings />} />

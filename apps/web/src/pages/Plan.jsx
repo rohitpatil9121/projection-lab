@@ -1,16 +1,16 @@
-import { Fragment, useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore, computeProjection } from '../data/store.js'
 import { useProjection } from '../data/useProjection.js'
-import { fmtMoney, CURRENT_YEAR, computeStages, computeQuests, computeFitness } from '@projectlab/engine'
+import { fmtMoney, CURRENT_YEAR } from '@projectlab/engine'
 import { Card, SectionLabel, Modal } from '../components/ui.jsx'
-import { IconPlus, IconTrash, IconCheck } from '../components/Icons.jsx'
+import { IconPlus, IconTrash } from '../components/Icons.jsx'
 import GoalGraphic, { kindFromText } from '../components/GoalGraphic.jsx'
 import FinancialProjectionChart from '../components/FinancialProjectionChart.jsx'
 
 export default function Plan() {
   const navigate = useNavigate()
-  const { projection: baseProjection, readiness, state } = useProjection()
+  const { state } = useProjection()
   const profile = useStore((s) => s.profile)
   const setProfile = useStore((s) => s.setProfile)
   const events = useStore((s) => s.events)
@@ -25,13 +25,6 @@ export default function Plan() {
   useEffect(() => {
     setDraftRetire(profile.retirementAge)
   }, [profile.retirementAge])
-
-  // Journey layer — stages / quests from the applied plan.
-  const stageInfo = useMemo(() => computeStages(state, baseProjection, readiness), [state, baseProjection, readiness])
-  const quests = useMemo(() => {
-    const fitness = computeFitness(state, baseProjection, readiness)
-    return computeQuests(state, fitness)
-  }, [state, baseProjection, readiness])
 
   // Chart + vault figures follow the DRAFTED retirement age.
   const chartState = useMemo(
@@ -69,9 +62,6 @@ export default function Plan() {
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Future Blueprint</h1>
         <p className="text-sm text-ink-400 font-medium mt-0.5">Strategic wealth mapping</p>
       </div>
-
-      {/* Stage stepper */}
-      <StageStepper stages={stageInfo.stages} coastAge={stageInfo.coastAge} />
 
       {/* Retirement vault */}
       <section>
@@ -144,43 +134,6 @@ export default function Plan() {
           />
         </Card>
       </section>
-
-      {/* Micro-quests */}
-      {quests.length > 0 && (
-        <section>
-          <SectionLabel
-            action={
-              <Link to="/milestones" className="text-xs font-bold text-brand-600">
-                view all
-              </Link>
-            }
-          >
-            Micro-Quests
-          </SectionLabel>
-          <div className="space-y-3">
-            {quests.map((q) => (
-              <Card key={q.id} className="flex items-center gap-3 !py-3.5">
-                <div className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 dark:bg-brand-500/15 shrink-0">
-                  <GoalGraphic kind={kindFromText(q.title + ' ' + q.tag)} size={30} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold text-sm truncate">{q.title}</div>
-                  <div className="text-xs text-ink-400 truncate">{q.desc}</div>
-                </div>
-                <span
-                  className={`chip shrink-0 ${
-                    q.tone === 'warn'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300'
-                      : 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
-                  }`}
-                >
-                  {q.tag}
-                </span>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Strategic milestones (life events) */}
       <section>
@@ -281,97 +234,6 @@ export default function Plan() {
         )}
       </Modal>
     </div>
-  )
-}
-
-// Horizontal life-stage stepper — done = filled check, current = outlined number, upcoming = gray.
-// Every stage is tappable and opens the roadmap with requirements, so locked stages
-// read as "not yet reached", never as broken.
-function StageStepper({ stages, coastAge }) {
-  const [open, setOpen] = useState(false)
-  const here = stages.find((s) => s.status === 'here')
-
-  return (
-    <>
-      <div className="flex items-start" role="group" aria-label="Wealth journey stages">
-        {stages.map((s, i) => (
-          <Fragment key={s.key}>
-            {i > 0 && (
-              <div
-                className={`mt-[18px] h-0.5 flex-1 rounded-full ${
-                  stages[i - 1].status === 'done' ? 'bg-brand-600' : 'bg-ink-200 dark:bg-ink-700'
-                }`}
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => setOpen(true)}
-              className="flex flex-col items-center gap-1.5 w-[64px] shrink-0 group"
-              aria-label={`${s.label} — ${s.status === 'done' ? 'complete' : s.status === 'here' ? 'you are here' : 'upcoming'}. Tap for details.`}
-            >
-              {s.status === 'done' ? (
-                <div className="grid place-items-center h-9 w-9 rounded-full bg-brand-600 text-white group-hover:scale-105 transition-transform">
-                  <IconCheck size={16} />
-                </div>
-              ) : s.status === 'here' ? (
-                <div className="grid place-items-center h-9 w-9 rounded-full border-2 border-brand-600 bg-white dark:bg-ink-900 text-brand-600 dark:text-brand-400 text-sm font-extrabold group-hover:scale-105 transition-transform">
-                  {i + 1}
-                </div>
-              ) : (
-                <div className="grid place-items-center h-9 w-9 rounded-full bg-ink-100 dark:bg-ink-800 text-ink-400 text-sm font-bold group-hover:scale-105 transition-transform">
-                  {i + 1}
-                </div>
-              )}
-              <div
-                className={`text-[9px] font-bold uppercase tracking-wider text-center leading-tight ${
-                  s.status === 'upcoming' ? 'text-ink-300 dark:text-ink-600' : s.status === 'here' ? 'text-brand-600 dark:text-brand-400' : 'text-ink-500 dark:text-ink-300'
-                }`}
-              >
-                {s.label}
-              </div>
-            </button>
-          </Fragment>
-        ))}
-      </div>
-      {here && (
-        <button type="button" onClick={() => setOpen(true)} className="mt-2 text-xs text-ink-400 hover:text-brand-600 transition-colors">
-          You are at <span className="font-bold text-brand-600 dark:text-brand-400">{here.label}</span> — {here.sub}. Tap any stage for the roadmap.
-        </button>
-      )}
-
-      <Modal open={open} onClose={() => setOpen(false)} title="Your wealth journey">
-        <div className="space-y-3">
-          {stages.map((s, i) => (
-            <div key={s.key} className={`flex items-start gap-3 rounded-xl p-3 ${s.status === 'here' ? 'bg-brand-50 dark:bg-brand-500/10' : ''}`}>
-              <div
-                className={`grid place-items-center h-8 w-8 rounded-full text-xs font-extrabold shrink-0 ${
-                  s.status === 'done'
-                    ? 'bg-brand-600 text-white'
-                    : s.status === 'here'
-                      ? 'border-2 border-brand-600 text-brand-600 dark:text-brand-400'
-                      : 'bg-ink-100 dark:bg-ink-800 text-ink-400'
-                }`}
-              >
-                {s.status === 'done' ? <IconCheck size={14} /> : i + 1}
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">{s.label}</span>
-                  {s.status === 'here' && <span className="chip bg-brand-600 text-white text-[10px]">You are here</span>}
-                  {s.status === 'done' && <span className="chip bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 text-[10px]">Done</span>}
-                </div>
-                <div className="text-xs text-ink-400 mt-0.5">{s.sub}</div>
-              </div>
-            </div>
-          ))}
-          {coastAge != null && (
-            <p className="text-xs text-ink-400 pt-1 border-t border-ink-100 dark:border-ink-800">
-              On your current plan you reach <span className="font-semibold text-ink-600 dark:text-ink-200">Freedom (Coast-FI) around age {coastAge}</span> — after that, your corpus grows to the retirement target even without new SIPs.
-            </p>
-          )}
-        </div>
-      </Modal>
-    </>
   )
 }
 

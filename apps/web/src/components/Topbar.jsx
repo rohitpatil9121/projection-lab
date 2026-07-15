@@ -1,10 +1,7 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
-import { useProjection } from '../data/useProjection.js'
-import { computeFitness } from '@projectlab/engine'
 import { Modal } from './ui.jsx'
-import { FitnessRing } from './Journey.jsx'
 import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
@@ -44,12 +41,6 @@ export default function Topbar() {
   const addScenario = useStore((s) => s.addScenario)
   const deleteScenario = useStore((s) => s.deleteScenario)
   const logout = useStore((s) => s.logout)
-  const onboarded = useStore((s) => s.onboarded)
-  const { projection, readiness, state } = useProjection()
-  const fitness = useMemo(
-    () => (onboarded ? computeFitness(state, projection, readiness) : null),
-    [onboarded, state, projection, readiness],
-  )
 
   const [newOpen, setNewOpen] = useState(false)
   const [newName, setNewName] = useState('')
@@ -141,17 +132,6 @@ export default function Topbar() {
           <Link to="/login" className="btn-ghost text-xs sm:text-sm">Sign in</Link>
         )}
 
-        {fitness && (
-          <Link
-            to="/milestones"
-            className="hidden sm:block shrink-0 hover:opacity-80 transition-opacity"
-            title={`Financial Fitness ${fitness.score} · ${fitness.band}`}
-            aria-label={`Financial Fitness ${fitness.score} out of 100`}
-          >
-            <FitnessRing score={fitness.score} size={34} stroke={11} />
-          </Link>
-        )}
-
         <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme" aria-label="Toggle theme">
           {dark ? <IconSun size={19} /> : <IconMoon size={19} />}
         </button>
@@ -163,7 +143,7 @@ export default function Topbar() {
             className="flex items-center gap-2 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 pl-1.5 pr-2 py-1.5 hover:border-ink-200 dark:hover:border-ink-700 transition-colors"
             aria-haspopup="true" aria-expanded={menuOpen}
           >
-            <div className="grid place-items-center h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-indigo-600 text-white text-xs font-bold">{initials}</div>
+            <div className="grid place-items-center h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-bold">{initials}</div>
             <span className="hidden sm:inline text-sm font-semibold max-w-[120px] truncate">{profile.name || 'Guest'}</span>
             <IconChevron size={14} className={`text-ink-400 transition-transform ${menuOpen ? 'rotate-90' : ''}`} />
           </button>

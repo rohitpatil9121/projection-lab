@@ -205,7 +205,7 @@ export function MomentsCard({ moments }) {
   const [hero, ...rest] = moments
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-2xl p-5 text-white bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-600 shadow-card">
+      <div className="relative overflow-hidden rounded-2xl p-5 text-white bg-gradient-to-br from-brand-600 via-brand-500 to-[#469b88] shadow-card">
         <div className="text-[10px] font-extrabold tracking-[0.14em] uppercase opacity-85">{hero.label}</div>
         <div className="text-xl font-extrabold tracking-tight mt-1.5 leading-tight">{hero.title}</div>
         <div className="text-xs opacity-85 mt-2 leading-relaxed">{hero.detail}</div>

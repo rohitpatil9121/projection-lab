@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
-import { IconDashboard, IconPlan, IconAccounts, IconFlow, IconMilestone, IconSettings, IconDice, IconTax, IconHome } from './Icons.jsx'
+import { IconDashboard, IconPlan, IconAccounts, IconFlow, IconMilestone, IconSettings, IconDice, IconHome } from './Icons.jsx'
 import AppLogo from './AppLogo.jsx'
 import ProModal from './ProModal.jsx'
 
@@ -10,7 +10,6 @@ const links = [
   { to: '/plan', label: 'Plan', Icon: IconPlan },
   { to: '/accounts', label: 'Accounts', Icon: IconAccounts },
   { to: '/cash-flow', label: 'Cash Flow', Icon: IconFlow },
-  { to: '/tax', label: 'Tax', Icon: IconTax },
   { to: '/monte-carlo', label: 'Monte Carlo', Icon: IconDice },
   { to: '/milestones', label: 'Goals', Icon: IconMilestone },
   { to: '/settings', label: 'Settings', Icon: IconSettings },
