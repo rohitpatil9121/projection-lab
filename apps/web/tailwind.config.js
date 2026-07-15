@@ -26,13 +26,17 @@ export default {
           500: '#64748b',
           600: '#475569',
           700: '#334155',
-          800: '#1e293b',
-          900: '#0f172a',
-          950: '#0b1120',
+          // Dark-end retuned to a deep navy palette (matches the reference mock).
+          // Only 800/900/950 changed — these back dark-mode surfaces; light mode
+          // uses 50–700 and is unaffected.
+          800: '#232c44', // borders / hover surfaces in dark
+          900: '#141b2e', // card surface — navy, lifted above the app bg
+          950: '#090c17', // app background — deep navy-black
         },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', '"Roboto Mono"', 'monospace'],
       },
       // 8px-grid-friendly extra sizes
       borderRadius: {
@@ -69,6 +73,10 @@ export default {
           '0%,100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
         },
+        'page-in': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out both',
@@ -77,6 +85,7 @@ export default {
         shimmer: 'shimmer 1.6s infinite',
         float: 'float 6s ease-in-out infinite',
         'gradient-pan': 'gradient-pan 12s ease infinite',
+        'page-in': 'page-in 0.32s cubic-bezier(0.16,1,0.3,1) both',
       },
     },
   },

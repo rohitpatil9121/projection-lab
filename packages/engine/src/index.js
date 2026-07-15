@@ -1,5 +1,19 @@
 export { fmtMoney, fmtPct, fmtNum } from './format.js'
 export { evaluateGoal } from './goals.js'
+export { computeTax, compareRegimes, deductionsFromPlan, computeTaxSummary, TAX_CONFIG, TAX_FY } from './tax.js'
+export {
+  computeFitness,
+  computeStages,
+  computeQuests,
+  computeMoments,
+  growthVsContributions,
+  savingsRateSeries,
+  allocationVsTarget,
+  coastFiAge,
+  corpusLastsToAge,
+  consistencyCells,
+} from './journey.js'
+import { deductionsFromPlan as _deductionsFromPlan, computeTax as _computeTax } from './tax.js'
 
 export const CURRENT_YEAR = 2026
 
@@ -17,11 +31,37 @@ export function accountRoles(accounts) {
   return { cashId, drawOrder, investableIds: invAssets.map((a) => a.id) }
 }
 
+// Tax-aware mode (opt-in): swap the take-home 'salary' flow for gross salary
+// minus computed income tax. Deductions are held at current-year nominal usage.
+function taxContext(state) {
+  if (!state.taxAware) return null
+  const { profile, incomes, contributions = [], expenses = [] } = state
+  const gross = profile?.grossSalary
+  if (!(gross > 0)) return null
+  const salary = incomes.find((i) => i.id === 'salary')
+  if (!salary) return null
+  const deductions = {
+    '80C': contributions.filter((c) => c.section === '80C').reduce((s, c) => s + c.amount, 0),
+    '80CCD1B': contributions.filter((c) => c.section === '80CCD1B').reduce((s, c) => s + c.amount, 0),
+    '80D': expenses.filter((e) => e.section === '80D').reduce((s, e) => s + e.amount, 0),
+  }
+  return { salary, gross, deductions, regime: profile.taxRegime || 'new' }
+}
+
+// Income delta for year t: (gross − tax) replaces the take-home salary amount.
+function salarySwapDelta(ctx, t, age) {
+  if (!ctx || !clampFlow(ctx.salary, age)) return 0
+  const grossT = ctx.gross * Math.pow(1 + (ctx.salary.growth || 0), t)
+  const { tax } = _computeTax({ grossIncome: grossT, regime: ctx.regime, deductions: ctx.deductions, age })
+  return grossT - tax - grownAmount(ctx.salary, t)
+}
+
 export function computeProjection(state) {
   const { profile, accounts, incomes, expenses, contributions } = state
   const { currentAge, retirementAge, lifeExpectancy } = profile
   const startYear = state.currentYear || CURRENT_YEAR
 
+  const taxCtx = taxContext(state)
   const { cashId, drawOrder, investableIds } = accountRoles(accounts)
 
   const bal = {}
@@ -33,7 +73,7 @@ export function computeProjection(state) {
     const year = startYear + t
     const working = age < retirementAge
 
-    const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, t) * clampFlow(i, age), 0)
+    const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, t) * clampFlow(i, age), 0) + salarySwapDelta(taxCtx, t, age)
     const expenseTotal = expenses.reduce((s, e) => s + grownAmount(e, t) * clampFlow(e, age), 0)
     const eventCash = (state.events || []).filter((e) => e.age === age).reduce((s, e) => s + e.amount, 0)
 
@@ -103,24 +143,16 @@ export function computeReadiness(state, projection) {
   }
 }
 
+/** @deprecated Use deductionsFromPlan / computeTaxSummary from tax.js instead. */
 export function computeTaxSavings(state) {
   const { contributions, expenses, profile } = state
-  const sum = (section, cap) => {
-    const raw = contributions.filter((c) => c.section === section).reduce((s, c) => s + c.amount, 0)
-    return Math.min(raw, cap)
-  }
-  const used80C = sum('80C', 150000)
-  const used80CCD = sum('80CCD1B', 50000)
-  const health = expenses.filter((e) => e.section === '80D').reduce((s, e) => s + e.amount, 0)
-  const used80D = Math.min(health, 25000)
-
-  const totalDeduction = used80C + used80CCD + used80D
-  const taxSaved = Math.round(totalDeduction * (profile.taxSlab || 0.3) * 1.04)
+  const s = _deductionsFromPlan({ contributions, expenses, age: profile.currentAge ?? 35 })
+  const taxSaved = Math.round(s.total * (profile.taxSlab || 0.3) * 1.04)
   return {
-    used80C, cap80C: 150000,
-    used80CCD, cap80CCD: 50000,
-    used80D, cap80D: 25000,
-    totalDeduction,
+    used80C: s['80C'].used, cap80C: s['80C'].cap,
+    used80CCD: s['80CCD1B'].used, cap80CCD: s['80CCD1B'].cap,
+    used80D: s['80D'].used, cap80D: s['80D'].cap,
+    totalDeduction: s.total,
     taxSaved,
     regime: profile.taxRegime,
   }
@@ -147,6 +179,7 @@ export function runMonteCarlo(state, { runs = 500, seed = 1 } = {}) {
   const { profile, accounts, incomes, expenses, contributions } = state
   const { currentAge, retirementAge, lifeExpectancy, inflation = 0 } = profile
   const startYear = state.currentYear || CURRENT_YEAR
+  const taxCtx = taxContext(state)
   const { cashId, drawOrder, investableIds } = accountRoles(accounts)
   const years = lifeExpectancy - currentAge + 1
 
@@ -170,7 +203,7 @@ export function runMonteCarlo(state, { runs = 500, seed = 1 } = {}) {
     for (let y = 0; y < years; y++) {
       const age = currentAge + y
       const working = age < retirementAge
-      const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, y) * clampFlow(i, age), 0)
+      const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, y) * clampFlow(i, age), 0) + salarySwapDelta(taxCtx, y, age)
       const expenseTotal = expenses.reduce((s, e) => s + grownAmount(e, y) * clampFlow(e, age), 0)
       const eventCash = (state.events || []).filter((e) => e.age === age).reduce((s, e) => s + e.amount, 0)
 
