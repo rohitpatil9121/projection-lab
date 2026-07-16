@@ -7,14 +7,18 @@ import { IconTrend } from '../components/Icons.jsx'
 
 const L = 100000 // ₹1 lakh
 
-// Progress dots — active step is a wide brand bar. Tap targets are ≥44px via padding.
+// Progress dots — active step is a wide brand bar; completed steps stay tinted.
 function Dots({ count, index, className = '' }) {
   return (
     <div className={`flex items-center gap-1.5 ${className}`} aria-hidden>
       {Array.from({ length: count }, (_, i) => (
         <span
           key={i}
-          className={`rounded-full transition-all duration-300 ${i === index ? 'h-1.5 w-6 bg-brand-600' : 'h-1.5 w-1.5 bg-ink-200 dark:bg-ink-700'}`}
+          className={`h-[7px] rounded-full transition-all duration-300 ${
+            i === index ? 'w-[22px] bg-brand-600'
+              : i < index ? 'w-[7px] bg-brand-300'
+                : 'w-[7px] bg-ink-200 dark:bg-ink-700'
+          }`}
         />
       ))}
     </div>
@@ -215,22 +219,23 @@ export default function Onboarding() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-ink-50 dark:bg-ink-950">
       <div className={`card w-full shadow-soft ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
-        {/* Header — logo dot, wizard title, progress dots */}
+        {/* Header — logo tile, wizard title, progress dots */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="grid place-items-center h-8 w-8 rounded-full bg-brand-600 text-white">
-              <IconTrend size={15} />
+            <span className="grid place-items-center h-[42px] w-[42px] rounded-xl bg-brand-600 text-white">
+              <IconTrend size={20} className="!stroke-[2.2]" />
             </span>
-            <h2 className="text-sm font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
+            <h2 className="text-[19px] font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
           </div>
           <Dots count={stepList.length} index={stepIndex} />
         </div>
-        <div className="mb-4">
-          <span className="chip bg-brand-100 text-brand-700 dark:bg-brand-500/15 text-[10px] tracking-wider">{h.badge}</span>
-        </div>
 
-        <h1 className="text-lg font-extrabold tracking-tight">{h.title}</h1>
-        <p className="text-sm text-ink-400 mt-1 mb-5 leading-snug">{h.sub}</p>
+        <span className="inline-block rounded-full bg-brand-600/10 px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.06em] text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
+          {h.badge}
+        </span>
+
+        <h1 className="mt-4 text-2xl font-extrabold tracking-tight">{h.title}</h1>
+        <p className="mt-2 mb-5 text-sm leading-relaxed text-ink-400">{h.sub}</p>
 
         {/* ---- Step bodies ---- */}
         {step === 'persona' && (

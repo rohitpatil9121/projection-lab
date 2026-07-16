@@ -77,6 +77,14 @@ export async function verifyOtp(email, otp) {
   return data
 }
 
+/** Exchanges a Google ID token for our own session. The token is proof of identity;
+ *  the API verifies it with Google before trusting the email inside it. */
+export async function loginWithGoogle(idToken) {
+  const data = await apiFetch('/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) })
+  saveSession(data)
+  return data
+}
+
 export async function registerUser(email, password, name) {
   const data = await apiFetch('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) })
   saveSession(data)
