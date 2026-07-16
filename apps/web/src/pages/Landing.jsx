@@ -1,132 +1,169 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { Capacitor } from '@capacitor/core'
+import { IconShield, IconTrend } from '../components/Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
-const C = { coral: '#e0533d', teal: '#469b88', blue: '#377cc8', sun: '#eed868', blossom: '#e78c9d', peri: '#9da7d0' }
-// One tile shape everywhere — a uniform squircle.
-const TILE = 'rounded-[1.75rem]'
-
-// Three real onboarding slides — each a distinct brand-tile arrangement + copy.
-const SLIDES = [
-  {
-    tiles: [C.coral, C.teal, C.blue, C.sun, C.blossom, C.peri],
-    title: ['Plan your money,', 'with clarity.'],
-    body: 'Net worth, cash flow and projections in one simple blueprint.',
-  },
-  {
-    tiles: [C.blue, C.sun, C.teal, C.peri, C.coral, C.blossom],
-    title: ['See where', 'money goes.'],
-    body: 'Track income against spending each month and grow your savings rate.',
-  },
-  {
-    tiles: [C.teal, C.blossom, C.sun, C.coral, C.peri, C.blue],
-    title: ['Reach every', 'life goal.'],
-    body: 'Set targets, get a clear plan, and watch your progress grow.',
-  },
-]
+const AUTO_MS = Capacitor.isNativePlatform() ? 4800 : 5500
 
 export default function Landing({ onComplete }) {
-  const [i, setI] = useState(0)
-  const [shown, setShown] = useState(false)
+  const [phase, setPhase] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [exiting, setExiting] = useState(false)
-  const touchX = useRef(null)
 
   const finish = useCallback((action = 'continue') => {
     if (exiting) return
     setExiting(true)
-    setTimeout(() => onComplete(action), 360)
+    setTimeout(() => onComplete(action), 380)
   }, [exiting, onComplete])
 
   const finishRef = useRef(finish)
   finishRef.current = finish
 
-  // Advance through the slides; the last arrow opens the Login / Sign-up screen.
-  const next = () => (i < SLIDES.length - 1 ? setI(i + 1) : finish('signin'))
-
   useEffect(() => {
-    const t = setTimeout(() => setShown(true), 80)
-    return () => clearTimeout(t)
+    const start = performance.now()
+    let frame
+    const tick = (now) => {
+      const pct = Math.min(100, ((now - start) / AUTO_MS) * 100)
+      setProgress(pct)
+      if (pct < 100) frame = requestAnimationFrame(tick)
+      else finishRef.current('continue')
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
   }, [])
 
-  // Android back: step to previous slide, else leave.
-  useEffect(() => registerBackHandler(() => {
-    setI((cur) => { if (cur > 0) return cur - 1; finishRef.current('continue'); return cur })
-    return true
-  }), [])
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 400)
+    const t2 = setTimeout(() => setPhase(2), 1200)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [])
 
-  const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
-  const onTouchEnd = (e) => {
-    if (touchX.current == null) return
-    const dx = e.changedTouches[0].clientX - touchX.current
-    touchX.current = null
-    if (dx < -40 && i < SLIDES.length - 1) setI(i + 1)
-    if (dx > 40 && i > 0) setI(i - 1)
-  }
-
-  const slide = SLIDES[i]
+  useEffect(() => {
+    return registerBackHandler(() => {
+      finishRef.current('continue')
+      return true
+    })
+  }, [])
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col bg-ink-950 text-white transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+      className={`fixed inset-0 z-[200] flex flex-col overflow-hidden text-white transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+      style={{ background: 'radial-gradient(120% 80% at 50% 8%, #1c3350, #101826 55%, #0a0f17)' }}
       role="presentation"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
     >
-      {/* Top-right: quiet sign-in */}
-      <div className="flex justify-end px-6 pt-[max(1.25rem,env(safe-area-inset-top))]">
-        <button type="button" onClick={() => finish('signin')} className="text-sm font-semibold text-ink-400 hover:text-white transition-colors px-2 py-1">
-          Sign in
+      {/* Drifting dot grid */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-60 animate-grid-pan"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+        }}
+      />
+
+      {/* Floating glass slabs — each keeps its own tilt via --r */}
+      <div aria-hidden className={`pointer-events-none absolute inset-0 transition-opacity duration-[1400ms] ${phase >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+        {[
+          { cls: 'top-[8%] left-[10%] w-[150px] h-[300px]', r: '-9deg', d: '0s', dur: '7s', bg: 'bg-white/[0.03] border-white/[0.08]' },
+          { cls: 'top-[6%] right-[9%] w-[130px] h-[340px]', r: '8deg', d: '.8s', dur: '8.5s', bg: 'bg-white/[0.03] border-white/[0.08]' },
+          { cls: 'top-[20%] right-[20%] w-[120px] h-[260px]', r: '-4deg', d: '.4s', dur: '9.5s', bg: 'bg-white/[0.025] border-white/[0.06]' },
+          { cls: 'top-[44%] -left-[4%] w-[120px] h-[220px]', r: '6deg', d: '1.2s', dur: '8s', bg: 'bg-white/[0.02] border-white/[0.06]' },
+        ].map((p, i) => (
+          <div
+            key={i}
+            className={`absolute rounded-[22px] border backdrop-blur-[2px] animate-float-y ${p.cls} ${p.bg}`}
+            style={{ '--r': p.r, animationDelay: p.d, animationDuration: p.dur }}
+          />
+        ))}
+        {/* Warm horizon glow */}
+        <div
+          className="absolute inset-x-0 top-[46%] h-[200px]"
+          style={{ background: 'radial-gradient(60% 100% at 50% 0, rgba(238,216,104,.16), transparent 70%)' }}
+        />
+        {/* Rising wealth line, drawn on entry */}
+        <svg viewBox="0 0 400 300" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[46%] w-full opacity-90">
+          <path
+            d="M-10 250 L60 232 L110 244 L170 150 L230 176 L300 92 L360 60 L420 20"
+            fill="none" stroke="#3f83cd" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+            className="animate-draw-line" style={{ strokeDasharray: 1400, strokeDashoffset: 1400 }}
+          />
+        </svg>
+      </div>
+
+      <div className="relative flex-1 flex flex-col items-center justify-center px-7 pb-4 pt-14 w-full max-w-md mx-auto text-center">
+        {/* Brand icon */}
+        <div
+          className={`grid place-items-center h-[74px] w-[74px] rounded-full animate-glow-pulse transition-all duration-700 ${phase >= 1 ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
+          style={{
+            background: 'linear-gradient(160deg, #4f93da, #2f6aac)',
+            transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
+          }}
+        >
+          <IconTrend size={30} className="!stroke-[2.4]" />
+        </div>
+
+        <h1
+          className="mt-6 text-[38px] font-extrabold tracking-[-0.03em] leading-[1.05] animate-fade-in-up"
+          style={{ animationDelay: '200ms' }}
+        >
+          Engineering Your Wealth
+        </h1>
+
+        <p
+          className="mt-4 max-w-[300px] text-[15px] leading-relaxed text-white/[0.66] animate-fade-in-up"
+          style={{ animationDelay: '360ms' }}
+        >
+          Institutional-grade planning for the modern Indian investor. Secure, precise, and transparent.
+        </p>
+
+        {/* Outlined pill chips */}
+        <div className={`mt-6 flex flex-wrap items-center justify-center gap-2.5 transition-all duration-700 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.18] bg-white/[0.04] px-4 py-2.5 text-[13px] font-bold">
+            <IconShield size={15} /> Secure Assets
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.18] bg-white/[0.04] px-4 py-2.5 text-[13px] font-bold">
+            <IconTrend size={15} /> Smart Growth
+          </span>
+        </div>
+      </div>
+
+      {/* Bottom CTAs + progress */}
+      <div
+        className={`relative px-7 pb-8 pt-4 w-full max-w-md mx-auto transition-all duration-700 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+      >
+        <div className="h-1 rounded-full bg-white/[0.12] overflow-hidden">
+          <div
+            className="h-full rounded-full bg-brand-500 transition-[width] duration-100 linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => finish('continue')}
+          className="mt-6 w-full rounded-2xl bg-brand-500 py-[17px] text-base font-extrabold text-white shadow-[0_14px_34px_-10px_rgba(63,131,205,.8)] transition-transform hover:bg-brand-400 active:scale-[0.98]"
+        >
+          Get Started <span aria-hidden>→</span>
         </button>
-      </div>
+        <button
+          type="button"
+          onClick={() => finish('signin')}
+          className="mt-3 w-full rounded-2xl border border-white/20 bg-white/[0.04] py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
+        >
+          Sign In <span aria-hidden>›</span>
+        </button>
 
-      {/* Hero collage — re-keyed per slide so tiles animate in on change */}
-      <div className="flex-1 grid place-items-center px-8">
-        <div key={i} className={`grid grid-cols-2 gap-3.5 w-full max-w-[280px] transition-all duration-500 ${shown ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-          {slide.tiles.map((c, idx) => (
-            <div
-              key={idx}
-              className={`aspect-square ${TILE} animate-fade-in-up`}
-              style={{ background: c, animationDelay: `${idx * 60}ms` }}
-            />
-          ))}
-        </div>
-      </div>
+        <button
+          type="button"
+          onClick={() => finish('guest')}
+          className="mt-3 w-full py-1 text-center text-xs font-medium text-white/40 transition-colors hover:text-white/70"
+        >
+          Continue as guest →
+        </button>
 
-      {/* Copy + dots + arrow */}
-      <div className="px-7 pb-[max(2.5rem,env(safe-area-inset-bottom))] w-full max-w-md mx-auto">
-        <div key={i} className="animate-fade-in-up">
-          <h1 className="text-3xl font-extrabold leading-[1.15] tracking-tight">
-            {slide.title[0]}<br />{slide.title[1]}
-          </h1>
-          <p className="mt-3 text-sm text-ink-400 leading-relaxed max-w-xs">{slide.body}</p>
-        </div>
-
-        <div className="mt-9 flex items-center justify-between">
-          <div className="flex items-center -ml-2.5" role="tablist" aria-label="Intro slides">
-            {SLIDES.map((_, d) => (
-              <button
-                key={d}
-                type="button"
-                role="tab"
-                aria-selected={d === i}
-                aria-label={`Slide ${d + 1}`}
-                onClick={() => setI(d)}
-                className="grid place-items-center h-11 w-8" // ≥44px tap target
-              >
-                <span className={`block h-2 rounded-full transition-all duration-300 ${d === i ? 'w-6 bg-white' : 'w-2 bg-white/25'}`} />
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={next}
-            className="grid place-items-center h-16 w-16 rounded-full bg-white text-ink-900 shadow-lg active:scale-95 transition-transform"
-            aria-label={i < SLIDES.length - 1 ? 'Next' : 'Get started'}
-          >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </button>
-        </div>
+        <p className="mt-5 text-center text-[10px] font-bold tracking-[0.14em] text-white/[0.32]">
+          FINANCIAL BLUEPRINT · V{__APP_VERSION__} · {__BUILD_STAMP__}
+        </p>
       </div>
     </div>
   )

@@ -7,7 +7,6 @@ import { registerBackHandler } from '../hooks/backButton.js'
 
 const titles = {
   '/': 'Today',
-  '/dashboard': 'Dashboard',
   '/plan': 'Financial Plan',
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',

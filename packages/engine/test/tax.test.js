@@ -97,9 +97,10 @@ test('deductionsFromPlan against default sample plan', () => {
   assert.equal(s['80C'].raw, 330000)
   assert.equal(s['80C'].used, 150000)
   assert.equal(s['80CCD1B'].used, 50000)
-  assert.equal(s['80D'].raw, 30000)
-  assert.equal(s['80D'].used, 25000)
-  assert.equal(s.total, 225000)
+  // The default plan no longer carries a health (80D) expense.
+  assert.equal(s['80D'].raw, 0)
+  assert.equal(s['80D'].used, 0)
+  assert.equal(s.total, 200000)
 })
 
 test('deductionsFromPlan: 80D cap rises to 50k at age 60', () => {
@@ -153,8 +154,8 @@ test('computeTaxSavings keeps legacy shape', () => {
   })
   assert.equal(r.used80C, 150000)
   assert.equal(r.used80CCD, 50000)
-  assert.equal(r.used80D, 25000)
-  assert.equal(r.totalDeduction, 225000)
-  assert.equal(r.taxSaved, Math.round(225000 * 0.3 * 1.04))
+  assert.equal(r.used80D, 0) // default plan no longer has a health (80D) expense
+  assert.equal(r.totalDeduction, 200000)
+  assert.equal(r.taxSaved, Math.round(200000 * 0.3 * 1.04))
   assert.equal(r.regime, 'old')
 })

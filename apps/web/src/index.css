@@ -77,6 +77,44 @@ body, .overflow-x-auto, .overflow-y-auto, .overflow-auto {
 .dark ::-webkit-scrollbar-thumb { @apply bg-ink-700; }
 .dark ::-webkit-scrollbar-thumb:hover { @apply bg-ink-600; }
 
+/* Range sliders (Plan page) — brand-ringed thumb on a flat track. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  outline: none;
+  @apply bg-ink-200;
+}
+.dark input[type='range'] {
+  @apply bg-ink-800;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+  @apply border-[3px] border-brand-600 bg-white;
+}
+.dark input[type='range']::-webkit-slider-thumb {
+  @apply bg-ink-900;
+}
+input[type='range']::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+  @apply border-[3px] border-brand-600 bg-white;
+}
+.dark input[type='range']::-moz-range-thumb {
+  @apply bg-ink-900;
+}
+
 /* Hide native number input spinners */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
@@ -150,8 +188,53 @@ input[type='number'] {
   .section-label {
     @apply text-[11px] font-bold uppercase tracking-[0.12em] text-ink-400;
   }
+  /* Money numerals are Plus Jakarta Sans with tabular figures — not mono.
+     Tabular-nums is what keeps columns aligned; the mono face is not needed. */
   .money {
-    @apply font-mono tracking-tight tabular-nums;
+    @apply font-sans tracking-tight tabular-nums;
+  }
+
+  /* Dark chart panel — the journey/projection surface sits dark in both themes. */
+  .panel-dark {
+    @apply rounded-2xl border border-white/[0.06] p-3.5 pb-2.5 text-white;
+    background: linear-gradient(150deg, #232326, #161618);
+    box-shadow: 0 18px 40px -20px rgba(15, 23, 42, 0.5);
+  }
+
+  /* Focus-within input cell used by the Settings rate grid. */
+  .rcell {
+    @apply flex items-baseline gap-1 rounded-xl border border-ink-100 bg-ink-50 px-3 py-0.5
+           transition-[border-color,box-shadow] duration-150;
+  }
+  .dark .rcell {
+    @apply border-ink-800 bg-ink-950/40;
+  }
+  .rcell:focus-within {
+    @apply border-brand-600 bg-white ring-4 ring-brand-600/15;
+  }
+  .dark .rcell:focus-within {
+    @apply bg-ink-900;
+  }
+  /* Small boxed numeric cell (from/to age, growth %) inside flow rows. */
+  .fcell {
+    @apply w-full rounded-[10px] border border-ink-100 bg-white px-2 py-2 text-center text-sm
+           font-bold tabular-nums text-ink-900 outline-none transition-[border-color,box-shadow];
+  }
+  .dark .fcell {
+    @apply border-ink-800 bg-ink-900 text-white;
+  }
+  .fcell:focus {
+    @apply border-brand-600 ring-4 ring-brand-600/15;
+  }
+
+  .rcell input,
+  .rcell select {
+    @apply w-full min-w-0 flex-1 border-none bg-transparent p-0 py-2.5 text-[17px] font-extrabold
+           tabular-nums text-ink-900 outline-none;
+  }
+  .dark .rcell input,
+  .dark .rcell select {
+    @apply text-white;
   }
   .hero-card {
     @apply rounded-2xl bg-gradient-to-br from-ink-900 to-ink-950 text-white p-5 shadow-lift

@@ -4,7 +4,6 @@ import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import MobileNav from './components/MobileNav.jsx'
 import Today from './pages/Today.jsx'
-import Dashboard from './pages/Dashboard.jsx'
 import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
@@ -111,7 +110,6 @@ export default function App() {
         <Route element={<ProtectedLayout />}>
           <Route element={<AppShell />}>
             <Route index element={<Today />} />
-            <Route path="dashboard" element={<Dashboard />} />
             <Route path="plan" element={<Plan />} />
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />

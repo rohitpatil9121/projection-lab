@@ -44,6 +44,11 @@ function verifyPassword(password, stored) {
   return a.length === b.length && crypto.timingSafeEqual(a, b)
 }
 
+// Verified against when the account doesn't exist, so a miss costs the same scrypt
+// work as a hit. Without it, an unknown email is rejected measurably faster than a
+// real one with a wrong password, which turns login into an account-existence oracle.
+const DUMMY_PASSWORD_HASH = hashPassword(crypto.randomBytes(16).toString('hex'))
+
 const MIN_PASSWORD = 8
 
 function assertPassword(password) {
@@ -92,10 +97,42 @@ export async function registerUser(email, password, name) {
 export async function loginUser(email, password) {
   const normalized = String(email).trim().toLowerCase()
   const cred = await users.credByEmail(normalized)
-  if (!cred || !cred.passwordHash || !verifyPassword(password, cred.passwordHash)) {
+  // Always hash — including for unknown emails — so the response time says nothing
+  // about whether the account exists. Checking `cred` first would short-circuit this.
+  const passwordOk = verifyPassword(password, cred?.passwordHash || DUMMY_PASSWORD_HASH)
+  if (!cred || !cred.passwordHash || !passwordOk) {
     const err = new Error('Incorrect email or password'); err.status = 401; throw err
   }
   const user = await users.byId(cred.id)
+  return issueSession(user)
+}
+
+/**
+ * Signs a user in from a verified Google identity, creating the account on first use.
+ *
+ * Accounts are keyed on email, so a user who first signed up with a password and later
+ * uses Google lands on the same account. That is safe precisely because the caller has
+ * already proven `email_verified` — Google vouches for the address, so this is the same
+ * person, not a stranger claiming their email.
+ */
+export async function signInWithGoogle({ email, name }) {
+  let user = await users.byEmail(email)
+  if (!user) {
+    user = await users.create({
+      id: id(),
+      email,
+      name: name || email.split('@')[0],
+      currentAge: 32,
+      retirementAge: 60,
+      lifeExpectancy: 85,
+      inflation: 0.06,
+      taxRegime: 'old',
+      taxSlab: 0.3,
+      currency: 'INR',
+      uiPrefs: { dark: false, realTerms: true },
+      createdAt: new Date().toISOString(),
+    })
+  }
   return issueSession(user)
 }
 
@@ -120,6 +157,12 @@ export async function resetPassword(email, code, newPassword) {
   if (!user) { const err = new Error('Account not found'); err.status = 404; throw err }
   await users.setPassword(user.id, hashPassword(newPassword))
   await otps.del('reset:' + normalized)
+
+  // Resetting a password is what people do when they think they've been compromised,
+  // so it has to actually eject whoever else is in. Refresh tokens outlive the old
+  // password by up to 30 days, so changing the password alone would leave a thief
+  // signed in. Drop every session first, then hand this device a fresh one.
+  await sessions.deleteByUser(user.id)
   return issueSession(user)
 }
 

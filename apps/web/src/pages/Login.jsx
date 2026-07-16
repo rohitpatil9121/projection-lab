@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router-dom'
-import { loginUser, registerUser, forgotPassword, resetPassword, requestOtp, requestPhoneOtp } from '../api/client.js'
+import { loginUser, registerUser, forgotPassword, resetPassword, requestOtp, requestPhoneOtp, loginWithGoogle } from '../api/client.js'
 import { apiConfigError } from '../api/config.js'
+import { getGoogleIdToken, isGoogleConfigured } from '../auth/google.js'
 import { useStore, redirectAfterAuth, isAuthenticated } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
-import { IconChevron, IconMail, IconLock, IconShield, IconTrend } from '../components/Icons.jsx'
+import { IconChevron, IconMail, IconLock, IconShield, IconTrend, GoogleMark } from '../components/Icons.jsx'
 
 const FEATURES = [
   { icon: '📈', text: 'Year-by-year net-worth projection' },
@@ -35,9 +36,29 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [secureDevice, setSecureDevice] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const apiUnavailable = apiConfigError()
+
+  async function signInGoogle() {
+    setGoogleLoading(true)
+    setError('')
+    try {
+      const idToken = await getGoogleIdToken()
+      const data = await loginWithGoogle(idToken)
+      await afterLogin(data.user)
+      navigate(redirectAfterAuth(), { replace: true })
+    } catch (err) {
+      // Backing out of the Google sheet isn't a failure worth shouting about.
+      // Native rejects with code USER_CANCELLED; the web popup only gives a message.
+      const msg = err?.message || 'Google sign-in failed'
+      const cancelled = err?.code === 'USER_CANCELLED' || /popup_closed|closed by user|cancel/i.test(msg)
+      if (!cancelled) setError(msg)
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -256,7 +277,16 @@ export default function Login() {
                 </button>
               </p>
 
-              <button type="button" onClick={() => { setView('otp'); setError('') }} className="btn-secondary w-full mt-4">Sign in with OTP</button>
+              {isGoogleConfigured() && (
+                <button
+                  type="button"
+                  onClick={signInGoogle}
+                  disabled={googleLoading || loading || !!apiUnavailable}
+                  className="btn-secondary w-full mt-4"
+                >
+                  {googleLoading ? <><Spinner size={16} /> Signing in…</> : <><GoogleMark size={18} /> Sign in with Google</>}
+                </button>
+              )}
 
               <Link to="/onboarding" className="btn-secondary w-full mt-3 block text-center">Continue as guest</Link>
 

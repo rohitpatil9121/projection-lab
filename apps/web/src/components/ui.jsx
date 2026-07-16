@@ -115,6 +115,35 @@ export function StatCard({ label, value, sub, trend, accent = 'brand' }) {
   )
 }
 
+// Progress ring with the percentage in the middle (savings rate, goal completion).
+export function Ring({ pct, color = '#377cc8', size = 66, label }) {
+  const p = Math.max(0, Math.min(100, Math.round(pct)))
+  const thickness = size >= 60 ? 8 : 6
+  const r = (size - thickness) / 2
+  const circumference = 2 * Math.PI * r
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={thickness}
+          className="stroke-ink-100 dark:stroke-white/[0.12]"
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={thickness}
+          stroke={color} strokeLinecap="round"
+          strokeDasharray={`${((p / 100) * circumference).toFixed(1)} ${circumference}`}
+          className="transition-[stroke-dasharray] duration-500 ease-out-expo"
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center">
+        <span className="money font-extrabold" style={{ fontSize: size >= 60 ? 14 : 12 }}>
+          {label ?? `${p}%`}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function Pill({ color, children }) {
   return (
     <span className="chip bg-ink-100 dark:bg-ink-800 text-ink-600 dark:text-ink-300">

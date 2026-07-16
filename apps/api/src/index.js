@@ -5,7 +5,8 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import rateLimit from 'express-rate-limit'
-import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, requestPasswordReset, resetPassword, refreshSession, logout } from './auth.js'
+import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, requestPasswordReset, resetPassword, refreshSession, logout, signInWithGoogle } from './auth.js'
+import { verifyGoogleIdToken, googleConfigured } from './google.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
 import { users, ready } from './db.js'
@@ -45,7 +46,14 @@ const authLimiter = rateLimit({
 app.use('/v1/auth', authLimiter)
 
 app.get('/healthz', (_req, res) => {
-  res.json({ ok: true, service: 'financial-blueprint-api', time: new Date().toISOString() })
+  // `auth` reports which sign-in methods this deployment can actually serve, so a
+  // missing env var shows up here instead of as a mystery 503 at the login screen.
+  res.json({
+    ok: true,
+    service: 'financial-blueprint-api',
+    time: new Date().toISOString(),
+    auth: { google: googleConfigured, email: emailConfigured },
+  })
 })
 
 app.get('/privacy-policy.html', (_req, res) => {
@@ -80,6 +88,15 @@ app.post('/v1/auth/otp/verify', async (req, res, next) => {
       refreshToken: session.refreshToken,
       user: publicUser(session.user),
     })
+  } catch (err) { next(err) }
+})
+
+app.post('/v1/auth/google', async (req, res, next) => {
+  try {
+    const identity = await verifyGoogleIdToken(req.body.idToken || req.body.credential || '')
+    const session = await signInWithGoogle(identity)
+    await ensureDefaultPlan(session.user.id)
+    res.json({ accessToken: session.accessToken, refreshToken: session.refreshToken, user: publicUser(session.user) })
   } catch (err) { next(err) }
 })
 

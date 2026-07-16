@@ -8,14 +8,8 @@ import {
 import { Card, SectionLabel } from '../components/ui.jsx'
 import { IconCheck, IconPlus, IconTrash, IconTarget, IconTrend } from '../components/Icons.jsx'
 import { ConsistencyCard } from '../components/Journey.jsx'
-import GoalGraphic, { MOMENT_KIND, kindFromText } from '../components/GoalGraphic.jsx'
-
-// ---- Goal status (from evaluateGoal track) ---------------------------------
-const STATUS = {
-  ahead: { dot: 'bg-emerald-500', text: 'text-emerald-700 dark:text-emerald-400', label: 'Ahead of Schedule' },
-  'on-track': { dot: 'bg-brand-500', text: 'text-brand-700 dark:text-brand-400', label: 'On Track' },
-  behind: { dot: 'bg-rose-500', text: 'text-rose-700 dark:text-rose-400', label: 'Needs Correction' },
-}
+import GoalGraphic, { MOMENT_KIND } from '../components/GoalGraphic.jsx'
+import { goalStatus, goalColor } from '../utils/goalStatus.js'
 
 // ---- Category inference (honest: name hints, then linked account, then metric)
 function goalCategory(m, accounts) {
@@ -65,15 +59,6 @@ export default function Milestones() {
   const moments = computeMoments(state, snapshots, projection)
   const consistency = consistencyCells(snapshots)
 
-  // ---- Streak hero figures (all real data) ----
-  const yearlyContrib = contributions.reduce((s, c) => s + c.amount, 0)
-  const monthlyAlloc = yearlyContrib / 12
-  const now = new Date()
-  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const checkedIn = snapshots.some((s) => s.ym === currentYm)
-  const nextReview = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-    .toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState(null)
   const [draft, setDraft] = useState({ name: '', target: '', targetAge: '', icon: '🎯', metric: 'netWorth' })
@@ -84,7 +69,7 @@ export default function Milestones() {
     .map((m) => ({ m, ...evaluateGoal(m, ctx) }))
 
   const done = rows.filter((r) => r.m.achieved || r.progress >= 100).length
-  const behind = rows.filter((r) => r.track === 'behind' && r.progress < 100).length
+  const overallPct = rows.length ? Math.round(rows.reduce((s, r) => s + r.progress, 0) / rows.length) : 0
 
   const save = () => {
     if (!draft.name.trim() || !(Number(draft.target) > 0)) return
@@ -104,48 +89,24 @@ export default function Milestones() {
     <div className="space-y-6">
       {/* ---- Header ---- */}
       <div className="flex items-center gap-3">
-        <span className="grid place-items-center h-11 w-11 rounded-full bg-brand-50 text-brand-600 dark:bg-brand-500/15">
+        <span className="grid place-items-center h-11 w-11 rounded-[13px] bg-brand-50 text-brand-600 dark:bg-brand-500/15">
           <IconTarget size={22} />
         </span>
         <div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Life Goals</h1>
-          <p className="text-xs text-ink-400 font-medium">mapping your financial future</p>
+          <h1 className="text-[22px] font-extrabold tracking-tight">Life Goals</h1>
+          <p className="text-[13px] text-ink-500 mt-0.5">mapping your financial future</p>
         </div>
       </div>
 
-      {/* ---- Streak hero (brand-indigo gradient) ---- */}
-      <div className="relative overflow-hidden rounded-2xl p-5 sm:p-6 text-white bg-gradient-to-br from-brand-600 via-brand-500 to-[#469b88] shadow-card">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"
-          className="absolute -right-4 -top-4 h-36 w-36 text-white/10" aria-hidden="true">
-          <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v4M16 3v4" />
-          <circle cx="14.5" cy="15" r="3.5" /><path d="M14.5 13.5V15l1.2 1.2" />
-        </svg>
-        <div className="relative">
-          <div className="text-[11px] font-extrabold tracking-[0.14em] uppercase text-brand-100">
-            🔥 {consistency.steady > 0 ? `${consistency.steady}-month check-in streak` : 'Start your check-in streak'}
-          </div>
-          <h2 className="text-2xl font-extrabold tracking-tight mt-2">
-            {checkedIn ? 'Monthly Check-in Complete' : 'Monthly Check-in Due'}
-          </h2>
-          <p className="text-sm text-brand-100/90 mt-2 leading-relaxed max-w-md">
-            {monthlyAlloc > 0 ? (
-              <>You're allocating <span className="money font-bold text-white">{fmtMoney(monthlyAlloc, { compact: true })}</span> a
-                month towards your goals. Keep the momentum going to stay on track for your targets.</>
-            ) : (
-              <>Set up a monthly SIP in Accounts to start funding your goals automatically.</>
-            )}
-          </p>
-          <div className="mt-5 flex items-end justify-between gap-3">
-            <div>
-              <div className="text-[10px] font-extrabold tracking-[0.14em] uppercase text-brand-200">Next review</div>
-              <div className="text-lg font-extrabold money mt-0.5">{nextReview}</div>
-            </div>
-            <button
-              onClick={() => document.getElementById('active-goals')?.scrollIntoView({ behavior: 'smooth' })}
-              className="rounded-xl bg-white text-brand-700 px-4 py-2.5 text-sm font-bold shadow-sm hover:bg-brand-50 transition">
-              View Goals
-            </button>
-          </div>
+      {/* ---- Overall progress hero ---- */}
+      <div className="rounded-[22px] bg-gradient-to-br from-brand-500 to-brand-700 p-5 text-white shadow-[0_18px_40px_-20px_rgba(55,124,200,.6)]">
+        <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-brand-100">🔥 Overall goal progress</div>
+        <div className="mt-1.5 flex items-end gap-2">
+          <div className="money text-[40px] font-extrabold leading-none">{overallPct}%</div>
+          <div className="pb-1.5 text-[13px] text-brand-100">{done} of {milestones.length} goals complete</div>
+        </div>
+        <div className="mt-3.5 h-2 overflow-hidden rounded-full bg-white/20">
+          <div className="h-full rounded-full bg-white transition-[width] duration-500 ease-out-expo" style={{ width: `${overallPct}%` }} />
         </div>
       </div>
 
@@ -237,23 +198,29 @@ export default function Milestones() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {rows.map(({ m, current, progress, achievedYear, isPayoff, targetAge, nominalTarget, inflationAdjusted, requiredSip, actualSip, sipGap, expectedProgress, track, priority }, idx) => {
+          {rows.map((row, idx) => {
+            const { m, current, progress, achievedYear, isPayoff, targetAge, nominalTarget, inflationAdjusted,
+              requiredSip, actualSip, sipGap, expectedProgress, priority } = row
             const complete = progress >= 100
             const category = goalCategory(m, accounts)
             const style = CATEGORY_STYLE[category] || CATEGORY_STYLE['NET WORTH']
-            const status = complete ? null : (track ? STATUS[track] : null)
+            const status = goalStatus(row)
+            const barColor = goalColor(row)
             const targetYear = targetAge != null
               ? CURRENT_YEAR + (targetAge - profile.currentAge)
               : achievedYear
             const open = openId === m.id
             return (
               <Card key={m.id} className="!p-0 overflow-hidden group">
-                {/* Gradient header band */}
-                <div className={`relative h-28 bg-gradient-to-br ${style.band}`}>
-                  <div className="absolute inset-0 grid place-items-center" aria-hidden="true">
-                    <GoalGraphic kind={complete ? 'FLAG' : category} size={72} />
-                  </div>
-                  <span className={`absolute left-4 bottom-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${style.pill}`}>
+                {/* Gradient header band with a frosted icon tile */}
+                <div className={`relative h-[104px] grid place-items-center bg-gradient-to-br ${style.band}`}>
+                  <span
+                    className="grid h-14 w-14 place-items-center rounded-2xl border border-white/45 bg-white/25 backdrop-blur-[3px] shadow-[inset_0_1px_0_rgba(255,255,255,.4)] drop-shadow-[0_4px_8px_rgba(0,0,0,.16)]"
+                    aria-hidden="true"
+                  >
+                    <GoalGraphic kind={complete ? 'FLAG' : category} size={32} />
+                  </span>
+                  <span className={`absolute left-3.5 bottom-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] ${style.pill}`}>
                     {category}
                   </span>
                 </div>
@@ -281,29 +248,23 @@ export default function Milestones() {
                     </div>
                   </div>
 
-                  <div className="mt-3 h-2 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden relative">
-                    <div className={`h-full rounded-full transition-all ${complete ? 'bg-emerald-500' : 'bg-brand-500'}`} style={{ width: `${progress}%` }} />
+                  <div className="mt-3.5 h-2 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden relative">
+                    <div className="h-full rounded-full transition-[width] duration-500 ease-out-expo"
+                      style={{ width: `${progress}%`, background: barColor }} />
                     {expectedProgress != null && !complete && (
                       <div className="absolute top-0 bottom-0 w-0.5 bg-ink-400/70" style={{ left: `${expectedProgress}%` }} title={`Expected ${expectedProgress}% by now`} />
                     )}
                   </div>
 
-                  <div className="mt-2.5 flex items-center justify-between text-xs">
-                    {complete ? (
-                      <span className="flex items-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400">
-                        <IconCheck size={13} /> Achieved
-                      </span>
-                    ) : status ? (
-                      <span className={`flex items-center gap-1.5 font-bold ${status.text}`}>
-                        <span className={`h-2 w-2 rounded-full ${status.dot}`} /> {status.label}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1.5 font-bold text-ink-400">
-                        <span className="h-2 w-2 rounded-full bg-ink-300" /> Set target age
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1 font-bold text-ink-500 dark:text-ink-300 money">
-                      <IconTrend size={13} /> {targetYear ?? '—'}
+                  <div className="mt-3 flex items-center justify-between text-[13px]">
+                    <span className="flex items-center gap-[7px] font-bold">
+                      {complete
+                        ? <IconCheck size={13} className="text-emerald-600" />
+                        : <span className="h-[9px] w-[9px] rounded-full" style={{ background: status.color }} />}
+                      {status.label}
+                    </span>
+                    <span className="flex items-center gap-1.5 font-bold text-ink-500 dark:text-ink-300">
+                      <IconTrend size={14} /> <span className="money">{targetYear ?? '—'}</span>
                     </span>
                   </div>
 
@@ -377,20 +338,6 @@ export default function Milestones() {
             )
           })}
         </div>
-      </div>
-
-      {/* ---- Goal stats (kept from previous layout) ---- */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Card className="bg-gradient-to-br from-brand-500 to-brand-700 text-white border-0">
-          <div className="text-sm font-semibold text-brand-100">Goals achieved</div>
-          <div className="text-4xl font-extrabold mt-1 money">{done}<span className="text-brand-200 text-2xl">/{milestones.length}</span></div>
-          <div className="text-xs text-brand-100 mt-1">Keep going — you're building momentum.</div>
-        </Card>
-        <Card>
-          <div className="text-sm font-semibold text-ink-400">Needs correction</div>
-          <div className="text-4xl font-extrabold mt-1 text-amber-600 money">{behind}</div>
-          <div className="text-xs text-ink-400 mt-1">Goals where funding lags the timeline</div>
-        </Card>
       </div>
 
       {/* ---- Check-in consistency (from your recorded snapshots) ---- */}

@@ -85,6 +85,22 @@ export default {
           '0%,100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-14px)' },
         },
+        // Landing scene. `float-y` keeps each card's own tilt via --r.
+        'float-y': {
+          '0%,100%': { transform: 'translateY(0) rotate(var(--r,0deg))' },
+          '50%': { transform: 'translateY(-16px) rotate(var(--r,0deg))' },
+        },
+        'grid-pan': {
+          from: { backgroundPosition: '0 0' },
+          to: { backgroundPosition: '44px 44px' },
+        },
+        'glow-pulse': {
+          '0%,100%': { boxShadow: '0 0 0 0 rgba(63,131,205,.55), 0 0 42px 6px rgba(63,131,205,.45)' },
+          '50%': { boxShadow: '0 0 0 14px rgba(63,131,205,0), 0 0 64px 12px rgba(63,131,205,.6)' },
+        },
+        'draw-line': {
+          to: { strokeDashoffset: '0' },
+        },
         'gradient-pan': {
           '0%,100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
@@ -100,6 +116,10 @@ export default {
         'scale-in': 'scale-in 0.35s cubic-bezier(0.16,1,0.3,1) both',
         shimmer: 'shimmer 1.6s infinite',
         float: 'float 6s ease-in-out infinite',
+        'float-y': 'float-y 8s ease-in-out infinite',
+        'grid-pan': 'grid-pan 14s linear infinite',
+        'glow-pulse': 'glow-pulse 3.2s ease-in-out infinite',
+        'draw-line': 'draw-line 2.4s cubic-bezier(0.16,1,0.3,1) 0.3s forwards',
         'gradient-pan': 'gradient-pan 12s ease infinite',
         'page-in': 'page-in 0.32s cubic-bezier(0.16,1,0.3,1) both',
       },

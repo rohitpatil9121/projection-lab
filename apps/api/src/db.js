@@ -179,6 +179,11 @@ if (DATABASE_URL) {
     async deleteByHash(hash) {
       await pool.query('DELETE FROM sessions WHERE refresh_hash = $1', [hash])
     },
+    /** Signs the user out everywhere — used when a password changes. */
+    async deleteByUser(userId) {
+      const res = await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId])
+      return res.rowCount
+    },
   }
 
   plans = {
@@ -343,6 +348,10 @@ if (DATABASE_URL) {
     },
     deleteByHash(hash) {
       sqlite.prepare('DELETE FROM sessions WHERE refresh_hash = ?').run(hash)
+    },
+    /** Signs the user out everywhere — used when a password changes. */
+    deleteByUser(userId) {
+      return sqlite.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId).changes
     },
   }
 
