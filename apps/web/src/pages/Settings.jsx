@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../data/store.js'
 import { emptyProfile, defaultProfile } from '@projectlab/schema'
-import { Card, SectionLabel, SectionTitle } from '../components/ui.jsx'
+import { Card, SectionLabel } from '../components/ui.jsx'
 import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
-import { toPct, fromPct, fmtRate } from '../utils/rates.js'
+import { toPct, fromPct } from '../utils/rates.js'
 import ProModal from '../components/ProModal.jsx'
 
 // iOS-style switch used by every preference row.
@@ -76,8 +76,8 @@ export default function Settings() {
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* ---- Header ---- */}
       <div className="animate-fade-in-up">
-        <h1 className="text-2xl font-extrabold tracking-tight">Settings</h1>
-        <p className="text-sm text-ink-400 font-medium mt-1">Manage your profile, financial assumptions, and ritual preferences</p>
+        <h1 className="text-[22px] font-extrabold tracking-tight">Settings</h1>
+        <p className="mt-1 text-[13px] text-ink-500">Manage your profile, financial assumptions, and preferences</p>
       </div>
 
       {/* ---- User profile ---- */}
@@ -127,38 +127,53 @@ export default function Settings() {
         <SectionLabel action={
           <button onClick={resetAssumptions} className="text-xs font-bold text-brand-600 hover:text-brand-700">Reset to Default</button>
         }>Financial Rates (%)</SectionLabel>
-        <Card>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Inflation Rate">
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="30"
+        <Card className="!p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Inflation rate">
+              <div className="rcell">
+                <input type="number" step="0.5" min="0" max="20" inputMode="decimal"
                   value={toPct(profile.inflation)}
                   onChange={(e) => setProfile({ inflation: fromPct(e.target.value) })}
-                  className="input money pr-10"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-400">%</span>
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-[13px] font-bold text-ink-400">%</span>
+              </div>
+            </Field>
+            <Field label="Current age">
+              <div className="rcell">
+                <input type="number" min="18" max="70" inputMode="numeric" value={profile.currentAge}
+                  onChange={(e) => setProfile({ currentAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
+              </div>
+            </Field>
+            <Field label="Retirement age">
+              <div className="rcell">
+                <input type="number" min="40" max="75" inputMode="numeric" value={profile.retirementAge}
+                  onChange={(e) => setProfile({ retirementAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
+              </div>
+            </Field>
+            <Field label="Life expectancy">
+              <div className="rcell">
+                <input type="number" min="60" max="100" inputMode="numeric" value={profile.lifeExpectancy}
+                  onChange={(e) => setProfile({ lifeExpectancy: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
               </div>
             </Field>
             <Field label="Currency">
-              <select value={profile.currency} onChange={(e) => setProfile({ currency: e.target.value })} className="input">
-                <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option>
-              </select>
-            </Field>
-            <Field label="Current Age">
-              <input type="number" value={profile.currentAge} onChange={(e) => setProfile({ currentAge: Number(e.target.value) })} className="input money" />
-            </Field>
-            <Field label="Retirement Age">
-              <input type="number" value={profile.retirementAge} onChange={(e) => setProfile({ retirementAge: Number(e.target.value) })} className="input money" />
-            </Field>
-            <Field label="Life Expectancy">
-              <input type="number" value={profile.lifeExpectancy} onChange={(e) => setProfile({ lifeExpectancy: Number(e.target.value) })} className="input money" />
+              <div className="rcell">
+                <select value={profile.currency} onChange={(e) => setProfile({ currency: e.target.value })}
+                  className="cursor-pointer">
+                  <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option>
+                </select>
+              </div>
             </Field>
           </div>
-          <p className="mt-4 text-[11px] text-ink-400 italic">* These assumptions are used across all projections and retirement planning modules.</p>
+          <p className="mt-3.5 px-0.5 text-[11.5px] italic leading-relaxed text-ink-400">
+            * These assumptions are used across all projections and retirement planning modules.
+          </p>
         </Card>
       </div>
 
@@ -180,11 +195,26 @@ export default function Settings() {
               right={<Switch checked={!!ui.dark} onChange={toggleDark} />} />
             <Row icon={<IconTrend size={18} />} label="Real Terms" sub="Show projections in today's rupees"
               right={<Switch checked={!!ui.realTerms} onChange={() => setRealTerms(!ui.realTerms)} />} />
-            <Row icon={<IconAccounts size={18} />} label="Subscription Plan" sub="Free plan — Pro coming soon"
-              onClick={() => setProOpen(true)}
-              right={<span className="flex items-center gap-1.5"><span className="xp-chip !px-2 !py-0.5 text-[10px]">Pro</span><IconChevron size={16} className="text-ink-300" /></span>} />
           </div>
         </Card>
+      </div>
+
+      {/* ---- Subscription ---- */}
+      <div>
+        <SectionLabel>Subscription</SectionLabel>
+        <div className="flex items-center gap-3 rounded-[18px] bg-gradient-to-br from-brand-500 to-brand-700 p-4 text-white shadow-[0_12px_30px_-16px_rgba(55,124,200,.6)]">
+          <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl bg-white/[0.18]">
+            <IconShield size={20} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-extrabold">Free plan</div>
+            <div className="mt-0.5 text-xs text-brand-100">1 scenario · 500-run simulation</div>
+          </div>
+          <button onClick={() => setProOpen(true)}
+            className="shrink-0 rounded-[10px] bg-white px-3.5 py-2 text-xs font-extrabold text-brand-700 transition hover:bg-brand-50">
+            Go Pro
+          </button>
+        </div>
       </div>
 
       {/* ---- Support & data ---- */}
@@ -228,95 +258,93 @@ export default function Settings() {
 
 function FlowEditor({ title, collection, items, update, add, remove, color, profile }) {
   return (
-    <Card>
-      <SectionTitle
-        title={title}
-        action={
-          <button
-            onClick={() => add(collection, {
-              name: 'New item',
-              amount: 0,
-              growth: 0.02,
-              startAge: profile?.currentAge || 32,
-              endAge: collection === 'incomes' ? (profile?.retirementAge || 60) : 90,
-              color,
-            })}
-            className="btn-ghost !py-1.5"
-          ><IconPlus size={16} /> Add</button>
-        }
-      />
-      <div className="space-y-2">
+    <Card className="!p-4">
+      <div className="mb-3.5 flex items-center justify-between">
+        <span className="text-base font-extrabold">{title}</span>
+        <button
+          onClick={() => add(collection, {
+            name: collection === 'incomes' ? 'New income' : 'New expense',
+            amount: 0,
+            growth: 0.02,
+            startAge: profile?.currentAge || 32,
+            endAge: collection === 'incomes' ? (profile?.retirementAge || 60) : 90,
+            color,
+          })}
+          className="inline-flex items-center gap-1 text-[13px] font-extrabold text-brand-600 hover:text-brand-700"
+        ><IconPlus size={14} /> Add</button>
+      </div>
+      <div className="flex flex-col gap-3">
         {(items || []).filter((it) => it?.id).map((it) => (
-          <div key={it.id} className="group rounded-xl bg-ink-50 dark:bg-ink-800/60 px-3 py-2.5 space-y-2">
-            <div className="flex items-center gap-2">
+          <div key={it.id} className="group rounded-2xl border border-ink-100 bg-ink-50 px-4 py-3.5 dark:border-ink-800 dark:bg-ink-800/60">
+            <div className="flex items-start gap-2.5">
               <input
                 value={it.name}
                 onChange={(e) => update(collection, it.id, { name: e.target.value })}
-                className="bg-transparent font-semibold text-sm outline-none min-w-0 flex-1"
+                aria-label="Name"
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-bold outline-none focus:text-brand-600"
               />
-              <div className="flex items-center gap-1 text-sm shrink-0">
-                <span className="text-ink-400">₹</span>
-                <input
-                  type="number"
-                  value={it.amount}
-                  onChange={(e) => update(collection, it.id, { amount: Number(e.target.value) })}
-                  className="money w-24 text-right bg-transparent font-bold outline-none"
-                />
-              </div>
               <button
                 onClick={() => remove(collection, it.id)}
-                className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition shrink-0"
+                aria-label={`Remove ${it.name}`}
+                className="shrink-0 pt-0.5 text-ink-300 opacity-70 transition hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <IconTrash size={15} />
+                <IconTrash size={16} />
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
-              <label className="flex items-center gap-1">
-                age
-                <input
-                  type="number"
-                  value={it.startAge}
-                  onChange={(e) => update(collection, it.id, { startAge: Number(e.target.value) })}
-                  className="w-12 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-              </label>
-              <label className="flex items-center gap-1">
-                →
-                <input
-                  type="number"
-                  value={it.endAge}
-                  onChange={(e) => update(collection, it.id, { endAge: Number(e.target.value) })}
-                  className="w-12 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-              </label>
-              <label className="flex items-center gap-1">
-                growth
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="50"
-                  value={toPct(it.growth)}
-                  onChange={(e) => update(collection, it.id, { growth: fromPct(e.target.value) })}
-                  className="w-14 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-                %
-              </label>
+
+            <div className="mt-1.5 flex items-baseline gap-1.5">
+              <span className="text-[15px] font-bold text-ink-400">₹</span>
+              <input
+                type="number" inputMode="numeric" value={it.amount}
+                onChange={(e) => update(collection, it.id, { amount: Number(e.target.value) })}
+                onWheel={(e) => e.currentTarget.blur()}
+                aria-label="Amount per year"
+                className="money min-w-0 flex-1 bg-transparent text-[22px] font-extrabold outline-none focus:text-brand-600"
+              />
+              <span className="text-xs font-semibold text-ink-400">/yr</span>
             </div>
-            <div className="text-[10px] text-ink-400">
-              Ages {it.startAge}→{it.endAge} · grows {fmtRate(it.growth)}/yr
+
+            <div className="mt-3.5 grid grid-cols-3 gap-2">
+              <CellField label="From age">
+                <input type="number" inputMode="numeric" value={it.startAge}
+                  onChange={(e) => update(collection, it.id, { startAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
+              <CellField label="To age">
+                <input type="number" inputMode="numeric" value={it.endAge}
+                  onChange={(e) => update(collection, it.id, { endAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
+              <CellField label="Growth %">
+                <input type="number" step="0.5" min="0" max="50" inputMode="decimal" value={toPct(it.growth)}
+                  onChange={(e) => update(collection, it.id, { growth: fromPct(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
             </div>
           </div>
         ))}
+        {!(items || []).length && (
+          <p className="py-2 text-center text-sm text-ink-400">Nothing here yet — use Add above.</p>
+        )}
       </div>
     </Card>
   )
 }
 
+// Compact labelled cell used inside the income/expense rows.
+function CellField({ label, children }) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1 block text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-ink-400">{label}</span>
+      {children}
+    </label>
+  )
+}
+
 function Field({ label, children }) {
   return (
-    <label className="block">
-      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-400">{label}</span>
+    <label className="block min-w-0">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-ink-400">{label}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   )

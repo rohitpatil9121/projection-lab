@@ -1,22 +1,17 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../data/store.js'
-import { fmtMoney } from '@projectlab/engine'
-import { Card, SectionLabel, HeroCard } from '../components/ui.jsx'
+import { useProjection } from '../data/useProjection.js'
+import { fmtMoney, evaluateGoal } from '@projectlab/engine'
+import { Card, SectionLabel, HeroCard, Ring } from '../components/ui.jsx'
+import JourneyPanel from '../components/JourneyPanel.jsx'
 import { IconChevron, IconTrend, IconPlan, IconAccounts, IconMilestone } from '../components/Icons.jsx'
+import { goalColor } from '../utils/goalStatus.js'
 
 // Colour language (brand palette).
 const GREEN = '#469b88' // money in / assets / positive
 const RED = '#e0533d'   // money out / liabilities / negative
 const BRAND = '#377cc8' // primary / neutral
-
-function bigMoney(n) {
-  const abs = Math.abs(n)
-  const sign = n < 0 ? '-' : ''
-  if (abs >= 1e7) return `${sign}₹${(abs / 1e7).toFixed(2)} Cr`
-  if (abs >= 1e5) return `${sign}₹${(abs / 1e5).toFixed(2)} L`
-  return `${sign}₹${Math.round(abs).toLocaleString('en-IN')}`
-}
 
 // Two-tone proportional bar.
 function SplitBar({ segments, height = 'h-3', track = 'bg-white/10' }) {
@@ -31,20 +26,8 @@ function SplitBar({ segments, height = 'h-3', track = 'bg-white/10' }) {
   )
 }
 
-// Ring with a % in the middle (conic gradient).
-function MiniRing({ pct, color = BRAND, label, size = 56 }) {
-  const p = Math.max(0, Math.min(100, pct))
-  return (
-    <div className="grid place-items-center rounded-full shrink-0"
-      style={{ width: size, height: size, background: `conic-gradient(${color} ${p * 3.6}deg, rgba(148,163,184,0.18) 0deg)` }}>
-      <div className="grid place-items-center rounded-full bg-white dark:bg-ink-900" style={{ width: size - 12, height: size - 12 }}>
-        <span className="text-xs font-extrabold tabular-nums">{label}</span>
-      </div>
-    </div>
-  )
-}
-
 export default function Today() {
+  const { projection, state } = useProjection()
   const profile = useStore((s) => s.profile)
   const accounts = useStore((s) => s.accounts)
   const contributions = useStore((s) => s.contributions)
@@ -53,15 +36,13 @@ export default function Today() {
   const milestones = useStore((s) => s.milestones)
   const events = useStore((s) => s.events)
   const snapshots = useStore((s) => s.snapshots)
+  const currentYear = useStore((s) => s.currentYear)
 
   // --- Net worth (all from the balances the user entered) ---
   const assetAccts = accounts.filter((a) => a.kind === 'asset')
   const totalAssets = assetAccts.reduce((s, a) => s + a.balance, 0)
   const totalLiab = accounts.filter((a) => a.kind === 'liability').reduce((s, a) => s + a.balance, 0)
   const netWorth = totalAssets - totalLiab
-  const cashTotal = assetAccts.filter((a) => a.type === 'cash').reduce((s, a) => s + a.balance, 0)
-  const investTotal = assetAccts.filter((a) => a.type === 'investment' || a.type === 'retirement').reduce((s, a) => s + a.balance, 0)
-  const propertyTotal = assetAccts.filter((a) => a.type === 'real-estate' || a.type === 'other').reduce((s, a) => s + a.balance, 0)
 
   // Month-over-month change from the user's recorded snapshots.
   const momPct = useMemo(() => {
@@ -81,21 +62,29 @@ export default function Today() {
   const leftover = monthlyIncome - monthlyExpense
   const savingsRate = monthlyIncome > 0 ? Math.round((leftover / monthlyIncome) * 100) : 0
 
-  // --- Goals summary (current value vs target — both from user input, no projection) ---
-  const currentFor = (m) => {
-    if (m.accountId) return accounts.find((a) => a.id === m.accountId)?.balance ?? 0
-    if (m.metric === 'investable') return investTotal
-    return netWorth
-  }
-  const goalRows = milestones.map((m) => {
-    const target = m.target || 0
-    const cur = currentFor(m)
-    const pct = m.achieved ? 100 : target > 0 ? Math.min(100, Math.round((cur / target) * 100)) : (m.achieved ? 100 : 0)
-    return { m, cur, target, pct }
-  })
+  // --- Goals summary (engine-evaluated, so status matches the Goals page) ---
+  const goalRows = useMemo(
+    () => milestones.map((m) => {
+      const ev = evaluateGoal(m, { accounts, projection, profile, contributions, currentYear })
+      return { m, ev, color: goalColor(ev) }
+    }),
+    [milestones, accounts, projection, profile, contributions, currentYear],
+  )
   const goalsTotal = goalRows.length
-  const goalsDone = goalRows.filter((r) => r.m.achieved || r.pct >= 100).length
-  const avgGoalPct = goalsTotal ? Math.round(goalRows.reduce((s, r) => s + r.pct, 0) / goalsTotal) : 0
+  const goalsDone = goalRows.filter((r) => r.m.achieved || r.ev.progress >= 100).length
+  const avgGoalPct = goalsTotal ? Math.round(goalRows.reduce((s, r) => s + r.ev.progress, 0) / goalsTotal) : 0
+
+  // --- Wealth journey: net worth to retirement, with life events marked ---
+  const journeyData = useMemo(
+    () => projection
+      .filter((r) => r.age <= profile.retirementAge)
+      .map((r) => ({ year: r.year, age: r.age, value: r.netWorth })),
+    [projection, profile.retirementAge],
+  )
+  const eventDots = useMemo(
+    () => events.map((e) => ({ year: currentYear + (e.age - profile.currentAge), name: e.name })),
+    [events, currentYear, profile.currentAge],
+  )
 
   return (
     <div className="space-y-6 max-w-xl mx-auto pb-4">
@@ -103,10 +92,14 @@ export default function Today() {
       <div className="flex items-center justify-between">
         <div>
           <div className="section-label">Namaste,</div>
-          <h1 className="text-xl font-extrabold tracking-tight">{profile.name || 'Guest'}</h1>
+          <h1 className="text-[22px] font-extrabold tracking-tight whitespace-nowrap">{profile.name || 'Guest'}</h1>
         </div>
-        <Link to="/milestones" className="grid place-items-center h-10 w-10 rounded-full border border-ink-200 dark:border-ink-700 text-ink-500 hover:text-brand-600 transition-colors" aria-label="Goals">
-          <IconMilestone size={18} />
+        <Link
+          to="/milestones"
+          className="grid place-items-center h-[42px] w-[42px] rounded-full border border-ink-200 dark:border-ink-700 bg-white dark:bg-ink-900 text-ink-500 hover:text-brand-600 transition-colors"
+          aria-label="Goals"
+        >
+          <IconMilestone size={19} />
         </Link>
       </div>
 
@@ -120,61 +113,71 @@ export default function Today() {
             </span>
           )}
         </div>
-        <div className="money text-4xl font-extrabold leading-tight mt-1">{bigMoney(netWorth)}</div>
-        <div className="mt-5">
+        <div className="money text-[38px] font-extrabold leading-[1.1] mt-1">{fmtMoney(netWorth, { compact: true })}</div>
+        <div className="mt-[18px]">
           <SplitBar segments={[{ value: totalAssets, color: GREEN }, { value: totalLiab, color: RED }]} />
           <div className="flex items-center justify-between mt-3">
             <div>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-emerald-300">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
                 <span className="h-2 w-2 rounded-full" style={{ background: GREEN }} /> Assets
               </div>
-              <div className="money text-lg font-extrabold mt-0.5">{fmtMoney(totalAssets, { compact: true })}</div>
+              <div className="money text-[17px] font-extrabold mt-0.5">{fmtMoney(totalAssets, { compact: true })}</div>
             </div>
             <div className="text-right">
-              <div className="flex items-center justify-end gap-1.5 text-[11px] font-bold uppercase tracking-wide text-rose-300">
+              <div className="flex items-center justify-end gap-1.5 text-[10px] font-bold uppercase tracking-wider text-rose-300">
                 Liabilities <span className="h-2 w-2 rounded-full" style={{ background: RED }} />
               </div>
-              <div className="money text-lg font-extrabold mt-0.5">{fmtMoney(totalLiab, { compact: true })}</div>
+              <div className="money text-[17px] font-extrabold mt-0.5">{fmtMoney(totalLiab, { compact: true })}</div>
             </div>
           </div>
         </div>
       </HeroCard>
 
+      {/* ===== WEALTH JOURNEY ===== */}
+      <JourneyPanel
+        data={journeyData}
+        valueLabel="Net worth"
+        events={eventDots}
+        gradientId="todayJourney"
+        footer={
+          <p className="mt-2 mb-0.5 px-1 text-[11px] italic text-[#8b8b93]">
+            Projected net worth to age {profile.retirementAge}, from your income, investments &amp; growth rates.
+          </p>
+        }
+      />
+
       {/* ===== INCOME vs OUTFLOW (this month) ===== */}
       <div>
-        <SectionLabel action={<Link to="/cash-flow" className="text-xs font-bold text-brand-600 uppercase tracking-wide">Cash Flow</Link>}>
+        <SectionLabel action={<Link to="/cash-flow" className="text-[11px] font-extrabold uppercase tracking-wider text-brand-600">Cash Flow</Link>}>
           Income vs Outflow · This Month
         </SectionLabel>
         <Card className="!p-4">
-          <div className="flex items-center gap-4">
-            <MiniRing pct={savingsRate} color={savingsRate >= 20 ? GREEN : savingsRate >= 0 ? BRAND : RED} label={`${savingsRate}%`} size={64} />
+          <div className="flex items-center gap-3.5">
+            <Ring pct={savingsRate} color={savingsRate >= 20 ? GREEN : BRAND} size={66} />
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-bold uppercase tracking-wide text-ink-400">Savings Rate</div>
-              <div className="text-sm text-ink-500 dark:text-ink-300 mt-0.5">
+              <div className="text-[11px] font-bold uppercase tracking-wide text-ink-400">Savings Rate</div>
+              <div className="text-[13px] leading-[1.4] text-ink-500 dark:text-ink-300 mt-0.5">
                 You keep <span className="font-extrabold" style={{ color: GREEN }}>{fmtMoney(leftover, { compact: true })}</span> of every month's income.
               </div>
             </div>
           </div>
-          <div className="mt-4">
-            <SplitBar segments={[{ value: monthlyExpense, color: RED }, { value: Math.max(0, leftover), color: GREEN }]} track="bg-ink-100 dark:bg-ink-800" />
-          </div>
           <div className="grid grid-cols-3 gap-2 mt-4 text-center">
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 py-2.5">
+            <div className="rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 py-2.5">
               <div className="money text-sm font-extrabold" style={{ color: GREEN }}>{fmtMoney(monthlyIncome, { compact: true })}</div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-ink-400 mt-0.5">Income in</div>
+              <div className="text-[10px] font-bold uppercase tracking-wide text-ink-400 mt-0.5">Income</div>
             </div>
-            <div className="rounded-xl bg-rose-50 dark:bg-rose-500/10 py-2.5">
+            <div className="rounded-2xl bg-rose-50 dark:bg-rose-500/10 py-2.5">
               <div className="money text-sm font-extrabold" style={{ color: RED }}>{fmtMoney(monthlyExpense, { compact: true })}</div>
               <div className="text-[10px] font-bold uppercase tracking-wide text-ink-400 mt-0.5">Spent</div>
             </div>
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 py-2.5">
-              <div className="money text-sm font-extrabold" style={{ color: leftover >= 0 ? GREEN : RED }}>{fmtMoney(leftover, { compact: true })}</div>
+            <div className="rounded-2xl bg-brand-50 dark:bg-brand-500/10 py-2.5">
+              <div className="money text-sm font-extrabold" style={{ color: leftover >= 0 ? BRAND : RED }}>{fmtMoney(leftover, { compact: true })}</div>
               <div className="text-[10px] font-bold uppercase tracking-wide text-ink-400 mt-0.5">Left over</div>
             </div>
           </div>
           {monthlyInvesting > 0 && (
             <p className="text-[11px] text-ink-400 mt-3">
-              Of that, <span className="font-bold text-brand-600 dark:text-brand-400">{fmtMoney(monthlyInvesting, { compact: true })}/mo</span> goes into SIPs & investments.
+              Of that, <span className="font-bold text-brand-600 dark:text-brand-400">{fmtMoney(monthlyInvesting, { compact: true })}/mo</span> goes into SIPs &amp; investments.
             </p>
           )}
         </Card>
@@ -186,11 +189,11 @@ export default function Today() {
         <div className="space-y-3">
           {/* Plan */}
           <Link to="/plan" className="block">
-            <Card interactive className="!p-4 flex items-center gap-3">
-              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconPlan size={20} /></span>
+            <Card interactive className="!p-[15px] flex items-center gap-3">
+              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconPlan size={21} /></span>
               <div className="min-w-0 flex-1">
-                <div className="font-bold">Plan</div>
-                <div className="text-xs text-ink-400 mt-0.5">Retire at age {profile.retirementAge} · {events.length} life {events.length === 1 ? 'event' : 'events'} planned</div>
+                <div className="font-bold text-[15px]">Plan</div>
+                <div className="text-xs text-ink-400 mt-0.5">Retire at age {profile.retirementAge} · drag to test any future</div>
               </div>
               <IconChevron size={16} className="text-ink-300 shrink-0" />
             </Card>
@@ -198,51 +201,48 @@ export default function Today() {
 
           {/* Accounts */}
           <Link to="/accounts" className="block">
-            <Card interactive className="!p-4">
-              <div className="flex items-center gap-3">
-                <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconAccounts size={20} /></span>
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold">Accounts</div>
-                  <div className="text-xs text-ink-400 mt-0.5">{assetAccts.length} accounts · {fmtMoney(totalAssets, { compact: true })} in assets</div>
-                </div>
-                <IconChevron size={16} className="text-ink-300 shrink-0" />
+            <Card interactive className="!p-[15px] flex items-center gap-3">
+              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconAccounts size={21} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-[15px]">Accounts</div>
+                <div className="text-xs text-ink-400 mt-0.5">{assetAccts.length} accounts · {fmtMoney(totalAssets, { compact: true })} in assets</div>
               </div>
-              {totalAssets > 0 && (
-                <div className="mt-3">
-                  <SplitBar height="h-2" track="bg-ink-100 dark:bg-ink-800"
-                    segments={[{ value: cashTotal, color: GREEN }, { value: investTotal, color: BRAND }, { value: propertyTotal, color: '#eed868' }]} />
-                </div>
-              )}
+              <IconChevron size={16} className="text-ink-300 shrink-0" />
             </Card>
           </Link>
 
           {/* Goals — the richer summary */}
           <Link to="/milestones" className="block">
-            <Card interactive className="!p-4">
+            <Card interactive className="!p-[15px]">
               <div className="flex items-center gap-3">
-                <MiniRing pct={avgGoalPct} color={GREEN} label={`${avgGoalPct}%`} size={48} />
+                <Ring pct={avgGoalPct} color={GREEN} size={50} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-bold">Goals</div>
+                  <div className="font-bold text-[15px]">Goals</div>
                   <div className="text-xs text-ink-400 mt-0.5">{goalsDone} of {goalsTotal} complete · {avgGoalPct}% overall</div>
                 </div>
                 <IconChevron size={16} className="text-ink-300 shrink-0" />
               </div>
               {goalRows.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {goalRows.slice(0, 3).map((r) => (
-                    <div key={r.m.id}>
-                      <div className="flex items-center justify-between text-[11px] mb-1">
-                        <span className="font-semibold truncate mr-2">{r.m.name}</span>
-                        <span className="money text-ink-400 shrink-0">{fmtMoney(r.cur, { compact: true })} / {fmtMoney(r.target, { compact: true })}</span>
+                <div className="mt-3.5 flex flex-col gap-2.5">
+                  {goalRows.slice(0, 3).map(({ m, ev, color }) => (
+                    <div key={m.id}>
+                      <div className="flex items-center justify-between gap-2 text-xs mb-1">
+                        <span className="font-bold truncate">{m.name}</span>
+                        <span className="money text-[11px] text-ink-400 shrink-0">
+                          {fmtMoney(ev.current, { compact: true })} / {ev.isPayoff ? 'Pay off' : fmtMoney(m.target, { compact: true })}
+                        </span>
                       </div>
-                      <SplitBar height="h-1.5" track="bg-ink-100 dark:bg-ink-800"
-                        segments={[{ value: r.pct, color: r.pct >= 100 ? GREEN : BRAND }, { value: 100 - r.pct, color: 'transparent' }]} />
+                      <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden">
+                        <div className="h-full rounded-full transition-[width] duration-500 ease-out-expo"
+                          style={{ width: `${ev.progress}%`, background: color }} />
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </Card>
           </Link>
+
         </div>
       </div>
     </div>
