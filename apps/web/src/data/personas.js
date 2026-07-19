@@ -20,19 +20,17 @@ export const PERSONAS = [
     ],
     expenses: [
       { id: 'living', name: 'Rent & Living', amount: 240000, growth: 0.06, startAge: 24, endAge: 85, color: '#e0533d' },
-      { id: 'emi', name: 'Education Loan EMI', amount: 66000, growth: 0, startAge: 24, endAge: 30, color: '#eed868' },
+      { id: 'emi', name: 'Education Loan EMI', amount: 66000, growth: 0, startAge: 24, endAge: 30, accountId: 'eduloan', color: '#eed868' },
     ],
     contributions: [
       { id: 'c1', accountId: 'equity', amount: 60000, section: null },
     ],
     milestones: [
-      { id: 'm1', name: 'Emergency Fund (6 months)', target: 120000, accountId: 'savings', icon: '🛟', achieved: false },
-      { id: 'm2', name: 'Education Loan Free', target: 0, accountId: 'eduloan', icon: '🎓', achieved: false },
-      { id: 'm3', name: 'First ₹10 Lakh Net Worth', target: 10 * L, metric: 'netWorth', icon: '💎', achieved: false },
-    ],
-    events: [
-      { id: 'e1', name: 'Buy a bike', age: 26, amount: -150000, icon: '🏍️', color: '#eed868' },
-      { id: 'e2', name: 'Retire', age: 60, amount: 0, icon: '🌴', color: '#469b88' },
+      { id: 'm1', name: 'Emergency Fund (6 months)', kind: 'save', target: 120000, cashImpact: 0, accountId: 'savings', icon: '🛟', achieved: false },
+      { id: 'm2', name: 'Education Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'eduloan', icon: '🎓', achieved: false },
+      { id: 'm3', name: 'First ₹10 Lakh Net Worth', kind: 'save', target: 10 * L, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false },
+      { id: 'm4', name: 'Buy a bike', kind: 'spend', target: 150000, cashImpact: -150000, metric: 'investable', icon: '🏍️', achieved: false, targetAge: 26 },
+      { id: 'm5', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 60 },
     ],
   },
   {
@@ -53,20 +51,18 @@ export const PERSONAS = [
     ],
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 700000, growth: 0.06, startAge: 29, endAge: 85, color: '#e0533d' },
-      { id: 'emi', name: 'Car Loan EMI', amount: 90000, growth: 0, startAge: 29, endAge: 33, color: '#eed868' },
+      { id: 'emi', name: 'Car Loan EMI', amount: 90000, growth: 0, startAge: 29, endAge: 33, accountId: 'carloan', color: '#eed868' },
     ],
     contributions: [
       { id: 'c1', accountId: 'equity', amount: 240000, section: null },
       { id: 'c2', accountId: 'epf', amount: 100000, section: '80C' },
     ],
     milestones: [
-      { id: 'm1', name: 'House Down Payment', target: 15 * L, metric: 'investable', icon: '🏠', achieved: false },
-      { id: 'm2', name: 'First ₹1 Crore Net Worth', target: 100 * L, metric: 'netWorth', icon: '💎', achieved: false },
-    ],
-    events: [
-      { id: 'e1', name: 'Buy a house', age: 32, amount: -2500000, icon: '🏠', color: '#eed868' },
-      { id: 'e2', name: 'Baby arrives', age: 31, amount: -200000, icon: '👶', color: '#e78c9d' },
-      { id: 'e3', name: 'Retire', age: 58, amount: 0, icon: '🌴', color: '#469b88' },
+      // "House Down Payment" and "Buy a house" were the same plan written twice.
+      { id: 'm1', name: 'Buy a house', kind: 'spend', target: 25 * L, cashImpact: -2500000, metric: 'investable', icon: '🏠', achieved: false, targetAge: 32 },
+      { id: 'm2', name: 'First ₹1 Crore Net Worth', kind: 'save', target: 100 * L, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false },
+      { id: 'm3', name: 'Baby arrives', kind: 'spend', target: 200000, cashImpact: -200000, metric: 'investable', icon: '👶', achieved: false, targetAge: 31 },
+      { id: 'm4', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 58 },
     ],
   },
   {
@@ -88,20 +84,20 @@ export const PERSONAS = [
     ],
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 650000, growth: 0.06, startAge: 36, endAge: 85, color: '#e0533d' },
-      { id: 'emi1', name: 'Home Loan EMI', amount: 550000, growth: 0, startAge: 36, endAge: 56, color: '#eed868' },
-      { id: 'emi2', name: 'Personal Loan EMI', amount: 140000, growth: 0, startAge: 36, endAge: 39, color: '#eed868' },
+      // ₹55L at 8.7% needs ~₹5.82L/yr to clear in 20 years; the old ₹5.5L barely beat
+      // the interest and left the loan running forever once amortisation became real.
+      { id: 'emi1', name: 'Home Loan EMI', amount: 582000, growth: 0, startAge: 36, endAge: 56, accountId: 'homeloan', color: '#eed868' },
+      { id: 'emi2', name: 'Personal Loan EMI', amount: 140000, growth: 0, startAge: 36, endAge: 39, accountId: 'ploan', color: '#eed868' },
     ],
     contributions: [
       { id: 'c1', accountId: 'epf', amount: 120000, section: '80C' },
     ],
     milestones: [
-      { id: 'm1', name: 'Personal Loan Free', target: 0, accountId: 'ploan', icon: '🔥', achieved: false },
-      { id: 'm2', name: 'Home Loan Free', target: 0, accountId: 'homeloan', icon: '🏠', achieved: false },
-      { id: 'm3', name: 'Emergency Fund (6 months)', target: 400000, accountId: 'savings', icon: '🛟', achieved: false },
-    ],
-    events: [
-      { id: 'e1', name: "Child's higher education", age: 50, amount: -2500000, icon: '🎓', color: '#9da7d0' },
-      { id: 'e2', name: 'Retire', age: 60, amount: 0, icon: '🌴', color: '#469b88' },
+      { id: 'm1', name: 'Personal Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'ploan', icon: '🔥', achieved: false },
+      { id: 'm2', name: 'Home Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'homeloan', icon: '🏠', achieved: false },
+      { id: 'm3', name: 'Emergency Fund (6 months)', kind: 'save', target: 400000, cashImpact: 0, accountId: 'savings', icon: '🛟', achieved: false },
+      { id: 'm4', name: "Child's Higher Education", kind: 'spend', target: 2500000, cashImpact: -2500000, metric: 'investable', icon: '🎓', achieved: false, targetAge: 50 },
+      { id: 'm5', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 60 },
     ],
   },
   {
@@ -127,12 +123,10 @@ export const PERSONAS = [
       { id: 'c2', accountId: 'ppf', amount: 150000, section: '80C' },
     ],
     milestones: [
-      { id: 'm1', name: 'First ₹1 Crore', target: 100 * L, metric: 'netWorth', icon: '💎', achieved: false },
-      { id: 'm2', name: 'FI Corpus (₹3.5 Cr)', target: 350 * L, metric: 'netWorth', icon: '🏝️', achieved: false },
-    ],
-    events: [
-      { id: 'e1', name: 'Retire early (FIRE)', age: 45, amount: 0, icon: '🔥', color: '#469b88' },
-      { id: 'e2', name: 'World travel year', age: 46, amount: -1000000, icon: '✈️', color: '#9da7d0' },
+      { id: 'm1', name: 'First ₹1 Crore', kind: 'save', target: 100 * L, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false },
+      { id: 'm2', name: 'FI Corpus (₹3.5 Cr)', kind: 'save', target: 350 * L, cashImpact: 0, metric: 'netWorth', icon: '🏝️', achieved: false, targetAge: 45 },
+      { id: 'm3', name: 'Retire early (FIRE)', kind: 'marker', target: 0, cashImpact: 0, icon: '🔥', achieved: false, targetAge: 45 },
+      { id: 'm4', name: 'World travel year', kind: 'spend', target: 1000000, cashImpact: -1000000, metric: 'investable', icon: '✈️', achieved: false, targetAge: 46 },
     ],
   },
   {
@@ -156,7 +150,7 @@ export const PERSONAS = [
     ],
     expenses: [
       { id: 'living', name: 'Household & Living', amount: 800000, growth: 0.06, startAge: 40, endAge: 85, color: '#e0533d' },
-      { id: 'emi', name: 'Home Loan EMI', amount: 540000, growth: 0, startAge: 40, endAge: 55, color: '#eed868' },
+      { id: 'emi', name: 'Home Loan EMI', amount: 540000, growth: 0, startAge: 40, endAge: 55, accountId: 'homeloan', color: '#eed868' },
       { id: 'education', name: "Children's Education", amount: 250000, growth: 0.08, startAge: 40, endAge: 58, color: '#e78c9d' },
     ],
     contributions: [
@@ -166,15 +160,14 @@ export const PERSONAS = [
       { id: 'c4', accountId: 'nps', amount: 50000, section: '80CCD1B' },
     ],
     milestones: [
-      { id: 'm1', name: 'Emergency Fund (6 months)', target: 500000, accountId: 'savings', icon: '🛟', achieved: true },
-      { id: 'm2', name: "Child's Education Corpus", target: 50 * L, metric: 'investable', icon: '🎓', achieved: false },
-      { id: 'm3', name: 'Retirement Corpus (₹5 Cr)', target: 500 * L, metric: 'netWorth', icon: '🏝️', achieved: false },
-      { id: 'm4', name: 'Home Loan Free', target: 0, accountId: 'homeloan', icon: '🏠', achieved: false },
-    ],
-    events: [
-      { id: 'e1', name: "Child's higher education", age: 48, amount: -3000000, icon: '🎓', color: '#9da7d0' },
-      { id: 'e2', name: "Child's marriage", age: 55, amount: -2500000, icon: '💍', color: '#e78c9d' },
-      { id: 'e3', name: 'Retire', age: 60, amount: 0, icon: '🌴', color: '#469b88' },
+      { id: 'm1', name: 'Emergency Fund (6 months)', kind: 'save', target: 500000, cashImpact: 0, accountId: 'savings', icon: '🛟', achieved: true },
+      // "Child's Education Corpus" and "Child's higher education" were the same plan
+      // written twice, at two different amounts. One goal: save it, then spend it.
+      { id: 'm2', name: "Child's Higher Education", kind: 'spend', target: 50 * L, cashImpact: -5000000, metric: 'investable', icon: '🎓', achieved: false, targetAge: 48 },
+      { id: 'm3', name: 'Retirement Corpus (₹5 Cr)', kind: 'save', target: 500 * L, cashImpact: 0, metric: 'netWorth', icon: '🏝️', achieved: false, targetAge: 60 },
+      { id: 'm4', name: 'Home Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'homeloan', icon: '🏠', achieved: false },
+      { id: 'm5', name: "Child's Marriage", kind: 'spend', target: 2500000, cashImpact: -2500000, metric: 'investable', icon: '💍', achieved: false, targetAge: 55 },
+      { id: 'm6', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 60 },
     ],
   },
   {
@@ -203,12 +196,56 @@ export const PERSONAS = [
       { id: 'c2', accountId: 'ppf', amount: 150000, section: '80C' },
     ],
     milestones: [
-      { id: 'm1', name: 'Retirement Corpus (₹5 Cr)', target: 500 * L, metric: 'netWorth', icon: '🏝️', achieved: false },
+      { id: 'm1', name: 'Retirement Corpus (₹5 Cr)', kind: 'save', target: 500 * L, cashImpact: 0, metric: 'netWorth', icon: '🏝️', achieved: false, targetAge: 58 },
+      { id: 'm2', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 58 },
+      { id: 'm3', name: 'World trip', kind: 'spend', target: 1500000, cashImpact: -1500000, metric: 'investable', icon: '✈️', achieved: false, targetAge: 60 },
+      // Money arriving, not a target to save toward.
+      { id: 'm4', name: 'Downsize home', kind: 'marker', target: 0, cashImpact: 4000000, icon: '📦', achieved: false, targetAge: 70 },
     ],
-    events: [
-      { id: 'e1', name: 'Retire', age: 58, amount: 0, icon: '🌴', color: '#469b88' },
-      { id: 'e2', name: 'World trip', age: 60, amount: -1500000, icon: '✈️', color: '#9da7d0' },
-      { id: 'e3', name: 'Downsize home', age: 70, amount: 4000000, icon: '📦', color: '#9da7d0' },
+  },
+  {
+    id: 'hni',
+    icon: '💼',
+    title: 'HNI, Wealth Preservation',
+    desc: 'Business + salary, PMS and property, legacy planning.',
+    profile: { name: 'Vikram Malhotra', currentAge: 45, retirementAge: 58, lifeExpectancy: 88 },
+    accounts: [
+      { id: 'savings', name: 'Savings + FD', type: 'cash', kind: 'asset', balance: 80 * L, growth: 0.06, color: '#469b88' },
+      { id: 'equity', name: 'Equity MF + Direct', type: 'investment', kind: 'asset', balance: 350 * L, growth: 0.11, color: '#377cc8' },
+      { id: 'pms', name: 'PMS / AIF', type: 'investment', kind: 'asset', balance: 200 * L, growth: 0.11, color: '#cdb475' },
+      { id: 'epf', name: 'EPF', type: 'retirement', kind: 'asset', balance: 80 * L, growth: 0.0815, color: '#9da7d0' },
+      { id: 'ppf', name: 'PPF', type: 'retirement', kind: 'asset', balance: 45 * L, growth: 0.071, color: '#9da7d0' },
+      { id: 'nps', name: 'NPS', type: 'retirement', kind: 'asset', balance: 60 * L, growth: 0.10, color: '#9da7d0' },
+      { id: 'property', name: 'Real Estate (2 properties)', type: 'real-estate', kind: 'asset', balance: 700 * L, growth: 0.05, color: '#eed868' },
+      { id: 'homeloan', name: 'Home Loan', type: 'loan', kind: 'liability', balance: 150 * L, growth: 0.085, payoff: 0.08, color: '#e0533d' },
+    ],
+    incomes: [
+      { id: 'salary', name: 'Salary (take-home)', amount: 90 * L, growth: 0.07, startAge: 45, endAge: 58, color: '#377cc8' },
+      { id: 'business', name: 'Business / Consulting', amount: 45 * L, growth: 0.06, startAge: 45, endAge: 65, color: '#469b88' },
+      { id: 'rental', name: 'Rental Income', amount: 30 * L, growth: 0.05, startAge: 45, endAge: 88, color: '#9da7d0' },
+    ],
+    expenses: [
+      // An HNI's lifestyle is the thing that actually tests the corpus — without it
+      // the plan just compounds to an absurd number and the demo proves nothing.
+      { id: 'living', name: 'Household & Lifestyle', amount: 96 * L, growth: 0.06, startAge: 45, endAge: 88, color: '#e0533d' },
+      { id: 'emi', name: 'Home Loan EMI', amount: 24 * L, growth: 0, startAge: 45, endAge: 55, accountId: 'homeloan', color: '#eed868' },
+      { id: 'education', name: "Children's Schooling", amount: 15 * L, growth: 0.08, startAge: 45, endAge: 55, color: '#e78c9d' },
+    ],
+    contributions: [
+      { id: 'c1', accountId: 'equity', amount: 12 * L, section: null },
+      { id: 'c2', accountId: 'pms', amount: 6 * L, section: null },
+      { id: 'c3', accountId: 'epf', amount: 3 * L, section: '80C' },
+      { id: 'c4', accountId: 'ppf', amount: 150000, section: '80C' },
+      { id: 'c5', accountId: 'nps', amount: 50000, section: '80CCD1B' },
+    ],
+    milestones: [
+      { id: 'm1', name: 'Emergency Fund (12 months)', kind: 'save', target: 60 * L, cashImpact: 0, accountId: 'savings', icon: '🛟', achieved: true },
+      { id: 'm2', name: "Children's Education (abroad)", kind: 'spend', target: 300 * L, cashImpact: -300 * L, metric: 'investable', icon: '🎓', achieved: false, targetAge: 50 },
+      { id: 'm3', name: 'Second Home / Villa', kind: 'spend', target: 500 * L, cashImpact: -500 * L, metric: 'investable', icon: '🏠', achieved: false, targetAge: 52 },
+      { id: 'm4', name: 'Home Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'homeloan', icon: '🔥', achieved: false },
+      { id: 'm5', name: 'Wealth Corpus (₹50 Cr)', kind: 'save', target: 5000 * L, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false, targetAge: 58 },
+      { id: 'm6', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: 58 },
+      { id: 'm7', name: 'Legacy / Trust Corpus', kind: 'save', target: 2500 * L, cashImpact: 0, metric: 'investable', icon: '🎁', achieved: false, targetAge: 70 },
     ],
   },
 ]

@@ -7,8 +7,8 @@ android {
         applicationId "in.projectlab.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "1.4.1"
+        versionCode 10
+        versionName "1.5.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -33,6 +33,18 @@ android {
             }
         }
         buildTypes.release.signingConfig signingConfigs.release
+    } else {
+        // Without this, a missing keystore silently produced an UNSIGNED release
+        // bundle that looked fine locally and was only rejected at Play upload,
+        // with an error that says nothing about the cause. Fail here instead.
+        gradle.taskGraph.whenReady { graph ->
+            if (graph.allTasks.any { it.name.toLowerCase().contains("release") }) {
+                throw new GradleException(
+                    "Release build requires signing. Set KEYSTORE_PATH, KEYSTORE_PASSWORD, " +
+                    "KEY_ALIAS and KEY_PASSWORD — see store-assets/PLAY-CHECKLIST.md §1. " +
+                    "(Unsigned bundles are rejected by Google Play.)")
+            }
+        }
     }
 }
 

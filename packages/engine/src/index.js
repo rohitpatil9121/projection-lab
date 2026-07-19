@@ -19,8 +19,46 @@ export const CURRENT_YEAR = 2026
 
 const CASH_BUFFER = 300000
 
+/**
+ * A safe annual withdrawal rate for this plan's inflation.
+ *
+ * The familiar "4% rule" is the Trinity study: US assets, US history, ~2–3% US inflation.
+ * Lifting it unchanged onto 6% Indian inflation is not conservative — it quietly
+ * overstates retirement income by roughly a third. So anchor to the real (post-inflation)
+ * return the rule implies and re-derive: 4% at 3% inflation is ~1% real, which at 6%
+ * inflation lands near 3.2%.
+ *
+ * Bounded either side because this is a rule of thumb, not a solver — `corpusLastsToAge`
+ * is the honest simulation, and this only exists to put a monthly figure on screen.
+ */
+export function safeWithdrawalRate(inflation = 0.06) {
+  const rate = 0.04 - (inflation - 0.03) * 0.27
+  return Math.min(0.04, Math.max(0.025, rate))
+}
+
 const clampFlow = (item, age) => (age >= item.startAge && age <= item.endAge ? 1 : 0)
 const grownAmount = (item, yearsFromNow) => item.amount * Math.pow(1 + (item.growth || 0), yearsFromNow)
+
+/**
+ * Advances a liability by one year.
+ *
+ * A debt is not a fading number: it charges interest, and payments retire it. When an
+ * expense names this account (an EMI), we do the real thing — accrue interest, subtract
+ * what was paid — so the loan reaches zero on its own schedule and the interest rate the
+ * user typed actually bites.
+ *
+ * `payoff` is the older model: shrink by a fixed fraction of the balance each year. It
+ * never truly clears the debt and ignores interest entirely, but plans created before
+ * EMIs could be linked still rely on it, so it stays as a fallback.
+ *
+ * With neither, the loan simply accrues interest — which is what an unpaid loan does.
+ */
+function stepLiability(account, balance, emiPaid) {
+  const rate = account.growth || 0
+  if (emiPaid > 0) return Math.max(0, balance * (1 + rate) - emiPaid)
+  if (account.payoff != null) return Math.max(0, balance * (1 - account.payoff))
+  return balance * (1 + rate)
+}
 
 export function accountRoles(accounts) {
   const cashId = (accounts.find((a) => a.type === 'cash') || {}).id
@@ -75,11 +113,15 @@ export function computeProjection(state) {
 
     const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, t) * clampFlow(i, age), 0) + salarySwapDelta(taxCtx, t, age)
     const expenseTotal = expenses.reduce((s, e) => s + grownAmount(e, t) * clampFlow(e, age), 0)
-    const eventCash = (state.events || []).filter((e) => e.age === age).reduce((s, e) => s + e.amount, 0)
+    const eventCash = (state.milestones || []).filter((g) => g.targetAge === age).reduce((s, g) => s + (g.cashImpact || 0), 0)
 
     accounts.forEach((a) => {
       if (a.kind === 'liability') {
-        bal[a.id] = Math.max(0, bal[a.id] * (1 - (a.payoff ?? 0.06)))
+        // Only what's actually being paid this year retires the debt.
+        const emiPaid = expenses
+          .filter((e) => e.accountId === a.id)
+          .reduce((s, e) => s + grownAmount(e, t) * clampFlow(e, age), 0)
+        bal[a.id] = stepLiability(a, bal[a.id], emiPaid)
       } else {
         bal[a.id] = bal[a.id] * (1 + a.growth)
       }
@@ -205,11 +247,14 @@ export function runMonteCarlo(state, { runs = 500, seed = 1 } = {}) {
       const working = age < retirementAge
       const incomeTotal = incomes.reduce((s, i) => s + grownAmount(i, y) * clampFlow(i, age), 0) + salarySwapDelta(taxCtx, y, age)
       const expenseTotal = expenses.reduce((s, e) => s + grownAmount(e, y) * clampFlow(e, age), 0)
-      const eventCash = (state.events || []).filter((e) => e.age === age).reduce((s, e) => s + e.amount, 0)
+      const eventCash = (state.milestones || []).filter((g) => g.targetAge === age).reduce((s, g) => s + (g.cashImpact || 0), 0)
 
       accounts.forEach((a) => {
         if (a.kind === 'liability') {
-          bal[a.id] = Math.max(0, bal[a.id] * (1 - (a.payoff ?? 0.06)))
+          const emiPaid = expenses
+            .filter((e) => e.accountId === a.id)
+            .reduce((s, e) => s + grownAmount(e, y) * clampFlow(e, age), 0)
+          bal[a.id] = stepLiability(a, bal[a.id], emiPaid)
         } else {
           const ret = a.growth + gaussian() * volOf(a)
           bal[a.id] = Math.max(0, bal[a.id] * (1 + ret))

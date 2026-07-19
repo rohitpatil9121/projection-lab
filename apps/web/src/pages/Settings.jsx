@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../data/store.js'
 import { emptyProfile, defaultProfile } from '@projectlab/schema'
-import { Card, SectionLabel } from '../components/ui.jsx'
+import { Card, SectionLabel, Modal } from '../components/ui.jsx'
 import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
 import { toPct, fromPct } from '../utils/rates.js'
-import ProModal from '../components/ProModal.jsx'
 
 // iOS-style switch used by every preference row.
 function Switch({ checked, onChange }) {
@@ -45,23 +44,41 @@ export default function Settings() {
   const setProfile = useStore((s) => s.setProfile)
   const incomes = useStore((s) => s.incomes) || []
   const expenses = useStore((s) => s.expenses) || []
+  const accounts = useStore((s) => s.accounts) || []
+  const liabilities = accounts.filter((a) => a.kind === 'liability')
   const updateItem = useStore((s) => s.updateItem)
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
   const reset = useStore((s) => s.reset)
   const resetAccountData = useStore((s) => s.resetAccountData)
+  const deleteAccount = useStore((s) => s.deleteAccount)
   const auth = useStore((s) => s.auth)
   const logout = useStore((s) => s.logout)
   const ui = useStore((s) => s.ui)
   const toggleDark = useStore((s) => s.toggleDark)
   const setRealTerms = useStore((s) => s.setRealTerms)
-  const [proOpen, setProOpen] = useState(false)
 
   const signOut = async () => { await logout(); navigate('/login') }
   const startFresh = async () => {
     if (!confirm('Clear this account data and start onboarding again?')) return
-    await resetAccountData()
-    navigate('/onboarding', { replace: true })
+    // resetAccountData re-throws when the sync fails. Unhandled, that left local data
+    // already wiped, the navigation never run, and the button looking dead.
+    try {
+      await resetAccountData()
+      navigate('/onboarding', { replace: true })
+    } catch (err) {
+      alert(`Could not clear your account data: ${err.message || 'please try again.'}`)
+    }
+  }
+  const removeAccount = async () => {
+    if (!confirm('Permanently delete your account, your plan and all your data?\n\nThis cannot be undone.')) return
+    if (!confirm('Last chance — this permanently deletes everything. Continue?')) return
+    try {
+      await deleteAccount()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      alert(`Could not delete your account: ${err.message || 'please try again.'}`)
+    }
   }
   const resetAssumptions = () => {
     if (!confirm('Reset ages, inflation, currency and tax regime to defaults?')) return
@@ -182,7 +199,7 @@ export default function Settings() {
         <SectionLabel>Income &amp; Expenses</SectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FlowEditor title="Income Streams" collection="incomes" items={incomes} update={updateItem} add={addItem} remove={removeItem} color="#377cc8" profile={profile} />
-          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#e0533d" profile={profile} />
+          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#e0533d" profile={profile} liabilities={liabilities} />
         </div>
       </div>
 
@@ -199,24 +216,6 @@ export default function Settings() {
         </Card>
       </div>
 
-      {/* ---- Subscription ---- */}
-      <div>
-        <SectionLabel>Subscription</SectionLabel>
-        <div className="flex items-center gap-3 rounded-[18px] bg-gradient-to-br from-brand-500 to-brand-700 p-4 text-white shadow-[0_12px_30px_-16px_rgba(55,124,200,.6)]">
-          <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-xl bg-white/[0.18]">
-            <IconShield size={20} />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-extrabold">Free plan</div>
-            <div className="mt-0.5 text-xs text-brand-100">1 scenario · 500-run simulation</div>
-          </div>
-          <button onClick={() => setProOpen(true)}
-            className="shrink-0 rounded-[10px] bg-white px-3.5 py-2 text-xs font-extrabold text-brand-700 transition hover:bg-brand-50">
-            Go Pro
-          </button>
-        </div>
-      </div>
-
       {/* ---- Support & data ---- */}
       <div>
         <SectionLabel>Support</SectionLabel>
@@ -225,13 +224,18 @@ export default function Settings() {
             <Row as="a" href="/privacy-policy.html" target="_blank" rel="noreferrer"
               icon={<IconShield size={18} />} label="Privacy Policy"
               right={<IconChevron size={16} className="text-ink-300" />} />
-            <Row icon={<IconTrash size={18} />} label="Reset all data" sub="Restore the sample plan and clear your local changes"
-              onClick={() => { if (confirm('Reset to sample data?')) reset() }}
+            <Row icon={<IconTrash size={18} />} label="Reset all data" sub="Erase your plan and start over from setup"
+              onClick={() => { if (confirm('Erase your whole plan and start setup again? This cannot be undone.')) reset() }}
               right={<span className="text-xs font-bold text-rose-500">Reset</span>} />
             {auth && (
               <Row icon={<IconPlus size={18} />} label="Start fresh for this account" sub="Clears this account's cloud plan and reopens onboarding"
                 onClick={startFresh}
                 right={<span className="text-xs font-bold text-amber-600">Clear</span>} />
+            )}
+            {auth && (
+              <Row icon={<IconTrash size={18} />} label="Delete my account" sub="Permanently removes your account and all data from our servers"
+                onClick={removeAccount}
+                right={<span className="text-xs font-bold text-rose-600">Delete</span>} />
             )}
           </div>
         </Card>
@@ -251,28 +255,95 @@ export default function Settings() {
         Financial Blueprint v{__APP_VERSION__} · build {__BUILD_STAMP__} · Institutional Minimalism Theme
       </p>
 
-      <ProModal open={proOpen} onClose={() => setProOpen(false)} />
     </div>
   )
 }
 
-function FlowEditor({ title, collection, items, update, add, remove, color, profile }) {
+function FlowEditor({ title, collection, items, update, add, remove, color, profile, liabilities = [] }) {
+  const isIncome = collection === 'incomes'
+  const blank = () => ({
+    name: '',
+    amount: '',
+    growthPct: isIncome ? 8 : 6,
+    startAge: profile?.currentAge || 32,
+    endAge: isIncome ? (profile?.retirementAge || 60) : (profile?.lifeExpectancy || 85),
+  })
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState(blank)
+
+  const open = () => { setDraft(blank()); setAdding(true) }
+  const valid = draft.name.trim() && Number(draft.amount) > 0 && Number(draft.endAge) >= Number(draft.startAge)
+  const save = () => {
+    if (!valid) return
+    add(collection, {
+      name: draft.name.trim(),
+      amount: Number(draft.amount),
+      growth: fromPct(draft.growthPct),
+      startAge: Number(draft.startAge),
+      endAge: Number(draft.endAge),
+      color,
+    })
+    setAdding(false)
+  }
+
   return (
     <Card className="!p-4">
       <div className="mb-3.5 flex items-center justify-between">
         <span className="text-base font-extrabold">{title}</span>
         <button
-          onClick={() => add(collection, {
-            name: collection === 'incomes' ? 'New income' : 'New expense',
-            amount: 0,
-            growth: 0.02,
-            startAge: profile?.currentAge || 32,
-            endAge: collection === 'incomes' ? (profile?.retirementAge || 60) : 90,
-            color,
-          })}
+          onClick={open}
           className="inline-flex items-center gap-1 text-[13px] font-extrabold text-brand-600 hover:text-brand-700"
         ><IconPlus size={14} /> Add</button>
       </div>
+
+      <Modal open={adding} onClose={() => setAdding(false)} title={isIncome ? 'New income stream' : 'New expense'}>
+        <div className="space-y-3">
+          <Field label={isIncome ? 'Source' : 'What for'}>
+            <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder={isIncome ? 'e.g. Salary (take-home)' : 'e.g. Rent & living'} className="input" />
+          </Field>
+
+          <Field label="Amount per year">
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-400">₹</span>
+              <input type="number" inputMode="numeric" value={draft.amount}
+                onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="420000" className="input money pl-8" />
+            </div>
+          </Field>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="From age">
+              <input type="number" inputMode="numeric" value={draft.startAge}
+                onChange={(e) => setDraft({ ...draft, startAge: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+            <Field label="To age">
+              <input type="number" inputMode="numeric" value={draft.endAge}
+                onChange={(e) => setDraft({ ...draft, endAge: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+            <Field label="Growth %">
+              <input type="number" step="0.5" inputMode="decimal" value={draft.growthPct}
+                onChange={(e) => setDraft({ ...draft, growthPct: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+          </div>
+          <p className="text-[11px] text-ink-400">
+            {isIncome
+              ? 'Grows each year — use your expected raise.'
+              : 'Grows each year — inflation, roughly. Use 0 for a fixed EMI.'}
+          </p>
+
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setAdding(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={save} disabled={!valid} className="btn-primary flex-1 disabled:opacity-40">
+              Add {isIncome ? 'income' : 'expense'}
+            </button>
+          </div>
+        </div>
+      </Modal>
       <div className="flex flex-col gap-3">
         {(items || []).filter((it) => it?.id).map((it) => (
           <div key={it.id} className="group rounded-2xl border border-ink-100 bg-ink-50 px-4 py-3.5 dark:border-ink-800 dark:bg-ink-800/60">
@@ -321,6 +392,28 @@ function FlowEditor({ title, collection, items, update, add, remove, color, prof
                   onWheel={(e) => e.currentTarget.blur()} className="fcell" />
               </CellField>
             </div>
+
+            {/* Naming the loan an EMI services is what lets the projection actually
+                retire that debt — without it the payment just leaves as cash. */}
+            {!isIncome && liabilities.length > 0 && (
+              <div className="mt-3">
+                <CellField label="Pays off a loan?">
+                  <select
+                    value={it.accountId || ''}
+                    onChange={(e) => update(collection, it.id, { accountId: e.target.value || null })}
+                    className="fcell cursor-pointer text-left"
+                  >
+                    <option value="">No — it's a regular expense</option>
+                    {liabilities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                </CellField>
+                {it.accountId && (
+                  <p className="mt-1.5 text-[11px] text-ink-400">
+                    Treated as an EMI: it pays this loan down against its interest rate.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
         {!(items || []).length && (

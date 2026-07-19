@@ -1,10 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, ReferenceLine, ReferenceDot, Tooltip,
 } from 'recharts'
 import { fmtMoney } from '@projectlab/engine'
 import { SectionLabel } from './ui.jsx'
+
+gsap.registerPlugin(useGSAP)
 
 const BRAND = '#377cc8'
 const TEAL = '#469b88'
@@ -65,6 +69,40 @@ export default function JourneyPanel({
   const [showTable, setShowTable] = useState(false)
   const tableRows = useMemo(() => sampleRows(data), [data])
   const ticks = useMemo(() => yearTicks(data), [data])
+  const chartRef = useRef(null)
+
+  // Draw the corpus line on rather than having it appear whole. Recharts owns the
+  // SVG, so we reach for the rendered path and run the classic stroke-dash reveal;
+  // the gradient fill is faded in behind it so the area doesn't lead the line.
+  // Runs on mount only — re-drawing on every slider drag would be noise, not polish.
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      let timer
+      let tl
+      // ResponsiveContainer measures its box before it renders the SVG, so the path
+      // isn't there on mount — poll briefly for it. setTimeout rather than rAF: rAF
+      // is frozen while the tab is hidden, which would leave the line permanently
+      // undrawn for anyone who opens the app in a background tab.
+      let tries = 0
+      const start = () => {
+        const line = chartRef.current?.querySelector('.recharts-area-curve')
+        if (!line || !line.getTotalLength()) {
+          if (tries++ < 40) timer = setTimeout(start, 25)
+          return
+        }
+        const area = chartRef.current.querySelector('.recharts-area-area')
+        const len = line.getTotalLength()
+        tl = gsap.timeline()
+        tl.fromTo(line, { strokeDasharray: len, strokeDashoffset: len },
+          { strokeDashoffset: 0, duration: 1.1, ease: 'power2.out', clearProps: 'strokeDasharray,strokeDashoffset' })
+        if (area) tl.from(area, { opacity: 0, duration: 0.6, ease: 'none' }, 0.25)
+      }
+      timer = setTimeout(start, 25)
+      return () => { clearTimeout(timer); tl?.kill() }
+    })
+    return () => mm.revert()
+  }, { scope: chartRef })
 
   // Place each event dot at the projected value for its year.
   const eventDots = useMemo(() => {
@@ -117,7 +155,7 @@ export default function JourneyPanel({
             </table>
           </div>
         ) : (
-          <div style={{ height }}>
+          <div style={{ height }} ref={chartRef}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 14, right: 8, bottom: 0, left: 0 }}>
                 <defs>

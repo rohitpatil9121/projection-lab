@@ -5,6 +5,7 @@ import { useProjection } from '../data/useProjection.js'
 import { fmtMoney, evaluateGoal } from '@projectlab/engine'
 import { Card, SectionLabel, HeroCard, Ring } from '../components/ui.jsx'
 import JourneyPanel from '../components/JourneyPanel.jsx'
+import CountUpMoney from '../components/CountUpMoney.jsx'
 import { IconChevron, IconTrend, IconPlan, IconAccounts, IconMilestone } from '../components/Icons.jsx'
 import { goalColor } from '../utils/goalStatus.js'
 
@@ -34,7 +35,6 @@ export default function Today() {
   const expenses = useStore((s) => s.expenses)
   const incomes = useStore((s) => s.incomes)
   const milestones = useStore((s) => s.milestones)
-  const events = useStore((s) => s.events)
   const snapshots = useStore((s) => s.snapshots)
   const currentYear = useStore((s) => s.currentYear)
 
@@ -74,7 +74,7 @@ export default function Today() {
   const goalsDone = goalRows.filter((r) => r.m.achieved || r.ev.progress >= 100).length
   const avgGoalPct = goalsTotal ? Math.round(goalRows.reduce((s, r) => s + r.ev.progress, 0) / goalsTotal) : 0
 
-  // --- Wealth journey: net worth to retirement, with life events marked ---
+  // --- Wealth journey: net worth to retirement, with dated goals marked ---
   const journeyData = useMemo(
     () => projection
       .filter((r) => r.age <= profile.retirementAge)
@@ -82,8 +82,10 @@ export default function Today() {
     [projection, profile.retirementAge],
   )
   const eventDots = useMemo(
-    () => events.map((e) => ({ year: currentYear + (e.age - profile.currentAge), name: e.name })),
-    [events, currentYear, profile.currentAge],
+    () => milestones
+      .filter((g) => g.targetAge != null)
+      .map((g) => ({ year: currentYear + (g.targetAge - profile.currentAge), name: g.name })),
+    [milestones, currentYear, profile.currentAge],
   )
 
   return (
@@ -113,7 +115,7 @@ export default function Today() {
             </span>
           )}
         </div>
-        <div className="money text-[38px] font-extrabold leading-[1.1] mt-1">{fmtMoney(netWorth, { compact: true })}</div>
+        <CountUpMoney value={netWorth} className="money block text-[38px] font-extrabold leading-[1.1] mt-1" />
         <div className="mt-[18px]">
           <SplitBar segments={[{ value: totalAssets, color: GREEN }, { value: totalLiab, color: RED }]} />
           <div className="flex items-center justify-between mt-3">

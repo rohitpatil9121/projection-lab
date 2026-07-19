@@ -81,12 +81,15 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const { state } = useLocation()
   const isNewScenario = !!state?.newScenario
+  // Login's "Go with sample data" skips the account and the walkthrough both, so it
+  // hands us straight to the persona picker rather than the first question.
+  const startInSandbox = !!state?.sample
   const completeOnboarding = useStore((s) => s.completeOnboarding)
 
   // The dark brand-tile Landing is the only splash. The wizard starts straight
   // at `about` (walkthrough) or `persona` (sandbox / sample data).
-  const [step, setStep] = useState('about')
-  const [mode, setMode] = useState('walkthrough')
+  const [step, setStep] = useState(startInSandbox ? 'persona' : 'about')
+  const [mode, setMode] = useState(startInSandbox ? 'sandbox' : 'walkthrough')
   const [personaId, setPersonaId] = useState(null)
   const [error, setError] = useState('')
 
@@ -149,8 +152,8 @@ export default function Onboarding() {
   function confirmPersona() {
     const p = PERSONAS.find((x) => x.id === personaId)
     if (!p) return setError('Choose a persona to continue')
-    const { profile, accounts, incomes, expenses, contributions, milestones, events } = p
-    completeOnboarding(profile, { accounts, incomes, expenses, contributions, milestones, events })
+    const { profile, accounts, incomes, expenses, contributions, milestones } = p
+    completeOnboarding(profile, { accounts, incomes, expenses, contributions, milestones })
     navigate('/', { replace: true })
   }
 
@@ -176,7 +179,9 @@ export default function Onboarding() {
     }
     if (have.investments && n(retirementBal) > 0) accounts.push({ id: 'retirement', name: 'EPF / PPF / NPS', type: 'retirement', kind: 'asset', balance: n(retirementBal), growth: 0.08, color: '#9da7d0' })
     if (have.realAssets && n(property) > 0) accounts.push({ id: 'property', name: 'House / Property', type: 'real-estate', kind: 'asset', balance: n(property), growth: 0.06, color: '#eed868' })
-    if (loanBal > 0) accounts.push({ id: 'loan', name: 'Loans', type: 'loan', kind: 'liability', balance: loanBal, growth: 0.09, payoff: yearlyEmi > 0 ? Math.min(1, yearlyEmi / loanBal) : 0.1, color: '#e0533d' })
+    // No `payoff` guess here: the EMI below names this loan, so the projection
+    // amortises it for real — interest accrues and the payment retires it.
+    if (loanBal > 0) accounts.push({ id: 'loan', name: 'Loans', type: 'loan', kind: 'liability', balance: loanBal, growth: 0.09, color: '#e0533d' })
 
     const incomes = [
       { id: 'salary', name: 'Salary (take-home)', amount: yearlySalary, growth: 0.07, startAge: age, endAge: ret, color: '#377cc8' },
@@ -185,24 +190,21 @@ export default function Onboarding() {
     const expenses = [
       { id: 'living', name: 'Household & Living', amount: yearlyExpense, growth: 0.06, startAge: age, endAge: 85, color: '#e0533d' },
     ]
-    if (yearlyEmi > 0) expenses.push({ id: 'emi', name: 'Loan EMI', amount: yearlyEmi, growth: 0, startAge: age, endAge: age + n(emiYears), color: '#eed868' })
+    if (yearlyEmi > 0) expenses.push({ id: 'emi', name: 'Loan EMI', amount: yearlyEmi, growth: 0, startAge: age, endAge: age + n(emiYears), accountId: loanBal > 0 ? 'loan' : null, color: '#eed868' })
 
     const contributions = []
     if (yearlySip > 0) contributions.push({ id: 'c-sip', accountId: 'equity', amount: yearlySip, section: null })
 
     const milestones = [
-      { id: 'm-emergency', name: 'Emergency Fund (6 months)', target: n(expense) * 6, accountId: accounts.find((a) => a.id === 'savings') ? 'savings' : undefined, metric: accounts.find((a) => a.id === 'savings') ? undefined : 'netWorth', icon: '🛟', achieved: n(savings) >= n(expense) * 6 },
-      { id: 'm-crore', name: 'First ₹1 Crore Net Worth', target: 100 * L, metric: 'netWorth', icon: '💎', achieved: false },
+      { id: 'm-emergency', name: 'Emergency Fund (6 months)', kind: 'save', target: n(expense) * 6, cashImpact: 0, accountId: accounts.find((a) => a.id === 'savings') ? 'savings' : undefined, metric: accounts.find((a) => a.id === 'savings') ? undefined : 'netWorth', icon: '🛟', achieved: n(savings) >= n(expense) * 6 },
+      { id: 'm-crore', name: 'First ₹1 Crore Net Worth', kind: 'save', target: 100 * L, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false },
+      { id: 'm-retire', name: 'Retire', kind: 'marker', target: 0, cashImpact: 0, icon: '🌴', achieved: false, targetAge: ret },
     ]
-    if (loanBal > 0) milestones.push({ id: 'm-loanfree', name: 'Loan Free', target: 0, accountId: 'loan', icon: '🏠', achieved: false })
-
-    const events = [
-      { id: 'e-retire', name: 'Retire', age: ret, amount: 0, icon: '🌴', color: '#469b88' },
-    ]
+    if (loanBal > 0) milestones.push({ id: 'm-loanfree', name: 'Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'loan', icon: '🏠', achieved: false })
 
     completeOnboarding(
       { name: name.trim(), currentAge: age, retirementAge: ret },
-      { accounts, incomes, expenses, contributions, milestones, events },
+      { accounts, incomes, expenses, contributions, milestones },
     )
     navigate('/', { replace: true })
   }

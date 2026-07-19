@@ -71,12 +71,29 @@ async function nativeIdToken() {
 
 function webIdToken() {
   return new Promise((resolve, reject) => {
+    let host = null
+    let settled = false
+    // GSI's callback never fires when the user closes the popup, so without a
+    // timeout this promise hangs forever — and the caller's `finally` never runs,
+    // leaving the sign-in button stuck on "Signing in…" until a page reload.
+    const done = (fn, arg) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      host?.remove()
+      fn(arg)
+    }
+    const timer = setTimeout(
+      () => done(reject, Object.assign(new Error('Google sign-in timed out'), { code: 'USER_CANCELLED' })),
+      120000,
+    )
+
     loadGsi().then((google) => {
       google.accounts.id.initialize({
         client_id: CLIENT_ID,
         callback: ({ credential }) => credential
-          ? resolve(credential)
-          : reject(new Error('Google did not return a credential')),
+          ? done(resolve, credential)
+          : done(reject, new Error('Google did not return a credential')),
         // We render our own button, so One Tap's auto-select would be a surprise.
         auto_select: false,
         cancel_on_tap_outside: true,
@@ -84,15 +101,14 @@ function webIdToken() {
       // Render an invisible official button and click it: this keeps the popup
       // inside a real user gesture, which browsers require, while letting our own
       // styled button be the thing the user actually sees.
-      const host = document.createElement('div')
+      host = document.createElement('div')
       host.style.cssText = 'position:fixed;opacity:0;pointer-events:none;z-index:-1;top:0;left:0'
       document.body.appendChild(host)
       google.accounts.id.renderButton(host, { type: 'standard', size: 'large' })
       const real = host.querySelector('div[role=button]') || host.querySelector('div')
-      if (!real) { host.remove(); return reject(new Error('Google button failed to render')) }
+      if (!real) return done(reject, new Error('Google button failed to render'))
       real.click()
-      setTimeout(() => host.remove(), 60000)
-    }).catch(reject)
+    }).catch((err) => done(reject, err))
   })
 }
 
@@ -101,4 +117,25 @@ export async function getGoogleIdToken() {
   const configErr = googleConfigError()
   if (configErr) throw new Error(configErr)
   return Capacitor.isNativePlatform() ? nativeIdToken() : webIdToken()
+}
+
+/**
+ * Tells Google we're signed out. Clearing only our own session leaves the SDK still
+ * holding the last account, which is what stops a second sign-in with the same email:
+ * Android's Credential Manager will not re-issue a credential it thinks is still in
+ * use, and on web One Tap would silently re-select the old account.
+ *
+ * Never throws — failing to sign out of Google must not block signing out of the app.
+ */
+export async function signOutGoogle() {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      if (!nativeReady) return // never signed in this run, so nothing to tear down
+      const { SocialLogin } = await import('@capgo/capacitor-social-login')
+      await SocialLogin.logout({ provider: 'google' })
+      nativeReady = null
+    } else {
+      window.google?.accounts?.id?.disableAutoSelect()
+    }
+  } catch { /* best effort */ }
 }

@@ -11,10 +11,9 @@ export function markLandingSeen() {
   sessionStorage.setItem(KEY, '1')
 }
 
-/** Where to send the user after the landing screen. */
-export function landingDestination(action, { onboarded } = {}) {
-  if (action === 'signin') return '/login'
-  if (action === 'guest') return '/onboarding'
+/** Where to send the user after the landing screen. Its one CTA always lands here;
+ *  signing in or trying the sample plan are both choices the login screen offers. */
+export function landingDestination({ onboarded } = {}) {
   if (isAuthenticated() && !onboarded) return '/onboarding'
   if (onboarded || isAuthenticated()) return '/'
   return Capacitor.isNativePlatform() ? '/login' : '/login'
