@@ -3,9 +3,10 @@
 
 import { create } from './miniStore.js'
 import { CURRENT_YEAR, computeProjection, computeReadiness, computeFitness } from '@projectlab/engine'
-import { defaultPlanPayload, defaultProfile, emptyPlanPayload, emptyProfile } from '@projectlab/schema'
+import { defaultPlanPayload, defaultProfile, emptyPlanPayload, emptyProfile, migratePlanPayload } from '@projectlab/schema'
 import { loadSession, saveSession, isAuthenticated } from '../auth/session.js'
-import { fetchPlans, fetchPlan, syncPlan, logoutApi, apiFetch } from '../api/client.js'
+import { fetchPlans, fetchPlan, syncPlan, logoutApi, apiFetch, deleteAccount as deleteAccountApi } from '../api/client.js'
+import { signOutGoogle } from '../auth/google.js'
 
 export {
   computeProjection,
@@ -37,8 +38,8 @@ function emptyScenarioData() {
 
 // Everything that differs between scenarios (plan data + profile assumptions).
 function scenarioData(s) {
-  const { profile, accounts, incomes, expenses, contributions, milestones, events } = s
-  return JSON.parse(JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones, events }))
+  const { profile, accounts, incomes, expenses, contributions, milestones } = s
+  return JSON.parse(JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones }))
 }
 
 const KEY = 'projectlab-state-in-v1'
@@ -48,7 +49,12 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY)
     if (raw) {
-      const parsed = JSON.parse(raw)
+      // Plans saved before goals and life events merged still carry an events array —
+      // including each what-if scenario, whose data is spread into state on switch.
+      const parsed = migratePlanPayload(JSON.parse(raw))
+      if (Array.isArray(parsed.scenarios)) {
+        parsed.scenarios = parsed.scenarios.map((x) => (x.data ? { ...x, data: migratePlanPayload(x.data) } : x))
+      }
       // Existing users (saved before the onboarded flag existed) are treated as onboarded.
       return { ...DEFAULT_STATE, ...parsed, onboarded: parsed.onboarded ?? true }
     }
@@ -57,8 +63,19 @@ function load() {
 }
 
 function planPayload(state) {
-  const { accounts, incomes, expenses, contributions, milestones, events } = state
-  return { accounts, incomes, expenses, contributions, milestones, events }
+  const { accounts, incomes, expenses, contributions, milestones, snapshots } = state
+  // Snapshots ride along with the plan: they're the monthly check-in history, and the
+  // only data here a user can't retype after a reinstall — one row per month, so the
+  // payload cost is negligible.
+  return { accounts, incomes, expenses, contributions, milestones, snapshots }
+}
+
+/** Server history wins on conflict, but nothing recorded on this device is dropped. */
+function mergeSnapshots(local = [], remote = []) {
+  const byMonth = new Map()
+  local.forEach((s) => byMonth.set(s.ym, s))
+  remote.forEach((s) => byMonth.set(s.ym, s))
+  return [...byMonth.values()].sort((a, b) => (a.ym < b.ym ? -1 : 1))
 }
 
 function planHasData(payload) {
@@ -100,8 +117,8 @@ export const useStore = create((set, get) => {
 
   persist() {
     const s = get()
-    const { profile, accounts, incomes, expenses, contributions, milestones, events, ui, onboarded, scenarios, activeScenarioId, snapshots } = s
-    localStorage.setItem(KEY, JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones, events, ui, onboarded, scenarios, activeScenarioId, snapshots }))
+    const { profile, accounts, incomes, expenses, contributions, milestones, ui, onboarded, scenarios, activeScenarioId, snapshots } = s
+    localStorage.setItem(KEY, JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones, ui, onboarded, scenarios, activeScenarioId, snapshots }))
     get().scheduleSync()
   },
 
@@ -117,6 +134,14 @@ export const useStore = create((set, get) => {
     const s = get()
     if (!s.auth?.planId || !navigator.onLine) {
       set({ syncStatus: s.auth?.planId ? 'offline' : 'idle' })
+      return
+    }
+    // What-if scenarios live only on this device — `scenarios` isn't part of
+    // PlanPayloadSchema. The active one is held in top-level state, so syncing while
+    // exploring one would upload the what-if AS the real plan; a brand-new scenario
+    // starts empty, which meant creating one wiped the saved plan off the server.
+    if (s.activeScenarioId && s.activeScenarioId !== 'base') {
+      set({ syncStatus: 'local' })
       return
     }
     set({ syncStatus: 'syncing', syncError: null })
@@ -181,7 +206,8 @@ export const useStore = create((set, get) => {
   },
 
   applyServerPlan(plan, user) {
-    const payload = plan.payload || emptyPlanPayload
+    // A plan synced before goals and life events merged still carries an events array.
+    const payload = migratePlanPayload(plan.payload || emptyPlanPayload)
     const hasData = planHasData(payload)
     const { profile, ui } = applyUserProfile(
       { profile: { ...emptyProfile }, ui: get().ui || { dark: false, realTerms: true } },
@@ -190,6 +216,8 @@ export const useStore = create((set, get) => {
     set({
       ...emptyPlanPayload,
       ...payload,
+      // Never let a sync erase check-in history this device already holds.
+      snapshots: mergeSnapshots(get().snapshots, payload.snapshots),
       profile,
       ui,
       scenarios: [{ id: 'base', name: 'Base plan', data: null }],
@@ -245,12 +273,15 @@ export const useStore = create((set, get) => {
 
   persistLocalOnly() {
     const s = get()
-    const { profile, accounts, incomes, expenses, contributions, milestones, events, ui, onboarded, scenarios, activeScenarioId, snapshots } = s
-    localStorage.setItem(KEY, JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones, events, ui, onboarded, scenarios, activeScenarioId, snapshots }))
+    const { profile, accounts, incomes, expenses, contributions, milestones, ui, onboarded, scenarios, activeScenarioId, snapshots } = s
+    localStorage.setItem(KEY, JSON.stringify({ profile, accounts, incomes, expenses, contributions, milestones, ui, onboarded, scenarios, activeScenarioId, snapshots }))
   },
 
   async logout() {
     await logoutApi()
+    // Google has to be told too, or its SDK keeps holding the account and refuses
+    // to hand back a credential when the same user signs in again.
+    await signOutGoogle()
     set({ auth: null, syncStatus: 'idle', syncError: null, planHydrating: false })
   },
 
@@ -273,7 +304,9 @@ export const useStore = create((set, get) => {
       activeScenarioId: id,
       ...emptyData,
     })
-    get().persist()
+    // Local-only: switching between what-ifs is exploration, not a change to the
+    // plan of record, so it must never reach the server.
+    get().persistLocalOnly()
   },
 
   switchScenario(id) {
@@ -283,7 +316,10 @@ export const useStore = create((set, get) => {
     if (!target?.data) return
     const scenarios = s.scenarios.map((x) => (x.id === s.activeScenarioId ? { ...x, data: scenarioData(s) } : x))
     set({ scenarios, activeScenarioId: id, ...target.data })
-    get().persist()
+    get().persistLocalOnly()
+    // Landing back on the plan of record re-syncs it, undoing nothing but making
+    // sure the server matches what the user now sees.
+    if (id === 'base') get().scheduleSync()
   },
 
   renameScenario(id, name) {
@@ -305,7 +341,8 @@ export const useStore = create((set, get) => {
     } else {
       set({ scenarios: s.scenarios.filter((x) => x.id !== id) })
     }
-    get().persist()
+    get().persistLocalOnly()
+    if (get().activeScenarioId === 'base') get().scheduleSync()
   },
 
   // ---- Progress tracking: monthly net-worth snapshots ----
@@ -320,7 +357,7 @@ export const useStore = create((set, get) => {
     try {
       const cs = {
         profile: s.profile, accounts: s.accounts, incomes: s.incomes, expenses: s.expenses,
-        contributions: s.contributions, events: s.events, currentYear: s.currentYear,
+        contributions: s.contributions, milestones: s.milestones, currentYear: s.currentYear,
         realTerms: s.ui.realTerms, taxAware: !!s.ui.taxAware,
       }
       const projection = computeProjection(cs)
@@ -454,6 +491,16 @@ export const useStore = create((set, get) => {
         throw err
       }
     }
+  },
+
+  /** Deletes the server account, then wipes this device. Not reversible. */
+  async deleteAccount() {
+    await deleteAccountApi()
+    // Only clear locally once the server has confirmed — otherwise a failed call
+    // would wipe the device while the account lived on, with no way back into it.
+    await signOutGoogle()
+    localStorage.removeItem(KEY)
+    set({ ...DEFAULT_STATE, auth: null, onboarded: false, syncStatus: 'idle', syncError: null })
   },
 }})
 

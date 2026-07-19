@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy Policy — Financial Blueprint India</title>
+  <style>
+    body { font-family: "Plus Jakarta Sans", -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 720px; margin: 0 auto; padding: 32px 20px; color: #242424; line-height: 1.6; }
+    h1 { font-size: 26px; } h2 { font-size: 18px; margin-top: 28px; }
+    a { color: #377cc8; } .muted { color: #64748b; font-size: 14px; }
+    code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; }
+    li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Privacy Policy — Financial Blueprint India</h1>
+  <p class="muted">Last updated: 19 July 2026</p>
+
+  <p>Financial Blueprint is an India-first financial planning simulator. This policy explains what data we collect and how we handle it. Financial Blueprint provides illustrations only and is <strong>not investment advice</strong>.</p>
+
+  <h2>1. Information we collect</h2>
+  <ul>
+    <li><strong>Account identifier:</strong> your email address, and your name if you provide one. If you sign in with Google, we receive only your email address and name from your Google account — see section 3.</li>
+    <li><strong>Password:</strong> only if you create an account with one. It is hashed (scrypt, with a unique random salt per account) before storage. We never store, log, or transmit your password in readable form, and we cannot recover it.</li>
+    <li><strong>Financial plan data you enter:</strong> your accounts and balances, income, expenses, contributions, goals, life events, and the assumptions you set (age, retirement age, inflation, tax regime, salary). These are figures you type in or import; <strong>we never connect to your bank</strong>.</li>
+    <li><strong>App preferences:</strong> theme and display settings.</li>
+  </ul>
+  <p>We do <strong>not</strong> collect your bank passwords, card numbers, PAN, Aadhaar, location, contacts, or device identifiers for advertising. We show no ads and run no third-party analytics or tracking SDKs.</p>
+
+  <h2>2. Guest mode</h2>
+  <p>If you use Financial Blueprint as a guest, your data stays only on your device (browser local storage) and is never sent to our servers. Signing in later is what starts syncing it.</p>
+
+  <h2>3. Sign in with Google</h2>
+  <p>If you choose "Sign in with Google", Google asks for your consent and then gives our app a signed token proving who you are. From that token we read and store only two things: your <strong>email address</strong> and your <strong>name</strong>.</p>
+  <p>We request only the standard <code>openid</code>, <code>email</code> and <code>profile</code> scopes. We have <strong>no access</strong> to your Gmail, Drive, Contacts, Photos, or anything else in your Google account, and we never receive your Google password. We do not store a Google account identifier, and we do not use Google sign-in to track you across other sites or apps.</p>
+  <p>Because accounts are matched on email address, signing in with Google using the same email as an existing password account will sign you into that same account. This is only permitted when Google confirms the address is verified.</p>
+
+  <h2>4. CAS statement import</h2>
+  <p>If you upload a Consolidated Account Statement (CAS) PDF from CAMS or KFintech, it is parsed <strong>entirely on your device</strong>. The PDF file and its contents are never uploaded to our servers. Only the fund names and values you choose to keep become part of your plan.</p>
+
+  <h2>5. How we use your data</h2>
+  <p>Only to provide the service: to authenticate you, save your plan, and sync it across your devices. We do not sell your data, share it for advertising, or use it to train any model.</p>
+
+  <h2>6. Storage and security</h2>
+  <ul>
+    <li>Signed-in users' plan data is stored in a PostgreSQL database hosted by Supabase in the <strong>Singapore (ap-southeast-1)</strong> region, encrypted at rest.</li>
+    <li>All traffic between the app and our API uses <strong>HTTPS</strong>. Reading or changing your plan requires a valid authentication token, and one account can never read another's data.</li>
+    <li>Sign-in sessions expire and rotate. The long-lived part of a session is stored in our database only as a <strong>SHA-256 hash</strong>, so a copy of the database would not let anyone sign in as you.</li>
+    <li><strong>Changing your password signs out every other device</strong>, so if someone else has access to your account, resetting your password removes it.</li>
+    <li>On Android, your session and plan cache live in the app's private storage. We have <strong>disabled Android's automatic backup</strong> for this app, so that data is not copied to Google Drive or transferred to a new phone.</li>
+  </ul>
+
+  <h2>7. Data sharing</h2>
+  <p>We use the following processors solely to run the service, and share only what each one needs:</p>
+  <ul>
+    <li><strong>Supabase</strong> — database hosting (your account record and plan data).</li>
+    <li><strong>Render</strong> — API hosting (handles requests in transit).</li>
+    <li><strong>Google</strong> — only if you choose "Sign in with Google", to verify your identity. Google's handling of that sign-in is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Google's Privacy Policy</a>.</li>
+    <li><strong>Email delivery provider</strong> — only to send password-reset or one-time codes to your address, when that feature is used.</li>
+  </ul>
+  <p>We do not share your data with anyone else.</p>
+
+  <h2>8. Retention and your rights</h2>
+  <p>You can edit or delete any of your financial data at any time in the app. "Reset all data" in Settings clears the plan held on your device — and if you are signed in, that cleared state also syncs up, so the copy on our servers is emptied too. Your account record itself remains.</p>
+  <p>To <strong>delete your account and everything associated with it</strong> — your account record, your saved plan, and your sessions — open <strong>Settings &rarr; Delete my account</strong> in the app. This is immediate and permanent: your user record, every plan you have saved, and all active sessions are removed from our servers, and the copy held on your device is erased. It cannot be undone.</p>
+  <p>If you can no longer sign in to the app, email us at the address below from the address on the account and we will delete it for you.</p>
+
+  <h2>9. Children</h2>
+  <p>Financial Blueprint is not intended for users under 18.</p>
+
+  <h2>10. Changes</h2>
+  <p>We may update this policy; the "Last updated" date will change accordingly. Material changes to what we collect will be reflected here before they take effect.</p>
+
+  <h2>11. Contact</h2>
+  <p>Questions or data-deletion requests: <a href="mailto:work.bhushanpatil@gmail.com">work.bhushanpatil@gmail.com</a></p>
+</body>
+</html>

@@ -24,6 +24,9 @@ export const FlowSchema = z.object({
   endAge: age,
   color,
   section: z.string().nullable().optional(),
+  /** For an expense that services a debt: the liability it pays down (e.g. an EMI).
+   *  Without it the projection can't know that this outflow is retiring that loan. */
+  accountId: z.string().min(1).max(64).nullable().optional(),
 }).refine((d) => d.endAge >= d.startAge, { message: 'endAge must be >= startAge' })
 
 export const ContributionSchema = z.object({
@@ -33,13 +36,24 @@ export const ContributionSchema = z.object({
   section: z.string().nullable().optional(),
 })
 
+/** A goal. One record covers all three things a plan needs to say about a future
+ *  moment: what it costs, when it lands, and whether the money actually leaves.
+ *  `kind` picks which of those apply:
+ *    save   — accumulate `target`; nothing is spent (the classic milestone).
+ *    spend  — accumulate `target`, then `cashImpact` leaves the plan at `targetAge`.
+ *    marker — no target; just a dated point, optionally with money arriving. */
 export const MilestoneSchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().min(1).max(120),
   target: z.number(),
+  kind: z.enum(['save', 'spend', 'marker']).default('save'),
+  /** Signed cash applied to the projection at `targetAge`; negative = money out.
+   *  0 for a pure tracking goal, which is why `save` never moves the projection. */
+  cashImpact: z.number().default(0),
   accountId: z.string().optional(),
   metric: z.string().nullable().optional(),
   icon: z.string().max(8).optional(),
+  color: color.optional(),
   achieved: z.boolean().default(false),
   /** Age when tracking started (defaults to current age at creation). */
   startAge: age.optional(),
@@ -51,6 +65,8 @@ export const MilestoneSchema = z.object({
   returnRate: growth.optional(),
 })
 
+/** Superseded by MilestoneSchema — kept only so plans written before goals and
+ *  life events merged still parse. migratePlanPayload folds these into milestones. */
 export const EventSchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().min(1).max(120),
@@ -60,18 +76,38 @@ export const EventSchema = z.object({
   color,
 })
 
+/** A monthly net-worth check-in. The one thing here the user cannot retype from memory,
+ *  so it travels with the plan rather than living only on one device. */
+export const SnapshotSchema = z.object({
+  ym: z.string().regex(/^\d{4}-\d{2}$/),
+  netWorth: z.number(),
+  score: z.number().min(0).max(100).optional(),
+})
+
 export const PlanPayloadSchema = z.object({
   accounts: z.array(AccountSchema).max(100),
   incomes: z.array(FlowSchema).max(100),
   expenses: z.array(FlowSchema).max(100),
   contributions: z.array(ContributionSchema).max(100),
   milestones: z.array(MilestoneSchema).max(100),
-  events: z.array(EventSchema).max(100),
+  // Optional so plans written before goals and life events merged still validate.
+  // Read only by migratePlanPayload; nothing downstream consumes it.
+  events: z.array(EventSchema).max(100).optional(),
+  // Optional so plans written before check-ins synced still validate.
+  snapshots: z.array(SnapshotSchema).max(600).optional(),
 }).superRefine((data, ctx) => {
   const assetIds = new Set(data.accounts.filter((a) => a.kind === 'asset').map((a) => a.id))
   data.contributions.forEach((c, i) => {
     if (!assetIds.has(c.accountId)) {
       ctx.addIssue({ code: 'custom', path: ['contributions', i, 'accountId'], message: 'accountId must reference an asset' })
+    }
+  })
+  // An expense may name the debt it services; a dangling link would silently stop
+  // paying the loan down, so reject it rather than let the projection drift.
+  const liabilityIds = new Set(data.accounts.filter((a) => a.kind === 'liability').map((a) => a.id))
+  data.expenses.forEach((e, i) => {
+    if (e.accountId != null && !liabilityIds.has(e.accountId)) {
+      ctx.addIssue({ code: 'custom', path: ['expenses', i, 'accountId'], message: 'accountId must reference a liability' })
     }
   })
   const size = JSON.stringify(data).length
@@ -123,18 +159,15 @@ export const defaultPlanPayload = {
     { id: 'c4', accountId: 'nps', amount: 50000, section: '80CCD1B' },
   ],
   milestones: [
-    { id: 'm1', name: 'Emergency Fund (6 months)', target: 360000, accountId: 'savings', icon: '🛟', achieved: true, priority: 1 },
-    { id: 'm2', name: 'First ₹1 Crore Net Worth', target: 10000000, metric: 'netWorth', icon: '💎', achieved: false, startAge: 32, targetAge: 45, priority: 2 },
-    { id: 'm3', name: "Child's Education Corpus", target: 5000000, metric: 'investable', icon: '🎓', achieved: false, startAge: 32, targetAge: 48, priority: 3 },
-    { id: 'm4', name: 'Retirement Corpus (₹5 Cr FI)', target: 50000000, metric: 'netWorth', icon: '🏝️', achieved: false, startAge: 32, targetAge: 60, priority: 4 },
-    { id: 'm5', name: 'Home Loan Free', target: 0, accountId: 'homeloan', icon: '🏠', achieved: false, startAge: 32, targetAge: 52, priority: 5 },
-  ],
-  events: [
-    { id: 'e1', name: 'Buy a car', age: 35, amount: -1200000, icon: '🚗', color: '#f59e0b' },
-    { id: 'e2', name: "Child's higher education", age: 48, amount: -3000000, icon: '🎓', color: '#0ea5e9' },
-    { id: 'e3', name: "Child's marriage", age: 55, amount: -2500000, icon: '💍', color: '#ec4899' },
-    { id: 'e4', name: 'Retire', age: 60, amount: 0, icon: '🌴', color: '#22c55e' },
-    { id: 'e5', name: 'Downsize / sell 2nd property', age: 70, amount: 4000000, icon: '📦', color: '#8b5cf6' },
+    { id: 'm1', name: 'Emergency Fund (6 months)', kind: 'save', target: 360000, cashImpact: 0, accountId: 'savings', icon: '🛟', achieved: true, priority: 1 },
+    { id: 'm2', name: 'First ₹1 Crore Net Worth', kind: 'save', target: 10000000, cashImpact: 0, metric: 'netWorth', icon: '💎', achieved: false, startAge: 32, targetAge: 45, priority: 2 },
+    // Saving for this and spending it are the same goal, so target and cashImpact match.
+    { id: 'm3', name: "Child's Higher Education", kind: 'spend', target: 5000000, cashImpact: -5000000, metric: 'investable', icon: '🎓', achieved: false, startAge: 32, targetAge: 48, priority: 3 },
+    { id: 'm4', name: 'Retirement Corpus (₹5 Cr FI)', kind: 'save', target: 50000000, cashImpact: 0, metric: 'netWorth', icon: '🏝️', achieved: false, startAge: 32, targetAge: 60, priority: 4 },
+    { id: 'm5', name: 'Home Loan Free', kind: 'save', target: 0, cashImpact: 0, accountId: 'homeloan', icon: '🏠', achieved: false, startAge: 32, targetAge: 52, priority: 5 },
+    { id: 'm6', name: 'Buy a car', kind: 'spend', target: 1200000, cashImpact: -1200000, metric: 'investable', icon: '🚗', achieved: false, startAge: 32, targetAge: 35, priority: 6 },
+    { id: 'm7', name: "Child's Marriage", kind: 'spend', target: 2500000, cashImpact: -2500000, metric: 'investable', icon: '💍', achieved: false, startAge: 32, targetAge: 55, priority: 7 },
+    { id: 'm8', name: 'Downsize / sell 2nd property', kind: 'marker', target: 0, cashImpact: 4000000, icon: '📦', achieved: false, targetAge: 70, priority: 8 },
   ],
 }
 
@@ -156,7 +189,6 @@ export const emptyPlanPayload = {
   expenses: [],
   contributions: [],
   milestones: [],
-  events: [],
 }
 
 export const emptyProfile = {
@@ -165,8 +197,34 @@ export const emptyProfile = {
   grossSalary: null,
 }
 
+/** Folds a pre-merge `events` array into `milestones`. Goals and life events used to
+ *  be two collections describing the same future moments, so an event becomes the goal
+ *  it always was: what it costs, when, and that the money leaves.
+ *  Idempotent — a payload without `events` passes straight through. */
+export function migratePlanPayload(data) {
+  if (!data || !Array.isArray(data.events) || data.events.length === 0) {
+    const { events, ...rest } = data || {}
+    return rest
+  }
+  const { events, ...rest } = data
+  const migrated = events.map((e) => {
+    const base = { id: e.id, name: e.name, targetAge: e.age, icon: e.icon, color: e.color }
+    // Money leaving is a goal you save toward, so the outflow doubles as the target.
+    // Anything else (a dated marker, or money arriving) has nothing to save toward.
+    return e.amount < 0
+      ? { ...base, kind: 'spend', target: Math.abs(e.amount), cashImpact: e.amount, metric: 'investable', achieved: false }
+      : { ...base, kind: 'marker', target: 0, cashImpact: e.amount, achieved: false }
+  })
+  const existing = Array.isArray(rest.milestones) ? rest.milestones : []
+  const taken = new Set(existing.map((m) => m.id))
+  return {
+    ...rest,
+    milestones: [...existing, ...migrated.filter((m) => !taken.has(m.id))],
+  }
+}
+
 export function parsePlanPayload(data) {
-  return PlanPayloadSchema.parse(data)
+  return PlanPayloadSchema.parse(migratePlanPayload(data))
 }
 
 export function parseProfile(data) {

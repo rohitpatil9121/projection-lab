@@ -4,12 +4,12 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import { requestOtp, verifyOtp, requestPhoneOtp, verifyPhoneOtp, registerUser, loginUser, requestPasswordReset, resetPassword, refreshSession, logout, signInWithGoogle } from './auth.js'
 import { verifyGoogleIdToken, googleConfigured } from './google.js'
 import { listPlans, getPlan, createPlan, ensureDefaultPlan, updatePlan, deletePlan } from './plans.js'
 import { requireAuth, errorHandler } from './middleware.js'
-import { users, ready } from './db.js'
+import { users, sessions, plans, ready } from './db.js'
 import { TAX_CONFIG, TAX_FY } from '@projectlab/engine'
 import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
 import { withDevFields, isProduction } from './dev.js'
@@ -44,6 +44,36 @@ const authLimiter = rateLimit({
   message: { error: 'Too many attempts. Try again later.' },
 })
 app.use('/v1/auth', authLimiter)
+
+/**
+ * Password guessing gets a much tighter budget than the rest of /v1/auth: 4 failures
+ * per 15 minutes.
+ *
+ * Deliberately its own limiter rather than lowering authLimiter, because that one also
+ * covers /auth/refresh — dropping it to 4 would 429 the token refresh of an ordinary
+ * signed-in user and silently log them out mid-session.
+ *
+ * `skipSuccessfulRequests` means only FAILURES count, so someone who signs in correctly
+ * never spends the budget, and a user who mistypes twice then succeeds starts clean.
+ *
+ * Keyed on IP + email, not IP alone: keying on email only would let anyone lock a victim
+ * out of their own account by guessing at it, and IP only would punish everyone sharing
+ * an office or carrier NAT for one person's typo.
+ */
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 4,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  // ipKeyGenerator normalises IPv6 into a sane subnet key; required in v8 when
+  // writing a custom keyGenerator, or IPv6 clients each get their own bucket.
+  keyGenerator: (req, res) =>
+    `${ipKeyGenerator(req.ip)}:${String(req.body?.email || '').trim().toLowerCase()}`,
+  message: {
+    error: 'Too many failed sign-in attempts. Please wait 15 minutes and try again.',
+  },
+})
 
 app.get('/healthz', (_req, res) => {
   // `auth` reports which sign-in methods this deployment can actually serve, so a
@@ -108,7 +138,7 @@ app.post('/v1/auth/register', async (req, res, next) => {
   } catch (err) { next(err) }
 })
 
-app.post('/v1/auth/login', async (req, res, next) => {
+app.post('/v1/auth/login', loginLimiter, async (req, res, next) => {
   try {
     const session = await loginUser(req.body.email || '', req.body.password || '')
     await ensureDefaultPlan(session.user.id)
@@ -188,6 +218,18 @@ app.patch('/v1/me', requireAuth, async (req, res, next) => {
     if (req.body.uiPrefs) patch.uiPrefs = req.body.uiPrefs
     const updated = await users.update(req.user.id, patch)
     res.json(publicUser(updated))
+  } catch (err) { next(err) }
+})
+
+// Google Play requires apps with accounts to offer in-app deletion of the account
+// itself, not just its contents. Removes plans and sessions before the user row so
+// a failure part-way can't strand rows pointing at a user that no longer exists.
+app.delete('/v1/me', requireAuth, async (req, res, next) => {
+  try {
+    await plans.deleteByUser(req.user.id)
+    await sessions.deleteByUser(req.user.id)
+    await users.del(req.user.id)
+    res.json({ ok: true })
   } catch (err) { next(err) }
 })
 
