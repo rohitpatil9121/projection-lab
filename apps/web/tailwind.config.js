@@ -63,7 +63,7 @@ export default {
         card: '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
         soft: '0 4px 24px rgba(15,23,42,0.06)',
         lift: '0 12px 32px -8px rgba(15,23,42,0.14), 0 4px 12px -4px rgba(15,23,42,0.08)',
-        glow: '0 0 0 1px rgba(99,102,241,0.15), 0 8px 30px -6px rgba(99,102,241,0.35)',
+        glow: '0 0 0 1px rgba(55,124,200,0.15), 0 8px 30px -6px rgba(55,124,200,0.35)',
       },
       transitionTimingFunction: {
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
@@ -90,13 +90,18 @@ export default {
           '0%,100%': { transform: 'translateY(0) rotate(var(--r,0deg))' },
           '50%': { transform: 'translateY(-16px) rotate(var(--r,0deg))' },
         },
+        // Drifts one grid cell then repeats — indistinguishable from panning the
+        // background-position, but a transform composites instead of repainting
+        // the whole screen every frame.
         'grid-pan': {
-          from: { backgroundPosition: '0 0' },
-          to: { backgroundPosition: '44px 44px' },
+          from: { transform: 'translate3d(0,0,0)' },
+          to: { transform: 'translate3d(44px,44px,0)' },
         },
+        // A scaling halo replaces the old animated box-shadow. Same pulse, except
+        // box-shadow repaints each frame and scale/opacity do not.
         'glow-pulse': {
-          '0%,100%': { boxShadow: '0 0 0 0 rgba(63,131,205,.55), 0 0 42px 6px rgba(63,131,205,.45)' },
-          '50%': { boxShadow: '0 0 0 14px rgba(63,131,205,0), 0 0 64px 12px rgba(63,131,205,.6)' },
+          '0%,100%': { transform: 'scale(1)', opacity: '0.55' },
+          '50%': { transform: 'scale(1.45)', opacity: '0' },
         },
         'draw-line': {
           to: { strokeDashoffset: '0' },
@@ -104,10 +109,6 @@ export default {
         'gradient-pan': {
           '0%,100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
-        },
-        'page-in': {
-          '0%': { opacity: '0', transform: 'translateY(8px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
@@ -121,7 +122,6 @@ export default {
         'glow-pulse': 'glow-pulse 3.2s ease-in-out infinite',
         'draw-line': 'draw-line 2.4s cubic-bezier(0.16,1,0.3,1) 0.3s forwards',
         'gradient-pan': 'gradient-pan 12s ease infinite',
-        'page-in': 'page-in 0.32s cubic-bezier(0.16,1,0.3,1) both',
       },
     },
   },

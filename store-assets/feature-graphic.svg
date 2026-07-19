@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1c3350"/>
+      <stop offset="55%" stop-color="#101826"/>
+      <stop offset="100%" stop-color="#0a0f17"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.1" r="0.8">
+      <stop offset="0%" stop-color="#377cc8" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#377cc8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#377cc8" stop-opacity="0.38"/>
+      <stop offset="100%" stop-color="#377cc8" stop-opacity="0"/>
+    </linearGradient>
+    <pattern id="dots" width="34" height="34" patternUnits="userSpaceOnUse">
+      <circle cx="1.5" cy="1.5" r="1.5" fill="#ffffff" fill-opacity="0.05"/>
+    </pattern>
+  </defs>
+
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#dots)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+
+  <!-- Rising corpus curve, echoing the in-app wealth chart -->
+  <path d="M560 430 L640 400 L700 412 L770 320 L840 348 L910 250 L1024 190 L1024 500 L560 500 Z" fill="url(#areaFill)"/>
+  <path d="M560 430 L640 400 L700 412 L770 320 L840 348 L910 250 L1024 190"
+        fill="none" stroke="#4f93da" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="770" cy="320" r="8" fill="#4f93da"/>
+  <circle cx="910" cy="250" r="8" fill="#4f93da"/>
+
+  <!-- App icon tile -->
+  <g transform="translate(74, 96)">
+    <rect width="104" height="104" rx="30" fill="#377cc8"/>
+    <path d="M28 74 L46 52 L60 66 L84 38" fill="none" stroke="#ffffff" stroke-width="9"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M68 34 L86 34 L86 52" fill="none" stroke="#ffffff" stroke-width="9"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <text x="74" y="272" font-family="'Plus Jakarta Sans','Segoe UI',Arial,sans-serif"
+        font-size="62" font-weight="800" fill="#ffffff" letter-spacing="-1.5">Financial Blueprint</text>
+
+  <text x="76" y="326" font-family="'Plus Jakarta Sans','Segoe UI',Arial,sans-serif"
+        font-size="27" font-weight="500" fill="#ffffff" fill-opacity="0.66">Plan your future in ₹ lakh &amp; crore</text>
+
+  <g font-family="'Plus Jakarta Sans','Segoe UI',Arial,sans-serif" font-size="19" font-weight="700" fill="#ffffff">
+    <g transform="translate(74, 372)">
+      <rect width="196" height="46" rx="23" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.2"/>
+      <text x="98" y="30" text-anchor="middle" fill-opacity="0.92">EPF · PPF · NPS · SIP</text>
+    </g>
+    <g transform="translate(288, 372)">
+      <rect width="182" height="46" rx="23" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.2"/>
+      <text x="91" y="30" text-anchor="middle" fill-opacity="0.92">Monte Carlo</text>
+    </g>
+  </g>
+</svg>

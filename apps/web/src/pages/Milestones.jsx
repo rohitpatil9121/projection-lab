@@ -19,6 +19,8 @@ function goalCategory(m, accounts) {
   if (/retire|freedom|independence|\bfire?\b/i.test(n)) return 'FINANCIAL FREEDOM'
   if (/car|vehicle|bike/i.test(n)) return 'VEHICLE'
   if (/wedding|marriage|travel|trip/i.test(n)) return 'LIFE EVENT'
+  // A marker has no target and no account to infer from — it's just a dated moment.
+  if (m.kind === 'marker') return 'LIFE EVENT'
   if (m.accountId) {
     const a = accounts.find((x) => x.id === m.accountId)
     if (a?.kind === 'liability') return 'DEBT PAYOFF'
@@ -29,6 +31,12 @@ function goalCategory(m, accounts) {
   }
   return m.metric === 'investable' ? 'INVESTMENT' : 'NET WORTH'
 }
+
+const KIND_OPTIONS = [
+  { value: 'save', label: 'Save', hint: 'Build up to an amount and keep it — a corpus, a fund, a payoff.' },
+  { value: 'spend', label: 'Spend', hint: 'Save up to an amount, then spend it at that age — a car, a wedding, fees.' },
+  { value: 'marker', label: 'Marker', hint: 'Just a date on your plan — no target to save toward.' },
+]
 
 const CATEGORY_STYLE = {
   'REAL ESTATE': { band: 'from-[#e0533d] via-[#e78c9d] to-[#eed868]', pill: 'text-[#e0533d]' },
@@ -61,7 +69,7 @@ export default function Milestones() {
 
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState(null)
-  const [draft, setDraft] = useState({ name: '', target: '', targetAge: '', icon: '🎯', metric: 'netWorth' })
+  const [draft, setDraft] = useState({ name: '', target: '', targetAge: '', icon: '🎯', metric: 'netWorth', kind: 'save' })
 
   const ctx = { accounts, projection, profile, contributions, currentYear: CURRENT_YEAR }
   const rows = [...milestones]
@@ -71,17 +79,29 @@ export default function Milestones() {
   const done = rows.filter((r) => r.m.achieved || r.progress >= 100).length
   const overallPct = rows.length ? Math.round(rows.reduce((s, r) => s + r.progress, 0) / rows.length) : 0
 
+  const isMarker = draft.kind === 'marker'
+  const draftAge = Number(draft.targetAge) > profile.currentAge ? Number(draft.targetAge) : undefined
+  // A marker has nothing to save toward, so it only needs a date. Everything else
+  // needs an amount; a spend goal also needs to know when the money leaves.
+  const canSave = draft.name.trim() && (isMarker ? draftAge != null : Number(draft.target) > 0)
+    && (draft.kind !== 'spend' || draftAge != null)
+
   const save = () => {
-    if (!draft.name.trim() || !(Number(draft.target) > 0)) return
+    if (!canSave) return
+    const target = isMarker ? 0 : Number(draft.target)
     addItem('milestones', {
       name: draft.name.trim(),
-      target: Number(draft.target),
-      metric: draft.metric,
+      kind: draft.kind,
+      target,
+      // What you save for is what you spend — that duplication is what split goals
+      // and life events in two, so the form only ever asks for the amount once.
+      cashImpact: draft.kind === 'spend' ? -target : 0,
+      metric: isMarker ? undefined : draft.metric,
       icon: draft.icon || '🎯',
       achieved: false,
-      targetAge: Number(draft.targetAge) > profile.currentAge ? Number(draft.targetAge) : undefined,
+      targetAge: draftAge,
     })
-    setDraft({ name: '', target: '', targetAge: '', icon: '🎯', metric: 'netWorth' })
+    setDraft({ name: '', target: '', targetAge: '', icon: '🎯', metric: 'netWorth', kind: 'save' })
     setAdding(false)
   }
 
@@ -110,9 +130,9 @@ export default function Milestones() {
         </div>
       </div>
 
-      {/* ---- Recent milestones rail (never empty: moments → achieved goals → next targets) ---- */}
+      {/* ---- Recent wins rail (never empty: moments → achieved goals → next targets) ---- */}
       <div>
-        <SectionLabel>Recent Milestones</SectionLabel>
+        <SectionLabel>Recent Wins</SectionLabel>
         <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 snap-x">
           {moments.map((mo) => (
             <Card key={mo.id} className="!p-3 flex items-center gap-3 min-w-[250px] shrink-0 snap-start">
@@ -148,7 +168,7 @@ export default function Milestones() {
             </Card>
           ))}
           {moments.length === 0 && rows.length === 0 && (
-            <Card className="!p-3 text-sm text-ink-400 min-w-[250px]">Add your first goal to start collecting milestones.</Card>
+            <Card className="!p-3 text-sm text-ink-400 min-w-[250px]">Add your first goal to start collecting wins.</Card>
           )}
         </div>
       </div>
@@ -169,28 +189,51 @@ export default function Milestones() {
                 <input value={draft.icon} onChange={(e) => setDraft({ ...draft, icon: e.target.value })} className="input !py-1.5 text-sm w-14 text-center" maxLength={2} />
                 <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Goal name (e.g. Dream home)" className="input !py-1.5 text-sm flex-1" />
               </div>
+              <div>
+                <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Goal type</span>
+                <div className="mt-1 grid grid-cols-3 gap-1.5">
+                  {KIND_OPTIONS.map((k) => (
+                    <button
+                      key={k.value} type="button" onClick={() => setDraft({ ...draft, kind: k.value })}
+                      aria-pressed={draft.kind === k.value}
+                      className={`rounded-[10px] border px-2 py-1.5 text-[11px] font-extrabold transition ${draft.kind === k.value
+                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
+                        : 'border-ink-200 text-ink-500 hover:border-brand-300 dark:border-ink-700 dark:text-ink-300'}`}
+                    >{k.label}</button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[11px] text-ink-400">{KIND_OPTIONS.find((k) => k.value === draft.kind).hint}</p>
+              </div>
               <div className="grid grid-cols-2 gap-2">
+                {!isMarker && (
+                  <label className="block">
+                    <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">
+                      {draft.kind === 'spend' ? 'Cost' : 'Target amount'}
+                    </span>
+                    <div className="relative mt-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-sm font-semibold">₹</span>
+                      <input type="number" value={draft.target} onChange={(e) => setDraft({ ...draft, target: e.target.value })} placeholder="10000000" className="input pl-7 text-sm" />
+                    </div>
+                  </label>
+                )}
                 <label className="block">
-                  <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Target amount</span>
-                  <div className="relative mt-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400 text-sm font-semibold">₹</span>
-                    <input type="number" value={draft.target} onChange={(e) => setDraft({ ...draft, target: e.target.value })} placeholder="10000000" className="input pl-7 text-sm" />
-                  </div>
-                </label>
-                <label className="block">
-                  <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Target by age</span>
+                  <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">
+                    {draft.kind === 'spend' ? 'Spend at age' : 'Target by age'}
+                  </span>
                   <input type="number" value={draft.targetAge} onChange={(e) => setDraft({ ...draft, targetAge: e.target.value })} placeholder={`e.g. ${profile.currentAge + 10}`} className="input text-sm mt-1" />
                 </label>
               </div>
-              <label className="block">
-                <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Measure progress against</span>
-                <select value={draft.metric} onChange={(e) => setDraft({ ...draft, metric: e.target.value })} className="input text-sm mt-1">
-                  <option value="netWorth">Net Worth</option>
-                  <option value="investable">Investments</option>
-                </select>
-              </label>
+              {!isMarker && (
+                <label className="block">
+                  <span className="text-[11px] font-semibold text-ink-400 uppercase tracking-wide">Measure progress against</span>
+                  <select value={draft.metric} onChange={(e) => setDraft({ ...draft, metric: e.target.value })} className="input text-sm mt-1">
+                    <option value="netWorth">Net Worth</option>
+                    <option value="investable">Investments</option>
+                  </select>
+                </label>
+              )}
               <div className="flex gap-2 pt-1">
-                <button onClick={save} className="btn-primary flex-1 text-sm">Save goal</button>
+                <button onClick={save} disabled={!canSave} className="btn-primary flex-1 text-sm disabled:opacity-40">Save goal</button>
                 <button onClick={() => setAdding(false)} className="btn-secondary text-sm">Cancel</button>
               </div>
             </div>
@@ -202,6 +245,7 @@ export default function Milestones() {
             const { m, current, progress, achievedYear, isPayoff, targetAge, nominalTarget, inflationAdjusted,
               requiredSip, actualSip, sipGap, expectedProgress, priority } = row
             const complete = progress >= 100
+            const marker = m.kind === 'marker'
             const category = goalCategory(m, accounts)
             const style = CATEGORY_STYLE[category] || CATEGORY_STYLE['NET WORTH']
             const status = goalStatus(row)
@@ -229,39 +273,79 @@ export default function Milestones() {
                   <div className="flex items-start justify-between gap-3">
                     <input value={m.name} onChange={(e) => updateItem('milestones', m.id, { name: e.target.value })}
                       className="text-lg font-extrabold tracking-tight bg-transparent outline-none min-w-0 flex-1 focus:text-brand-600" />
-                    <div className="text-right shrink-0">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">Reached</div>
-                      <div className={`text-xl font-extrabold money ${complete ? 'text-emerald-600' : 'text-brand-600'}`}>{progress}%</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex items-end justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">Current Savings</div>
-                      <div className="text-base font-extrabold money mt-0.5">{fmtMoney(current, { compact: true })}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">Target Amount</div>
-                      <div className="text-base font-bold money text-ink-500 dark:text-ink-300 mt-0.5">
-                        {isPayoff ? 'Pay off' : fmtMoney(m.target, { compact: true })}
+                    {!marker && (
+                      <div className="text-right shrink-0">
+                        <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">Reached</div>
+                        <div className={`text-xl font-extrabold money ${complete ? 'text-emerald-600' : 'text-brand-600'}`}>{progress}%</div>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3.5 h-2 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden relative">
-                    <div className="h-full rounded-full transition-[width] duration-500 ease-out-expo"
-                      style={{ width: `${progress}%`, background: barColor }} />
-                    {expectedProgress != null && !complete && (
-                      <div className="absolute top-0 bottom-0 w-0.5 bg-ink-400/70" style={{ left: `${expectedProgress}%` }} title={`Expected ${expectedProgress}% by now`} />
                     )}
                   </div>
 
+                  {/* A marker has no target to save toward, so progress would read 0% forever. */}
+                  {marker ? (
+                    <div className="mt-3 flex items-end justify-between gap-3">
+                      <div>
+                        <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">On your plan at</div>
+                        <div className="text-base font-extrabold money mt-0.5">
+                          {targetAge != null ? `Age ${targetAge}` : '—'}
+                        </div>
+                      </div>
+                      {!!m.cashImpact && (
+                        <div className="text-right">
+                          <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">
+                            {m.cashImpact > 0 ? 'Money in' : 'Money out'}
+                          </div>
+                          <div className={`text-base font-bold money mt-0.5 ${m.cashImpact > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {fmtMoney(m.cashImpact, { compact: true })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="mt-3 flex items-end justify-between gap-3">
+                        <div>
+                          <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">Current Savings</div>
+                          <div className="text-base font-extrabold money mt-0.5">{fmtMoney(current, { compact: true })}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[10px] font-extrabold uppercase tracking-wide text-ink-400">
+                            {m.kind === 'spend' ? 'Cost' : 'Target Amount'}
+                          </div>
+                          <div className="text-base font-bold money text-ink-500 dark:text-ink-300 mt-0.5">
+                            {isPayoff ? 'Pay off' : fmtMoney(m.target, { compact: true })}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3.5 h-2 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden relative">
+                        <div className="h-full rounded-full transition-[width] duration-500 ease-out-expo"
+                          style={{ width: `${progress}%`, background: barColor }} />
+                        {expectedProgress != null && !complete && (
+                          <div className="absolute top-0 bottom-0 w-0.5 bg-ink-400/70" style={{ left: `${expectedProgress}%` }} title={`Expected ${expectedProgress}% by now`} />
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {m.kind === 'spend' && targetAge != null && (
+                    <p className="mt-2.5 text-[11px] text-ink-400">
+                      Leaves your plan at age {targetAge} — {fmtMoney(Math.abs(m.cashImpact || 0), { compact: true })} spent.
+                    </p>
+                  )}
+
                   <div className="mt-3 flex items-center justify-between text-[13px]">
                     <span className="flex items-center gap-[7px] font-bold">
-                      {complete
-                        ? <IconCheck size={13} className="text-emerald-600" />
-                        : <span className="h-[9px] w-[9px] rounded-full" style={{ background: status.color }} />}
-                      {status.label}
+                      {marker ? (
+                        <span className="text-ink-400">Milestone on your timeline</span>
+                      ) : (
+                        <>
+                          {complete
+                            ? <IconCheck size={13} className="text-emerald-600" />
+                            : <span className="h-[9px] w-[9px] rounded-full" style={{ background: status.color }} />}
+                          {status.label}
+                        </>
+                      )}
                     </span>
                     <span className="flex items-center gap-1.5 font-bold text-ink-500 dark:text-ink-300">
                       <IconTrend size={14} /> <span className="money">{targetYear ?? '—'}</span>
@@ -277,9 +361,13 @@ export default function Milestones() {
                     <div className="mt-2 space-y-2 text-xs text-ink-500 border-t border-ink-100 dark:border-ink-800 pt-3">
                       <div className="flex flex-wrap items-center justify-between gap-x-2">
                         <span>
-                          {isPayoff ? 'Pay off in full' : (
-                            <>Target ₹<input type="number" value={m.target} onWheel={(e) => e.currentTarget.blur()}
-                              onChange={(e) => updateItem('milestones', m.id, { target: Number(e.target.value) })}
+                          {marker ? 'No target — just a date' : isPayoff ? 'Pay off in full' : (
+                            <>{m.kind === 'spend' ? 'Costs' : 'Target'} ₹<input type="number" value={m.target} onWheel={(e) => e.currentTarget.blur()}
+                              onChange={(e) => {
+                                const target = Number(e.target.value)
+                                // Saving for it and spending it are one number, so they move together.
+                                updateItem('milestones', m.id, m.kind === 'spend' ? { target, cashImpact: -target } : { target })
+                              }}
                               className="w-24 bg-transparent outline-none money focus:text-brand-600 [appearance:textfield]" /> today</>
                           )}
                         </span>

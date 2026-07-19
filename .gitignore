@@ -20,3 +20,8 @@ FinancialBlueprint-release.aab
 ProjectLab-debug.apk
 *.apk
 *.aab
+
+# signing keys — leaking one lets anyone ship an update as us, and it can never be rotated
+*.jks
+*.keystore
+keystore.properties

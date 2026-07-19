@@ -9,15 +9,15 @@ export function useProjection() {
   const incomes = useStore((s) => s.incomes)
   const expenses = useStore((s) => s.expenses)
   const contributions = useStore((s) => s.contributions)
-  const events = useStore((s) => s.events)
+  const milestones = useStore((s) => s.milestones)
   const currentYear = useStore((s) => s.currentYear)
   const realTerms = useStore((s) => s.ui.realTerms)
   const taxAware = useStore((s) => !!s.ui.taxAware)
 
   return useMemo(() => {
-    const state = { profile, accounts, incomes, expenses, contributions, events, currentYear, realTerms, taxAware }
+    const state = { profile, accounts, incomes, expenses, contributions, milestones, currentYear, realTerms, taxAware }
     const projection = computeProjection(state)
     const readiness = computeReadiness(state, projection)
     return { projection, readiness, state }
-  }, [profile, accounts, incomes, expenses, contributions, events, currentYear, realTerms, taxAware])
+  }, [profile, accounts, incomes, expenses, contributions, milestones, currentYear, realTerms, taxAware])
 }

@@ -1,63 +1,75 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Capacitor } from '@capacitor/core'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import { IconShield, IconTrend } from '../components/Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
-const AUTO_MS = Capacitor.isNativePlatform() ? 4800 : 5500
+gsap.registerPlugin(useGSAP)
 
 export default function Landing({ onComplete }) {
   const [phase, setPhase] = useState(0)
-  const [progress, setProgress] = useState(0)
   const [exiting, setExiting] = useState(false)
+  const root = useRef(null)
 
-  const finish = useCallback((action = 'continue') => {
+  const finish = useCallback(() => {
     if (exiting) return
     setExiting(true)
-    setTimeout(() => onComplete(action), 380)
+    setTimeout(() => onComplete(), 380)
   }, [exiting, onComplete])
 
   const finishRef = useRef(finish)
   finishRef.current = finish
 
+  // Fades the background scene in behind the content stagger.
   useEffect(() => {
-    const start = performance.now()
-    let frame
-    const tick = (now) => {
-      const pct = Math.min(100, ((now - start) / AUTO_MS) * 100)
-      setProgress(pct)
-      if (pct < 100) frame = requestAnimationFrame(tick)
-      else finishRef.current('continue')
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    const t = setTimeout(() => setPhase(1), 400)
+    return () => clearTimeout(t)
   }, [])
 
-  useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 400)
-    const t2 = setTimeout(() => setPhase(2), 1200)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
-  }, [])
+  // The design's own entrance: every .lz element rises in, one after another.
+  // matchMedia gives us a no-op branch for reduced motion — GSAP writes inline
+  // styles, so the stylesheet's reduced-motion rule can't reach these.
+  //
+  // fromTo, not from: this callback runs more than once, and .from() infers its
+  // destination from wherever the element sits at call time. Staggered elements sit
+  // parked at the start offset waiting their turn, so a second .from() read y:26 as
+  // the resting place and left whichever element was waiting stranded 26px down —
+  // most visibly the CTA, dropped onto the version line. Stating both ends fixes it.
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(
+        '.lz',
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.75, stagger: 0.12, ease: 'power3.out', delay: 0.12, overwrite: 'auto' },
+      )
+    })
+    return () => mm.revert()
+  }, { scope: root })
 
   useEffect(() => {
     return registerBackHandler(() => {
-      finishRef.current('continue')
+      finishRef.current()
       return true
     })
   }, [])
 
   return (
     <div
+      ref={root}
       className={`fixed inset-0 z-[200] flex flex-col overflow-hidden text-white transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
       style={{ background: 'radial-gradient(120% 80% at 50% 8%, #1c3350, #101826 55%, #0a0f17)' }}
       role="presentation"
     >
-      {/* Drifting dot grid */}
+      {/* Drifting dot grid. Oversized by one cell so translating it never exposes an
+          edge, and the pattern repeats exactly at 44px — the loop is seamless. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-60 animate-grid-pan"
+        className="pointer-events-none absolute -inset-[44px] opacity-60 animate-grid-pan"
         style={{
           backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px)',
           backgroundSize: '44px 44px',
+          willChange: 'transform',
         }}
       />
 
@@ -69,10 +81,13 @@ export default function Landing({ onComplete }) {
           { cls: 'top-[20%] right-[20%] w-[120px] h-[260px]', r: '-4deg', d: '.4s', dur: '9.5s', bg: 'bg-white/[0.025] border-white/[0.06]' },
           { cls: 'top-[44%] -left-[4%] w-[120px] h-[220px]', r: '6deg', d: '1.2s', dur: '8s', bg: 'bg-white/[0.02] border-white/[0.06]' },
         ].map((p, i) => (
+          // No backdrop-blur here on purpose: at 2–3% white over a dark gradient a
+          // 2px blur is invisible, but it forces the GPU to re-sample the backdrop
+          // behind four moving elements every frame. Pure cost, no pixels.
           <div
             key={i}
-            className={`absolute rounded-[22px] border backdrop-blur-[2px] animate-float-y ${p.cls} ${p.bg}`}
-            style={{ '--r': p.r, animationDelay: p.d, animationDuration: p.dur }}
+            className={`absolute rounded-[22px] border animate-float-y ${p.cls} ${p.bg}`}
+            style={{ '--r': p.r, animationDelay: p.d, animationDuration: p.dur, willChange: 'transform' }}
           />
         ))}
         {/* Warm horizon glow */}
@@ -91,33 +106,35 @@ export default function Landing({ onComplete }) {
       </div>
 
       <div className="relative flex-1 flex flex-col items-center justify-center px-7 pb-4 pt-14 w-full max-w-md mx-auto text-center">
-        {/* Brand icon */}
-        <div
-          className={`grid place-items-center h-[74px] w-[74px] rounded-full animate-glow-pulse transition-all duration-700 ${phase >= 1 ? 'scale-100 opacity-100' : 'scale-75 opacity-0'}`}
-          style={{
-            background: 'linear-gradient(160deg, #4f93da, #2f6aac)',
-            transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)',
-          }}
-        >
-          <IconTrend size={30} className="!stroke-[2.4]" />
+        {/* Brand icon. The halo is its own element so the pulse can ride on
+            scale/opacity — the previous animated box-shadow repainted every frame. */}
+        <div className="lz relative grid place-items-center h-[74px] w-[74px]">
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-brand-500/60 blur-xl animate-glow-pulse"
+            style={{ willChange: 'transform, opacity' }}
+          />
+          <span
+            className="relative grid place-items-center h-full w-full rounded-full"
+            style={{
+              background: 'linear-gradient(160deg, #4f93da, #2f6aac)',
+              boxShadow: '0 0 42px 6px rgba(63,131,205,.45)',
+            }}
+          >
+            <IconTrend size={30} className="!stroke-[2.4]" />
+          </span>
         </div>
 
-        <h1
-          className="mt-6 text-[38px] font-extrabold tracking-[-0.03em] leading-[1.05] animate-fade-in-up"
-          style={{ animationDelay: '200ms' }}
-        >
+        <h1 className="lz mt-6 text-[38px] font-extrabold tracking-[-0.03em] leading-[1.05]">
           Engineering Your Wealth
         </h1>
 
-        <p
-          className="mt-4 max-w-[300px] text-[15px] leading-relaxed text-white/[0.66] animate-fade-in-up"
-          style={{ animationDelay: '360ms' }}
-        >
+        <p className="lz mt-4 max-w-[300px] text-[15px] leading-relaxed text-white/[0.66]">
           Institutional-grade planning for the modern Indian investor. Secure, precise, and transparent.
         </p>
 
         {/* Outlined pill chips */}
-        <div className={`mt-6 flex flex-wrap items-center justify-center gap-2.5 transition-all duration-700 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <div className="lz mt-6 flex flex-wrap items-center justify-center gap-2.5">
           <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.18] bg-white/[0.04] px-4 py-2.5 text-[13px] font-bold">
             <IconShield size={15} /> Secure Assets
           </span>
@@ -127,41 +144,17 @@ export default function Landing({ onComplete }) {
         </div>
       </div>
 
-      {/* Bottom CTAs + progress */}
-      <div
-        className={`relative px-7 pb-8 pt-4 w-full max-w-md mx-auto transition-all duration-700 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-      >
-        <div className="h-1 rounded-full bg-white/[0.12] overflow-hidden">
-          <div
-            className="h-full rounded-full bg-brand-500 transition-[width] duration-100 linear"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-
+      {/* Bottom CTA */}
+      <div className="relative px-7 pb-8 pt-4 w-full max-w-md mx-auto">
         <button
           type="button"
-          onClick={() => finish('continue')}
-          className="mt-6 w-full rounded-2xl bg-brand-500 py-[17px] text-base font-extrabold text-white shadow-[0_14px_34px_-10px_rgba(63,131,205,.8)] transition-transform hover:bg-brand-400 active:scale-[0.98]"
+          onClick={finish}
+          className="lz w-full rounded-2xl bg-brand-500 py-[17px] text-base font-extrabold text-white shadow-[0_14px_34px_-10px_rgba(63,131,205,.8)] transition-transform hover:bg-brand-400 active:scale-[0.98]"
         >
           Get Started <span aria-hidden>→</span>
         </button>
-        <button
-          type="button"
-          onClick={() => finish('signin')}
-          className="mt-3 w-full rounded-2xl border border-white/20 bg-white/[0.04] py-4 text-[15px] font-bold text-white transition-transform active:scale-[0.98]"
-        >
-          Sign In <span aria-hidden>›</span>
-        </button>
 
-        <button
-          type="button"
-          onClick={() => finish('guest')}
-          className="mt-3 w-full py-1 text-center text-xs font-medium text-white/40 transition-colors hover:text-white/70"
-        >
-          Continue as guest →
-        </button>
-
-        <p className="mt-5 text-center text-[10px] font-bold tracking-[0.14em] text-white/[0.32]">
+        <p className="lz mt-5 text-center text-[10px] font-bold tracking-[0.14em] text-white/[0.32]">
           FINANCIAL BLUEPRINT · V{__APP_VERSION__} · {__BUILD_STAMP__}
         </p>
       </div>

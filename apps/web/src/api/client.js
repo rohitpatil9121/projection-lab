@@ -3,22 +3,41 @@ import { API_BASE, apiConfigError } from './config.js'
 
 const FETCH_TIMEOUT_MS = 20000
 
-function networkError(err) {
-  if (err?.name === 'AbortError') return new Error('Server took too long to respond. Check your internet.')
+// The API sleeps on Render's free plan and takes ~25s to wake. Sign-in is usually the
+// first request after that nap, so a 20s abort would fail every time the instance had
+// gone cold — and blame the user's connection for it. Auth gets room to wait.
+const AUTH_TIMEOUT_MS = 60000
+
+function networkError(err, timeoutMs) {
+  if (err?.name === 'AbortError') {
+    return new Error(`Server didn't respond within ${Math.round(timeoutMs / 1000)}s. It may be waking up — please try again.`)
+  }
   if (err?.message === 'Failed to fetch') return new Error('Cannot reach server. Check internet or try again later.')
   return err
 }
 
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     return await fetch(url, { ...options, signal: controller.signal })
   } catch (err) {
-    throw networkError(err)
+    throw networkError(err, timeoutMs)
   } finally {
     clearTimeout(timer)
   }
+}
+
+/**
+ * Nudges the API awake without blocking anything.
+ *
+ * Called as the app boots, so the free-tier instance spins up while the user is still
+ * reading the landing screen and picking a Google account — by the time they actually
+ * sign in, it's usually already listening. Failures are irrelevant here.
+ */
+export function warmApi() {
+  const base = API_BASE.replace(/\/v1$/, '')
+  fetch(`${base}/healthz`, { method: 'GET', cache: 'no-store' }).catch(() => {})
 }
 
 async function refreshTokens() {
@@ -28,7 +47,7 @@ async function refreshTokens() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),
-  })
+  }, AUTH_TIMEOUT_MS)
   if (!res.ok) throw new Error('Session expired')
   const data = await res.json()
   const prev = loadSession() || {}
@@ -44,13 +63,17 @@ export async function apiFetch(path, options = {}) {
   let token = getAccessToken()
   if (token) headers.Authorization = `Bearer ${token}`
 
-  let res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers })
+  // Signing in is typically the first call after the instance has slept, so it waits
+  // longer than the rest of the app is willing to.
+  const timeout = path.startsWith('/auth/') ? AUTH_TIMEOUT_MS : FETCH_TIMEOUT_MS
+
+  let res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers }, timeout)
 
   if (res.status === 401 && getRefreshToken()) {
     try {
       token = await refreshTokens()
       headers.Authorization = `Bearer ${token}`
-      res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers })
+      res = await fetchWithTimeout(`${API_BASE}${path}`, { ...options, headers }, timeout)
     } catch {
       saveSession(null)
       throw new Error('Session expired')
@@ -64,16 +87,6 @@ export async function apiFetch(path, options = {}) {
     err.data = data
     throw err
   }
-  return data
-}
-
-export async function requestOtp(email) {
-  return apiFetch('/auth/otp/request', { method: 'POST', body: JSON.stringify({ email }) })
-}
-
-export async function verifyOtp(email, otp) {
-  const data = await apiFetch('/auth/otp/verify', { method: 'POST', body: JSON.stringify({ email, otp }) })
-  saveSession(data)
   return data
 }
 
@@ -97,26 +110,6 @@ export async function loginUser(email, password) {
   return data
 }
 
-export async function forgotPassword(email) {
-  return apiFetch('/auth/password/forgot', { method: 'POST', body: JSON.stringify({ email }) })
-}
-
-export async function resetPassword(email, code, password) {
-  const data = await apiFetch('/auth/password/reset', { method: 'POST', body: JSON.stringify({ email, code, password }) })
-  saveSession(data)
-  return data
-}
-
-export async function requestPhoneOtp(phone) {
-  return apiFetch('/auth/phone/request', { method: 'POST', body: JSON.stringify({ phone }) })
-}
-
-export async function verifyPhoneOtp(phone, otp) {
-  const data = await apiFetch('/auth/phone/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) })
-  saveSession(data)
-  return data
-}
-
 export async function logoutApi() {
   const refreshToken = getRefreshToken()
   if (refreshToken) {
@@ -127,6 +120,13 @@ export async function logoutApi() {
     }).catch(() => {})
   }
   saveSession(null)
+}
+
+/** Deletes the account and everything on the server. Not reversible. */
+export async function deleteAccount() {
+  const res = await apiFetch('/me', { method: 'DELETE' })
+  saveSession(null)
+  return res
 }
 
 export async function fetchPlans() {

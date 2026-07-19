@@ -70,23 +70,17 @@ export function HeroCard({ className = '', children, ...rest }) {
   )
 }
 
-// Floating action button, bottom-right above the tab bar.
-export function Fab({ label = 'Add', children, ...rest }) {
-  return (
-    <button className="fab" aria-label={label} {...rest}>
-      {children}
-    </button>
-  )
-}
-
 export function SectionTitle({ title, subtitle, action }) {
+  // Stacks below sm: on a 360px phone — the most common Android width — a single
+  // row let the action keep its intrinsic width and crushed the title to ~55px,
+  // truncating it to "Mont…" and running the subtitle down a one-word column.
   return (
-    <div className="flex items-end justify-between gap-4 mb-4">
+    <div className="mb-4 flex flex-col items-stretch gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
       <div className="min-w-0">
         <h2 className="text-base font-bold tracking-tight truncate">{title}</h2>
         {subtitle && <p className="text-xs text-ink-400 font-medium mt-0.5">{subtitle}</p>}
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   )
 }
