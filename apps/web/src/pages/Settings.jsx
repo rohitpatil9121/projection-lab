@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../data/store.js'
 import { emptyProfile, defaultProfile } from '@projectlab/schema'
-import { Card, SectionLabel, SectionTitle } from '../components/ui.jsx'
+import { Card, SectionLabel, Modal } from '../components/ui.jsx'
 import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
-import { toPct, fromPct, fmtRate } from '../utils/rates.js'
-import ProModal from '../components/ProModal.jsx'
+import { toPct, fromPct } from '../utils/rates.js'
 
 // iOS-style switch used by every preference row.
 function Switch({ checked, onChange }) {
@@ -45,23 +44,41 @@ export default function Settings() {
   const setProfile = useStore((s) => s.setProfile)
   const incomes = useStore((s) => s.incomes) || []
   const expenses = useStore((s) => s.expenses) || []
+  const accounts = useStore((s) => s.accounts) || []
+  const liabilities = accounts.filter((a) => a.kind === 'liability')
   const updateItem = useStore((s) => s.updateItem)
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
   const reset = useStore((s) => s.reset)
   const resetAccountData = useStore((s) => s.resetAccountData)
+  const deleteAccount = useStore((s) => s.deleteAccount)
   const auth = useStore((s) => s.auth)
   const logout = useStore((s) => s.logout)
   const ui = useStore((s) => s.ui)
   const toggleDark = useStore((s) => s.toggleDark)
   const setRealTerms = useStore((s) => s.setRealTerms)
-  const [proOpen, setProOpen] = useState(false)
 
   const signOut = async () => { await logout(); navigate('/login') }
   const startFresh = async () => {
     if (!confirm('Clear this account data and start onboarding again?')) return
-    await resetAccountData()
-    navigate('/onboarding', { replace: true })
+    // resetAccountData re-throws when the sync fails. Unhandled, that left local data
+    // already wiped, the navigation never run, and the button looking dead.
+    try {
+      await resetAccountData()
+      navigate('/onboarding', { replace: true })
+    } catch (err) {
+      alert(`Could not clear your account data: ${err.message || 'please try again.'}`)
+    }
+  }
+  const removeAccount = async () => {
+    if (!confirm('Permanently delete your account, your plan and all your data?\n\nThis cannot be undone.')) return
+    if (!confirm('Last chance — this permanently deletes everything. Continue?')) return
+    try {
+      await deleteAccount()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      alert(`Could not delete your account: ${err.message || 'please try again.'}`)
+    }
   }
   const resetAssumptions = () => {
     if (!confirm('Reset ages, inflation, currency and tax regime to defaults?')) return
@@ -76,8 +93,8 @@ export default function Settings() {
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* ---- Header ---- */}
       <div className="animate-fade-in-up">
-        <h1 className="text-2xl font-extrabold tracking-tight">Settings</h1>
-        <p className="text-sm text-ink-400 font-medium mt-1">Manage your profile, financial assumptions, and ritual preferences</p>
+        <h1 className="text-[22px] font-extrabold tracking-tight">Settings</h1>
+        <p className="mt-1 text-[13px] text-ink-500">Manage your profile, financial assumptions, and preferences</p>
       </div>
 
       {/* ---- User profile ---- */}
@@ -127,38 +144,53 @@ export default function Settings() {
         <SectionLabel action={
           <button onClick={resetAssumptions} className="text-xs font-bold text-brand-600 hover:text-brand-700">Reset to Default</button>
         }>Financial Rates (%)</SectionLabel>
-        <Card>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Inflation Rate">
-              <div className="relative">
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="30"
+        <Card className="!p-4">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Inflation rate">
+              <div className="rcell">
+                <input type="number" step="0.5" min="0" max="20" inputMode="decimal"
                   value={toPct(profile.inflation)}
                   onChange={(e) => setProfile({ inflation: fromPct(e.target.value) })}
-                  className="input money pr-10"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-ink-400">%</span>
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-[13px] font-bold text-ink-400">%</span>
+              </div>
+            </Field>
+            <Field label="Current age">
+              <div className="rcell">
+                <input type="number" min="18" max="70" inputMode="numeric" value={profile.currentAge}
+                  onChange={(e) => setProfile({ currentAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
+              </div>
+            </Field>
+            <Field label="Retirement age">
+              <div className="rcell">
+                <input type="number" min="40" max="75" inputMode="numeric" value={profile.retirementAge}
+                  onChange={(e) => setProfile({ retirementAge: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
+              </div>
+            </Field>
+            <Field label="Life expectancy">
+              <div className="rcell">
+                <input type="number" min="60" max="100" inputMode="numeric" value={profile.lifeExpectancy}
+                  onChange={(e) => setProfile({ lifeExpectancy: Number(e.target.value) })}
+                  onWheel={(e) => e.currentTarget.blur()} />
+                <span className="text-xs font-semibold text-ink-400">yrs</span>
               </div>
             </Field>
             <Field label="Currency">
-              <select value={profile.currency} onChange={(e) => setProfile({ currency: e.target.value })} className="input">
-                <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option>
-              </select>
-            </Field>
-            <Field label="Current Age">
-              <input type="number" value={profile.currentAge} onChange={(e) => setProfile({ currentAge: Number(e.target.value) })} className="input money" />
-            </Field>
-            <Field label="Retirement Age">
-              <input type="number" value={profile.retirementAge} onChange={(e) => setProfile({ retirementAge: Number(e.target.value) })} className="input money" />
-            </Field>
-            <Field label="Life Expectancy">
-              <input type="number" value={profile.lifeExpectancy} onChange={(e) => setProfile({ lifeExpectancy: Number(e.target.value) })} className="input money" />
+              <div className="rcell">
+                <select value={profile.currency} onChange={(e) => setProfile({ currency: e.target.value })}
+                  className="cursor-pointer">
+                  <option>INR</option><option>USD</option><option>EUR</option><option>GBP</option>
+                </select>
+              </div>
             </Field>
           </div>
-          <p className="mt-4 text-[11px] text-ink-400 italic">* These assumptions are used across all projections and retirement planning modules.</p>
+          <p className="mt-3.5 px-0.5 text-[11.5px] italic leading-relaxed text-ink-400">
+            * These assumptions are used across all projections and retirement planning modules.
+          </p>
         </Card>
       </div>
 
@@ -167,7 +199,7 @@ export default function Settings() {
         <SectionLabel>Income &amp; Expenses</SectionLabel>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FlowEditor title="Income Streams" collection="incomes" items={incomes} update={updateItem} add={addItem} remove={removeItem} color="#377cc8" profile={profile} />
-          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#e0533d" profile={profile} />
+          <FlowEditor title="Expenses" collection="expenses" items={expenses} update={updateItem} add={addItem} remove={removeItem} color="#e0533d" profile={profile} liabilities={liabilities} />
         </div>
       </div>
 
@@ -180,9 +212,6 @@ export default function Settings() {
               right={<Switch checked={!!ui.dark} onChange={toggleDark} />} />
             <Row icon={<IconTrend size={18} />} label="Real Terms" sub="Show projections in today's rupees"
               right={<Switch checked={!!ui.realTerms} onChange={() => setRealTerms(!ui.realTerms)} />} />
-            <Row icon={<IconAccounts size={18} />} label="Subscription Plan" sub="Free plan — Pro coming soon"
-              onClick={() => setProOpen(true)}
-              right={<span className="flex items-center gap-1.5"><span className="xp-chip !px-2 !py-0.5 text-[10px]">Pro</span><IconChevron size={16} className="text-ink-300" /></span>} />
           </div>
         </Card>
       </div>
@@ -195,13 +224,18 @@ export default function Settings() {
             <Row as="a" href="/privacy-policy.html" target="_blank" rel="noreferrer"
               icon={<IconShield size={18} />} label="Privacy Policy"
               right={<IconChevron size={16} className="text-ink-300" />} />
-            <Row icon={<IconTrash size={18} />} label="Reset all data" sub="Restore the sample plan and clear your local changes"
-              onClick={() => { if (confirm('Reset to sample data?')) reset() }}
+            <Row icon={<IconTrash size={18} />} label="Reset all data" sub="Erase your plan and start over from setup"
+              onClick={() => { if (confirm('Erase your whole plan and start setup again? This cannot be undone.')) reset() }}
               right={<span className="text-xs font-bold text-rose-500">Reset</span>} />
             {auth && (
               <Row icon={<IconPlus size={18} />} label="Start fresh for this account" sub="Clears this account's cloud plan and reopens onboarding"
                 onClick={startFresh}
                 right={<span className="text-xs font-bold text-amber-600">Clear</span>} />
+            )}
+            {auth && (
+              <Row icon={<IconTrash size={18} />} label="Delete my account" sub="Permanently removes your account and all data from our servers"
+                onClick={removeAccount}
+                right={<span className="text-xs font-bold text-rose-600">Delete</span>} />
             )}
           </div>
         </Card>
@@ -221,102 +255,189 @@ export default function Settings() {
         Financial Blueprint v{__APP_VERSION__} · build {__BUILD_STAMP__} · Institutional Minimalism Theme
       </p>
 
-      <ProModal open={proOpen} onClose={() => setProOpen(false)} />
     </div>
   )
 }
 
-function FlowEditor({ title, collection, items, update, add, remove, color, profile }) {
+function FlowEditor({ title, collection, items, update, add, remove, color, profile, liabilities = [] }) {
+  const isIncome = collection === 'incomes'
+  const blank = () => ({
+    name: '',
+    amount: '',
+    growthPct: isIncome ? 8 : 6,
+    startAge: profile?.currentAge || 32,
+    endAge: isIncome ? (profile?.retirementAge || 60) : (profile?.lifeExpectancy || 85),
+  })
+  const [adding, setAdding] = useState(false)
+  const [draft, setDraft] = useState(blank)
+
+  const open = () => { setDraft(blank()); setAdding(true) }
+  const valid = draft.name.trim() && Number(draft.amount) > 0 && Number(draft.endAge) >= Number(draft.startAge)
+  const save = () => {
+    if (!valid) return
+    add(collection, {
+      name: draft.name.trim(),
+      amount: Number(draft.amount),
+      growth: fromPct(draft.growthPct),
+      startAge: Number(draft.startAge),
+      endAge: Number(draft.endAge),
+      color,
+    })
+    setAdding(false)
+  }
+
   return (
-    <Card>
-      <SectionTitle
-        title={title}
-        action={
-          <button
-            onClick={() => add(collection, {
-              name: 'New item',
-              amount: 0,
-              growth: 0.02,
-              startAge: profile?.currentAge || 32,
-              endAge: collection === 'incomes' ? (profile?.retirementAge || 60) : 90,
-              color,
-            })}
-            className="btn-ghost !py-1.5"
-          ><IconPlus size={16} /> Add</button>
-        }
-      />
-      <div className="space-y-2">
+    <Card className="!p-4">
+      <div className="mb-3.5 flex items-center justify-between">
+        <span className="text-base font-extrabold">{title}</span>
+        <button
+          onClick={open}
+          className="inline-flex items-center gap-1 text-[13px] font-extrabold text-brand-600 hover:text-brand-700"
+        ><IconPlus size={14} /> Add</button>
+      </div>
+
+      <Modal open={adding} onClose={() => setAdding(false)} title={isIncome ? 'New income stream' : 'New expense'}>
+        <div className="space-y-3">
+          <Field label={isIncome ? 'Source' : 'What for'}>
+            <input autoFocus value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder={isIncome ? 'e.g. Salary (take-home)' : 'e.g. Rent & living'} className="input" />
+          </Field>
+
+          <Field label="Amount per year">
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-400">₹</span>
+              <input type="number" inputMode="numeric" value={draft.amount}
+                onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="420000" className="input money pl-8" />
+            </div>
+          </Field>
+
+          <div className="grid grid-cols-3 gap-2">
+            <Field label="From age">
+              <input type="number" inputMode="numeric" value={draft.startAge}
+                onChange={(e) => setDraft({ ...draft, startAge: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+            <Field label="To age">
+              <input type="number" inputMode="numeric" value={draft.endAge}
+                onChange={(e) => setDraft({ ...draft, endAge: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+            <Field label="Growth %">
+              <input type="number" step="0.5" inputMode="decimal" value={draft.growthPct}
+                onChange={(e) => setDraft({ ...draft, growthPct: e.target.value })}
+                onWheel={(e) => e.currentTarget.blur()} className="input money !px-2 text-center" />
+            </Field>
+          </div>
+          <p className="text-[11px] text-ink-400">
+            {isIncome
+              ? 'Grows each year — use your expected raise.'
+              : 'Grows each year — inflation, roughly. Use 0 for a fixed EMI.'}
+          </p>
+
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setAdding(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={save} disabled={!valid} className="btn-primary flex-1 disabled:opacity-40">
+              Add {isIncome ? 'income' : 'expense'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+      <div className="flex flex-col gap-3">
         {(items || []).filter((it) => it?.id).map((it) => (
-          <div key={it.id} className="group rounded-xl bg-ink-50 dark:bg-ink-800/60 px-3 py-2.5 space-y-2">
-            <div className="flex items-center gap-2">
+          <div key={it.id} className="group rounded-2xl border border-ink-100 bg-ink-50 px-4 py-3.5 dark:border-ink-800 dark:bg-ink-800/60">
+            <div className="flex items-start gap-2.5">
               <input
                 value={it.name}
                 onChange={(e) => update(collection, it.id, { name: e.target.value })}
-                className="bg-transparent font-semibold text-sm outline-none min-w-0 flex-1"
+                aria-label="Name"
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-bold outline-none focus:text-brand-600"
               />
-              <div className="flex items-center gap-1 text-sm shrink-0">
-                <span className="text-ink-400">₹</span>
-                <input
-                  type="number"
-                  value={it.amount}
-                  onChange={(e) => update(collection, it.id, { amount: Number(e.target.value) })}
-                  className="money w-24 text-right bg-transparent font-bold outline-none"
-                />
-              </div>
               <button
                 onClick={() => remove(collection, it.id)}
-                className="opacity-70 sm:opacity-0 sm:group-hover:opacity-100 text-ink-400 hover:text-rose-500 transition shrink-0"
+                aria-label={`Remove ${it.name}`}
+                className="shrink-0 pt-0.5 text-ink-300 opacity-70 transition hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100"
               >
-                <IconTrash size={15} />
+                <IconTrash size={16} />
               </button>
             </div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
-              <label className="flex items-center gap-1">
-                age
-                <input
-                  type="number"
-                  value={it.startAge}
+
+            <div className="mt-1.5 flex items-baseline gap-1.5">
+              <span className="text-[15px] font-bold text-ink-400">₹</span>
+              <input
+                type="number" inputMode="numeric" value={it.amount}
+                onChange={(e) => update(collection, it.id, { amount: Number(e.target.value) })}
+                onWheel={(e) => e.currentTarget.blur()}
+                aria-label="Amount per year"
+                className="money min-w-0 flex-1 bg-transparent text-[22px] font-extrabold outline-none focus:text-brand-600"
+              />
+              <span className="text-xs font-semibold text-ink-400">/yr</span>
+            </div>
+
+            <div className="mt-3.5 grid grid-cols-3 gap-2">
+              <CellField label="From age">
+                <input type="number" inputMode="numeric" value={it.startAge}
                   onChange={(e) => update(collection, it.id, { startAge: Number(e.target.value) })}
-                  className="w-12 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-              </label>
-              <label className="flex items-center gap-1">
-                →
-                <input
-                  type="number"
-                  value={it.endAge}
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
+              <CellField label="To age">
+                <input type="number" inputMode="numeric" value={it.endAge}
                   onChange={(e) => update(collection, it.id, { endAge: Number(e.target.value) })}
-                  className="w-12 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-              </label>
-              <label className="flex items-center gap-1">
-                growth
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  max="50"
-                  value={toPct(it.growth)}
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
+              <CellField label="Growth %">
+                <input type="number" step="0.5" min="0" max="50" inputMode="decimal" value={toPct(it.growth)}
                   onChange={(e) => update(collection, it.id, { growth: fromPct(e.target.value) })}
-                  className="w-14 bg-white dark:bg-ink-900 rounded-md px-1.5 py-0.5 outline-none font-semibold text-ink-600 dark:text-ink-200"
-                />
-                %
-              </label>
+                  onWheel={(e) => e.currentTarget.blur()} className="fcell" />
+              </CellField>
             </div>
-            <div className="text-[10px] text-ink-400">
-              Ages {it.startAge}→{it.endAge} · grows {fmtRate(it.growth)}/yr
-            </div>
+
+            {/* Naming the loan an EMI services is what lets the projection actually
+                retire that debt — without it the payment just leaves as cash. */}
+            {!isIncome && liabilities.length > 0 && (
+              <div className="mt-3">
+                <CellField label="Pays off a loan?">
+                  <select
+                    value={it.accountId || ''}
+                    onChange={(e) => update(collection, it.id, { accountId: e.target.value || null })}
+                    className="fcell cursor-pointer text-left"
+                  >
+                    <option value="">No — it's a regular expense</option>
+                    {liabilities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                  </select>
+                </CellField>
+                {it.accountId && (
+                  <p className="mt-1.5 text-[11px] text-ink-400">
+                    Treated as an EMI: it pays this loan down against its interest rate.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
+        {!(items || []).length && (
+          <p className="py-2 text-center text-sm text-ink-400">Nothing here yet — use Add above.</p>
+        )}
       </div>
     </Card>
   )
 }
 
+// Compact labelled cell used inside the income/expense rows.
+function CellField({ label, children }) {
+  return (
+    <label className="block min-w-0">
+      <span className="mb-1 block text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-ink-400">{label}</span>
+      {children}
+    </label>
+  )
+}
+
 function Field({ label, children }) {
   return (
-    <label className="block">
-      <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-ink-400">{label}</span>
+    <label className="block min-w-0">
+      <span className="text-[9.5px] font-extrabold uppercase tracking-[0.06em] text-ink-400">{label}</span>
       <div className="mt-1.5">{children}</div>
     </label>
   )

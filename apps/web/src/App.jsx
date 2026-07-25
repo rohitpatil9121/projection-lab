@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
 import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import MobileNav from './components/MobileNav.jsx'
 import Today from './pages/Today.jsx'
-import Dashboard from './pages/Dashboard.jsx'
 import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
@@ -12,14 +13,49 @@ import MonteCarlo from './pages/MonteCarlo.jsx'
 import Milestones from './pages/Milestones.jsx'
 import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
-import Otp from './pages/Otp.jsx'
 import Onboarding from './pages/Onboarding.jsx'
 import Landing from './pages/Landing.jsx'
 import { useStore, isAuthenticated } from './data/store.js'
+import { warmApi } from './api/client.js'
 import { Spinner } from './components/ui.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import AndroidBackHandler from './components/AndroidBackHandler.jsx'
 import { shouldShowLanding, markLandingSeen, landingDestination } from './utils/landing.js'
+
+gsap.registerPlugin(useGSAP)
+
+/**
+ * Rises the page's cards in sequence rather than all at once.
+ *
+ * Everything moving on the same frame is what made the app read cheap; 55ms between
+ * neighbours is enough for the eye to follow the page assembling itself. Mounted under
+ * `key={pathname}`, so each navigation is a fresh mount and replays the cascade.
+ *
+ * `clearProps` matters: cards keep their own hover transforms, and a leftover inline
+ * transform from the tween would fight them.
+ */
+function PageCascade({ children }) {
+  const scope = useRef(null)
+
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      const cards = gsap.utils.toArray('.card, .hero-card', scope.current)
+      if (!cards.length) return
+      gsap.from(cards, {
+        y: 16,
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power3.out',
+        stagger: 0.055,
+        clearProps: 'transform,opacity',
+      })
+    })
+    return () => mm.revert()
+  }, { scope })
+
+  return <div ref={scope}>{children}</div>
+}
 
 function AppShell() {
   const dark = useStore((s) => s.ui.dark)
@@ -35,10 +71,10 @@ function AppShell() {
         <Topbar />
         <main className="flex-1 px-5 md:px-8 py-6 pb-24 md:pb-8 max-w-[1400px] w-full mx-auto">
           <ErrorBoundary>
-            {/* Keyed on route so each page fades in on navigation. */}
-            <div key={pathname} className="animate-page-in">
+            {/* Keyed on route so each navigation replays the card cascade. */}
+            <PageCascade key={pathname}>
               <Outlet />
-            </div>
+            </PageCascade>
           </ErrorBoundary>
         </main>
       </div>
@@ -86,13 +122,16 @@ export default function App() {
   const scheduleSync = useStore((s) => s.scheduleSync)
   const [showLanding, setShowLanding] = useState(shouldShowLanding)
 
-  const finishLanding = useCallback((action) => {
+  const finishLanding = useCallback(() => {
     markLandingSeen()
     setShowLanding(false)
-    navigate(landingDestination(action, { onboarded }), { replace: true })
+    navigate(landingDestination({ onboarded }), { replace: true })
   }, [navigate, onboarded])
 
   useEffect(() => {
+    // Start waking the API immediately: on Render's free plan it sleeps and takes
+    // ~25s to come back, and the landing screen buys most of that time for free.
+    warmApi()
     initFromSession()
     useStore.getState().recordSnapshot()
     const onOnline = () => scheduleSync()
@@ -106,12 +145,10 @@ export default function App() {
       <AndroidBackHandler />
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/otp" element={<Otp />} />
         <Route path="/onboarding" element={<OnboardingRoute />} />
         <Route element={<ProtectedLayout />}>
           <Route element={<AppShell />}>
             <Route index element={<Today />} />
-            <Route path="dashboard" element={<Dashboard />} />
             <Route path="plan" element={<Plan />} />
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />

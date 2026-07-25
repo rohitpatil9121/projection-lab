@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, Navigate } from 'react-router-dom'
-import { loginUser, registerUser, forgotPassword, resetPassword, requestOtp, requestPhoneOtp } from '../api/client.js'
+import { loginUser, registerUser, loginWithGoogle } from '../api/client.js'
 import { apiConfigError } from '../api/config.js'
+import { getGoogleIdToken, isGoogleConfigured } from '../auth/google.js'
 import { useStore, redirectAfterAuth, isAuthenticated } from '../data/store.js'
 import { Spinner } from '../components/ui.jsx'
-import { IconChevron, IconMail, IconLock, IconShield, IconTrend } from '../components/Icons.jsx'
+import { IconChevron, IconMail, IconLock, IconShield, IconTrend, GoogleMark } from '../components/Icons.jsx'
 
 const FEATURES = [
   { icon: '📈', text: 'Year-by-year net-worth projection' },
-  { icon: '🎯', text: 'Goals, milestones & life events' },
+  { icon: '🎯', text: 'Goals — save for them, spend them, track them' },
   { icon: '🎲', text: 'Monte Carlo risk analysis' },
   { icon: '🇮🇳', text: 'EPF · PPF · NPS · SIP · 80C — India-first' },
 ]
@@ -20,24 +21,48 @@ export default function Login() {
   const onboarded = useStore((s) => s.onboarded)
   const planHydrating = useStore((s) => s.planHydrating)
 
-  // Already signed in — skip login screen
-  if (isAuthenticated() && !planHydrating) {
-    return <Navigate to={onboarded ? '/' : '/onboarding'} replace />
-  }
-  const [view, setView] = useState('auth') // 'auth' | 'forgot' | 'reset' | 'otp'
   const [mode, setMode] = useState('login') // 'login' | 'signup'
-  const [otpChannel, setOtpChannel] = useState('email') // 'email' | 'phone'
-  const [phone, setPhone] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [code, setCode] = useState('')
   const [showPw, setShowPw] = useState(false)
   const [secureDevice, setSecureDevice] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState('')
-  const [notice, setNotice] = useState('')
   const apiUnavailable = apiConfigError()
+
+  // Already signed in — skip the login screen.
+  //
+  // This has to sit BELOW every hook. Signing in flips isAuthenticated() while this
+  // component is still mounted, so a bail-out above the useState calls would render
+  // fewer hooks than the previous pass and throw React #300 the moment auth lands.
+  if (isAuthenticated() && !planHydrating) {
+    return <Navigate to={onboarded ? '/' : '/onboarding'} replace />
+  }
+
+  async function signInGoogle() {
+    setGoogleLoading(true)
+    setError('')
+    try {
+      const idToken = await getGoogleIdToken()
+      const data = await loginWithGoogle(idToken)
+      await afterLogin(data.user)
+      redirectAfterAuth(navigate)
+    } catch (err) {
+      // Backing out of the Google sheet isn't a failure worth shouting about.
+      // Native rejects with code USER_CANCELLED; the web popup only gives a message.
+      // Match the wording of an actual dismissal, not the bare word "cancel" — the
+      // SDK puts that in genuine credential failures too, and swallowing those left
+      // the button looking dead with nothing to explain why.
+      const msg = err?.message || 'Google sign-in failed'
+      const cancelled = err?.code === 'USER_CANCELLED'
+        || /popup_closed|closed by user|user cancell?ed|cancell?ed by the user/i.test(msg)
+      if (!cancelled) setError(msg)
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
 
   async function submit(e) {
     e.preventDefault()
@@ -55,56 +80,6 @@ export default function Login() {
       setLoading(false)
     }
   }
-
-  async function submitForgot(e) {
-    e.preventDefault()
-    setLoading(true); setError(''); setNotice('')
-    try {
-      const res = await forgotPassword(email.trim())
-      setView('reset')
-      setNotice(res.devCode && import.meta.env.DEV
-        ? `Dev mode: your reset code is ${res.devCode}`
-        : 'If that email exists, a reset code has been sent. Check your inbox.')
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function submitReset(e) {
-    e.preventDefault()
-    setLoading(true); setError('')
-    try {
-      const data = await resetPassword(email.trim(), code.trim(), password)
-      await afterLogin(data.user)
-      redirectAfterAuth(navigate)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function submitOtpRequest(e) {
-    e.preventDefault()
-    setLoading(true); setError('')
-    try {
-      if (otpChannel === 'phone') {
-        const res = await requestPhoneOtp(phone.trim())
-        navigate('/otp', { state: { channel: 'phone', phone: res.phone, devOtp: import.meta.env.DEV ? res.devOtp : undefined } })
-      } else {
-        const res = await requestOtp(email.trim())
-        navigate('/otp', { state: { channel: 'email', email: email.trim(), devOtp: import.meta.env.DEV ? res.devOtp : undefined } })
-      }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const goAuth = () => { setView('auth'); setError(''); setNotice(''); setPassword(''); setCode('') }
 
   return (
     <div className="relative min-h-screen overflow-hidden flex items-center justify-center px-5 py-10 bg-ink-50 dark:bg-ink-950">
@@ -142,7 +117,7 @@ export default function Login() {
         <div className="card shadow-lift w-full max-w-md mx-auto lg:mx-0 animate-scale-in">
           <button
             type="button"
-            onClick={() => (view === 'auth' ? navigate(-1) : goAuth())}
+            onClick={() => navigate(-1)}
             aria-label="Back"
             className="mb-4 -ml-2 grid place-items-center h-9 w-9 rounded-xl text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
           >
@@ -154,13 +129,12 @@ export default function Login() {
               <IconTrend size={20} />
             </span>
             <h1 className="text-3xl font-extrabold tracking-tight">
-              {view === 'forgot' ? 'Reset Password' : view === 'reset' ? 'Check Your Email' : view === 'otp' ? 'Sign in with OTP' : mode === 'signup' ? 'Open an Account' : 'Welcome Back'}
+              {mode === 'signup' ? 'Open an Account' : 'Welcome Back'}
             </h1>
             <p className="text-sm text-ink-400 mt-2 leading-relaxed">
-              {view === 'forgot' ? "Enter your email and we'll send a reset code"
-                : view === 'reset' ? 'Enter the code and your new password'
-                : view === 'otp' ? 'We will send a 6-digit code to verify you'
-                : mode === 'signup' ? 'Start planning in under a minute' : 'Sign in to access your Financial Blueprint and track your net worth.'}
+              {mode === 'signup'
+                ? 'Start planning in under a minute'
+                : 'Sign in to access your Financial Blueprint and track your net worth.'}
             </p>
           </div>
 
@@ -174,13 +148,22 @@ export default function Login() {
               <span aria-hidden="true">⚠️</span><span>{error}</span>
             </p>
           )}
-          {notice && (
-            <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium bg-emerald-50 dark:bg-emerald-950/40 rounded-lg px-3 py-2 mb-4 animate-fade-in">{notice}</p>
-          )}
 
           {/* ---- AUTH (login / signup) ---- */}
-          {view === 'auth' && (
-            <>
+          {/* Skips the account entirely and lands on the sample-plan picker. */}
+              <Link
+                to="/onboarding"
+                state={{ sample: true }}
+                className="btn-secondary w-full block text-center border-brand-300 text-brand-700 hover:border-brand-400 dark:border-brand-500/40 dark:text-brand-300"
+              >
+                ✨ Go with sample data
+              </Link>
+              <div className="flex items-center gap-3 my-4">
+                <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
+                <span className="text-xs text-ink-400 font-medium tracking-wide">or use your account</span>
+                <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
+              </div>
+
               <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold mb-4" role="tablist">
                 <button type="button" role="tab" aria-selected={mode === 'login'}
                   onClick={() => { setMode('login'); setError('') }}
@@ -207,12 +190,7 @@ export default function Login() {
                   </div>
                 </label>
                 <label className="block">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
-                    {mode === 'login' && (
-                      <button type="button" onClick={() => { setView('forgot'); setError('') }} className="text-xs font-semibold text-brand-600 hover:text-brand-700">forgot?</button>
-                    )}
-                  </div>
+                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Password</span>
                   <div className="relative mt-1">
                     <IconLock size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400 pointer-events-none" />
                     <input
@@ -256,9 +234,16 @@ export default function Login() {
                 </button>
               </p>
 
-              <button type="button" onClick={() => { setView('otp'); setError('') }} className="btn-secondary w-full mt-4">Sign in with OTP</button>
-
-              <Link to="/onboarding" className="btn-secondary w-full mt-3 block text-center">Continue as guest</Link>
+              {isGoogleConfigured() && (
+                <button
+                  type="button"
+                  onClick={signInGoogle}
+                  disabled={googleLoading || loading || !!apiUnavailable}
+                  className="btn-secondary w-full mt-4"
+                >
+                  {googleLoading ? <><Spinner size={16} /> Signing in…</> : <><GoogleMark size={18} /> Sign in with Google</>}
+                </button>
+              )}
 
               <p className="flex items-center justify-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-400 mt-5">
                 <IconShield size={13} /> End-to-end encryption enabled
@@ -267,74 +252,6 @@ export default function Login() {
                 Illustration only — not investment advice.{' '}
                 <a href="/privacy-policy.html" target="_blank" rel="noreferrer" className="underline hover:text-ink-500">Privacy Policy</a>
               </p>
-            </>
-          )}
-
-          {/* ---- OTP request ---- */}
-          {view === 'otp' && (
-            <form onSubmit={submitOtpRequest} className="space-y-4">
-              <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold" role="tablist">
-                <button type="button" role="tab" aria-selected={otpChannel === 'email'}
-                  onClick={() => { setOtpChannel('email'); setError('') }}
-                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${otpChannel === 'email' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}
-                >Email</button>
-                <button type="button" role="tab" aria-selected={otpChannel === 'phone'}
-                  onClick={() => { setOtpChannel('phone'); setError('') }}
-                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${otpChannel === 'phone' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}
-                >Mobile</button>
-              </div>
-              {otpChannel === 'email' ? (
-                <label className="block">
-                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
-                  <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
-                </label>
-              ) : (
-                <label className="block">
-                  <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Mobile number</span>
-                  <input type="tel" required autoFocus inputMode="numeric" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit number" className="input mt-1" />
-                </label>
-              )}
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? <><Spinner size={16} /> Sending…</> : 'Send OTP'}
-              </button>
-              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
-            </form>
-          )}
-
-          {/* ---- FORGOT: enter email ---- */}
-          {view === 'forgot' && (
-            <form onSubmit={submitForgot} className="space-y-4">
-              <label className="block">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Email</span>
-                <input type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="input mt-1" />
-              </label>
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? <><Spinner size={16} /> Sending…</> : 'Send reset code'}
-              </button>
-              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
-            </form>
-          )}
-
-          {/* ---- RESET: code + new password ---- */}
-          {view === 'reset' && (
-            <form onSubmit={submitReset} className="space-y-4">
-              <label className="block">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">Reset code</span>
-                <input inputMode="numeric" required autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="6-digit code" className="input mt-1 tracking-widest" />
-              </label>
-              <label className="block">
-                <span className="text-xs font-semibold text-ink-400 uppercase tracking-wide">New password</span>
-                <div className="relative mt-1">
-                  <input type={showPw ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className="input pr-16" />
-                  <button type="button" onClick={() => setShowPw((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-semibold text-ink-400 hover:text-ink-600 px-2 py-1">{showPw ? 'Hide' : 'Show'}</button>
-                </div>
-              </label>
-              <button type="submit" disabled={loading} className="btn-primary w-full">
-                {loading ? <><Spinner size={16} /> Resetting…</> : 'Reset password & sign in'}
-              </button>
-              <button type="button" onClick={goAuth} className="btn-secondary w-full">Back to login</button>
-            </form>
-          )}
         </div>
       </div>
     </div>

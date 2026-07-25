@@ -25,7 +25,9 @@ export async function getPlan(userId, planId) {
 
 export async function createPlan(userId, { name = 'Base scenario', payload } = {}) {
   if (await plans.countByUser(userId) >= 1) {
-    const err = new Error('Free tier allows 1 plan. Upgrade to Pro for more.')
+    // No paid tier exists yet, so don't tell the user to upgrade to something
+    // they cannot buy. What-if scenarios are stored on-device in the meantime.
+    const err = new Error('Only one cloud plan per account for now. Use what-if scenarios to explore alternatives.')
     err.status = 403
     throw err
   }

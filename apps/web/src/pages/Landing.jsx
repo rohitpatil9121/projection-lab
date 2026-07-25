@@ -1,132 +1,162 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import gsap from 'gsap'
+import { useGSAP } from '@gsap/react'
+import { IconShield, IconTrend } from '../components/Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
-const C = { coral: '#e0533d', teal: '#469b88', blue: '#377cc8', sun: '#eed868', blossom: '#e78c9d', peri: '#9da7d0' }
-// One tile shape everywhere — a uniform squircle.
-const TILE = 'rounded-[1.75rem]'
-
-// Three real onboarding slides — each a distinct brand-tile arrangement + copy.
-const SLIDES = [
-  {
-    tiles: [C.coral, C.teal, C.blue, C.sun, C.blossom, C.peri],
-    title: ['Plan your money,', 'with clarity.'],
-    body: 'Net worth, cash flow and projections in one simple blueprint.',
-  },
-  {
-    tiles: [C.blue, C.sun, C.teal, C.peri, C.coral, C.blossom],
-    title: ['See where', 'money goes.'],
-    body: 'Track income against spending each month and grow your savings rate.',
-  },
-  {
-    tiles: [C.teal, C.blossom, C.sun, C.coral, C.peri, C.blue],
-    title: ['Reach every', 'life goal.'],
-    body: 'Set targets, get a clear plan, and watch your progress grow.',
-  },
-]
+gsap.registerPlugin(useGSAP)
 
 export default function Landing({ onComplete }) {
-  const [i, setI] = useState(0)
-  const [shown, setShown] = useState(false)
+  const [phase, setPhase] = useState(0)
   const [exiting, setExiting] = useState(false)
-  const touchX = useRef(null)
+  const root = useRef(null)
 
-  const finish = useCallback((action = 'continue') => {
+  const finish = useCallback(() => {
     if (exiting) return
     setExiting(true)
-    setTimeout(() => onComplete(action), 360)
+    setTimeout(() => onComplete(), 380)
   }, [exiting, onComplete])
 
   const finishRef = useRef(finish)
   finishRef.current = finish
 
-  // Advance through the slides; the last arrow opens the Login / Sign-up screen.
-  const next = () => (i < SLIDES.length - 1 ? setI(i + 1) : finish('signin'))
-
+  // Fades the background scene in behind the content stagger.
   useEffect(() => {
-    const t = setTimeout(() => setShown(true), 80)
+    const t = setTimeout(() => setPhase(1), 400)
     return () => clearTimeout(t)
   }, [])
 
-  // Android back: step to previous slide, else leave.
-  useEffect(() => registerBackHandler(() => {
-    setI((cur) => { if (cur > 0) return cur - 1; finishRef.current('continue'); return cur })
-    return true
-  }), [])
+  // The design's own entrance: every .lz element rises in, one after another.
+  // matchMedia gives us a no-op branch for reduced motion — GSAP writes inline
+  // styles, so the stylesheet's reduced-motion rule can't reach these.
+  //
+  // fromTo, not from: this callback runs more than once, and .from() infers its
+  // destination from wherever the element sits at call time. Staggered elements sit
+  // parked at the start offset waiting their turn, so a second .from() read y:26 as
+  // the resting place and left whichever element was waiting stranded 26px down —
+  // most visibly the CTA, dropped onto the version line. Stating both ends fixes it.
+  useGSAP(() => {
+    const mm = gsap.matchMedia()
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+      gsap.fromTo(
+        '.lz',
+        { opacity: 0, y: 26 },
+        { opacity: 1, y: 0, duration: 0.75, stagger: 0.12, ease: 'power3.out', delay: 0.12, overwrite: 'auto' },
+      )
+    })
+    return () => mm.revert()
+  }, { scope: root })
 
-  const onTouchStart = (e) => { touchX.current = e.touches[0].clientX }
-  const onTouchEnd = (e) => {
-    if (touchX.current == null) return
-    const dx = e.changedTouches[0].clientX - touchX.current
-    touchX.current = null
-    if (dx < -40 && i < SLIDES.length - 1) setI(i + 1)
-    if (dx > 40 && i > 0) setI(i - 1)
-  }
-
-  const slide = SLIDES[i]
+  useEffect(() => {
+    return registerBackHandler(() => {
+      finishRef.current()
+      return true
+    })
+  }, [])
 
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col bg-ink-950 text-white transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+      ref={root}
+      className={`fixed inset-0 z-[200] flex flex-col overflow-hidden text-white transition-opacity duration-300 ${exiting ? 'opacity-0' : 'opacity-100'}`}
+      style={{ background: 'radial-gradient(120% 80% at 50% 8%, #1c3350, #101826 55%, #0a0f17)' }}
       role="presentation"
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
     >
-      {/* Top-right: quiet sign-in */}
-      <div className="flex justify-end px-6 pt-[max(1.25rem,env(safe-area-inset-top))]">
-        <button type="button" onClick={() => finish('signin')} className="text-sm font-semibold text-ink-400 hover:text-white transition-colors px-2 py-1">
-          Sign in
-        </button>
+      {/* Drifting dot grid. Oversized by one cell so translating it never exposes an
+          edge, and the pattern repeats exactly at 44px — the loop is seamless. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-[44px] opacity-60 animate-grid-pan"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px)',
+          backgroundSize: '44px 44px',
+          willChange: 'transform',
+        }}
+      />
+
+      {/* Floating glass slabs — each keeps its own tilt via --r */}
+      <div aria-hidden className={`pointer-events-none absolute inset-0 transition-opacity duration-[1400ms] ${phase >= 1 ? 'opacity-100' : 'opacity-0'}`}>
+        {[
+          { cls: 'top-[8%] left-[10%] w-[150px] h-[300px]', r: '-9deg', d: '0s', dur: '7s', bg: 'bg-white/[0.03] border-white/[0.08]' },
+          { cls: 'top-[6%] right-[9%] w-[130px] h-[340px]', r: '8deg', d: '.8s', dur: '8.5s', bg: 'bg-white/[0.03] border-white/[0.08]' },
+          { cls: 'top-[20%] right-[20%] w-[120px] h-[260px]', r: '-4deg', d: '.4s', dur: '9.5s', bg: 'bg-white/[0.025] border-white/[0.06]' },
+          { cls: 'top-[44%] -left-[4%] w-[120px] h-[220px]', r: '6deg', d: '1.2s', dur: '8s', bg: 'bg-white/[0.02] border-white/[0.06]' },
+        ].map((p, i) => (
+          // No backdrop-blur here on purpose: at 2–3% white over a dark gradient a
+          // 2px blur is invisible, but it forces the GPU to re-sample the backdrop
+          // behind four moving elements every frame. Pure cost, no pixels.
+          <div
+            key={i}
+            className={`absolute rounded-[22px] border animate-float-y ${p.cls} ${p.bg}`}
+            style={{ '--r': p.r, animationDelay: p.d, animationDuration: p.dur, willChange: 'transform' }}
+          />
+        ))}
+        {/* Warm horizon glow */}
+        <div
+          className="absolute inset-x-0 top-[46%] h-[200px]"
+          style={{ background: 'radial-gradient(60% 100% at 50% 0, rgba(238,216,104,.16), transparent 70%)' }}
+        />
+        {/* Rising wealth line, drawn on entry */}
+        <svg viewBox="0 0 400 300" preserveAspectRatio="none" className="absolute inset-x-0 bottom-0 h-[46%] w-full opacity-90">
+          <path
+            d="M-10 250 L60 232 L110 244 L170 150 L230 176 L300 92 L360 60 L420 20"
+            fill="none" stroke="#3f83cd" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+            className="animate-draw-line" style={{ strokeDasharray: 1400, strokeDashoffset: 1400 }}
+          />
+        </svg>
       </div>
 
-      {/* Hero collage — re-keyed per slide so tiles animate in on change */}
-      <div className="flex-1 grid place-items-center px-8">
-        <div key={i} className={`grid grid-cols-2 gap-3.5 w-full max-w-[280px] transition-all duration-500 ${shown ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-          {slide.tiles.map((c, idx) => (
-            <div
-              key={idx}
-              className={`aspect-square ${TILE} animate-fade-in-up`}
-              style={{ background: c, animationDelay: `${idx * 60}ms` }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Copy + dots + arrow */}
-      <div className="px-7 pb-[max(2.5rem,env(safe-area-inset-bottom))] w-full max-w-md mx-auto">
-        <div key={i} className="animate-fade-in-up">
-          <h1 className="text-3xl font-extrabold leading-[1.15] tracking-tight">
-            {slide.title[0]}<br />{slide.title[1]}
-          </h1>
-          <p className="mt-3 text-sm text-ink-400 leading-relaxed max-w-xs">{slide.body}</p>
-        </div>
-
-        <div className="mt-9 flex items-center justify-between">
-          <div className="flex items-center -ml-2.5" role="tablist" aria-label="Intro slides">
-            {SLIDES.map((_, d) => (
-              <button
-                key={d}
-                type="button"
-                role="tab"
-                aria-selected={d === i}
-                aria-label={`Slide ${d + 1}`}
-                onClick={() => setI(d)}
-                className="grid place-items-center h-11 w-8" // ≥44px tap target
-              >
-                <span className={`block h-2 rounded-full transition-all duration-300 ${d === i ? 'w-6 bg-white' : 'w-2 bg-white/25'}`} />
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={next}
-            className="grid place-items-center h-16 w-16 rounded-full bg-white text-ink-900 shadow-lg active:scale-95 transition-transform"
-            aria-label={i < SLIDES.length - 1 ? 'Next' : 'Get started'}
+      <div className="relative flex-1 flex flex-col items-center justify-center px-7 pb-4 pt-14 w-full max-w-md mx-auto text-center">
+        {/* Brand icon. The halo is its own element so the pulse can ride on
+            scale/opacity — the previous animated box-shadow repainted every frame. */}
+        <div className="lz relative grid place-items-center h-[74px] w-[74px]">
+          <span
+            aria-hidden
+            className="absolute inset-0 rounded-full bg-brand-500/60 blur-xl animate-glow-pulse"
+            style={{ willChange: 'transform, opacity' }}
+          />
+          <span
+            className="relative grid place-items-center h-full w-full rounded-full"
+            style={{
+              background: 'linear-gradient(160deg, #4f93da, #2f6aac)',
+              boxShadow: '0 0 42px 6px rgba(63,131,205,.45)',
+            }}
           >
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </button>
+            <IconTrend size={30} className="!stroke-[2.4]" />
+          </span>
         </div>
+
+        <h1 className="lz mt-6 text-[38px] font-extrabold tracking-[-0.03em] leading-[1.05]">
+          Engineering Your Wealth
+        </h1>
+
+        <p className="lz mt-4 max-w-[300px] text-[15px] leading-relaxed text-white/[0.66]">
+          Institutional-grade planning for the modern Indian investor. Secure, precise, and transparent.
+        </p>
+
+        {/* Outlined pill chips */}
+        <div className="lz mt-6 flex flex-wrap items-center justify-center gap-2.5">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.18] bg-white/[0.04] px-4 py-2.5 text-[13px] font-bold">
+            <IconShield size={15} /> Secure Assets
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.18] bg-white/[0.04] px-4 py-2.5 text-[13px] font-bold">
+            <IconTrend size={15} /> Smart Growth
+          </span>
+        </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="relative px-7 pb-8 pt-4 w-full max-w-md mx-auto">
+        <button
+          type="button"
+          onClick={finish}
+          className="lz w-full rounded-2xl bg-brand-500 py-[17px] text-base font-extrabold text-white shadow-[0_14px_34px_-10px_rgba(63,131,205,.8)] transition-transform hover:bg-brand-400 active:scale-[0.98]"
+        >
+          Get Started <span aria-hidden>→</span>
+        </button>
+
+        <p className="lz mt-5 text-center text-[10px] font-bold tracking-[0.14em] text-white/[0.32]">
+          FINANCIAL BLUEPRINT · V{__APP_VERSION__} · {__BUILD_STAMP__}
+        </p>
       </div>
     </div>
   )

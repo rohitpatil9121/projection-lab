@@ -142,6 +142,10 @@ if (DATABASE_URL) {
       )
       return next
     },
+    async del(uid) {
+      const res = await pool.query('DELETE FROM users WHERE id = $1', [uid])
+      return res.rowCount > 0
+    },
   }
 
   otps = {
@@ -179,6 +183,11 @@ if (DATABASE_URL) {
     async deleteByHash(hash) {
       await pool.query('DELETE FROM sessions WHERE refresh_hash = $1', [hash])
     },
+    /** Signs the user out everywhere — used when a password changes. */
+    async deleteByUser(userId) {
+      const res = await pool.query('DELETE FROM sessions WHERE user_id = $1', [userId])
+      return res.rowCount
+    },
   }
 
   plans = {
@@ -209,6 +218,10 @@ if (DATABASE_URL) {
     },
     async del(pid) {
       await pool.query('DELETE FROM plans WHERE id = $1', [pid])
+    },
+    async deleteByUser(uid) {
+      const res = await pool.query('DELETE FROM plans WHERE user_id = $1', [uid])
+      return res.rowCount
     },
   }
 } else {
@@ -312,6 +325,9 @@ if (DATABASE_URL) {
         .run(next.name, next.currentAge, next.retirementAge, next.lifeExpectancy, next.inflation, next.taxRegime, next.taxSlab, next.grossSalary ?? null, next.currency, JSON.stringify(next.uiPrefs || {}), uid)
       return next
     },
+    del(uid) {
+      return sqlite.prepare('DELETE FROM users WHERE id = ?').run(uid).changes > 0
+    },
   }
 
   otps = {
@@ -344,6 +360,10 @@ if (DATABASE_URL) {
     deleteByHash(hash) {
       sqlite.prepare('DELETE FROM sessions WHERE refresh_hash = ?').run(hash)
     },
+    /** Signs the user out everywhere — used when a password changes. */
+    deleteByUser(userId) {
+      return sqlite.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId).changes
+    },
   }
 
   plans = {
@@ -363,6 +383,9 @@ if (DATABASE_URL) {
     },
     del(pid) {
       sqlite.prepare('DELETE FROM plans WHERE id = ?').run(pid)
+    },
+    deleteByUser(uid) {
+      return sqlite.prepare('DELETE FROM plans WHERE user_id = ?').run(uid).changes
     },
   }
 

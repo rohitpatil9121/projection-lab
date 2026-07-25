@@ -7,11 +7,12 @@ import { registerBackHandler } from '../hooks/backButton.js'
 
 const titles = {
   '/': 'Today',
-  '/dashboard': 'Dashboard',
   '/plan': 'Financial Plan',
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',
-  '/monte-carlo': 'Monte Carlo Simulation',
+  // Short enough to fit a 360px header without truncating; the card below it
+  // carries the full "Monte Carlo — Range of Outcomes" heading.
+  '/monte-carlo': 'Monte Carlo',
   '/milestones': 'Goals',
   '/settings': 'Settings',
 }
@@ -23,6 +24,9 @@ const syncLabels = {
   offline: 'Offline',
   error: 'Sync error',
   conflict: 'Conflict',
+  // A what-if scenario is deliberately never uploaded — say so, so its absence
+  // from the cloud doesn't look like a sync failure.
+  local: 'What-if · not synced',
 }
 
 export default function Topbar() {
@@ -87,7 +91,9 @@ export default function Topbar() {
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-950 supports-[backdrop-filter]:bg-ink-50/80 supports-[backdrop-filter]:dark:bg-ink-950/80 supports-[backdrop-filter]:backdrop-blur px-5 md:px-8 py-4">
       <div className="min-w-0">
-        <h1 className="text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'Financial Blueprint'}</h1>
+        {/* truncate, not wrap: a long title like "Monte Carlo Simulation" ran to two
+            lines at 360px and squeezed the actions beside it into a narrow column. */}
+        <h1 className="truncate text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'Financial Blueprint'}</h1>
         <div className="flex items-center gap-1 text-xs text-ink-400 font-medium">
           <select
             value={activeScenarioId}
@@ -111,7 +117,7 @@ export default function Topbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {syncStatus === 'conflict' ? (
           <div className="hidden sm:flex items-center gap-1 text-xs">
             <button onClick={() => resolveConflict(true)} className="chip bg-brand-100 text-brand-700">Keep mine</button>
@@ -129,7 +135,7 @@ export default function Topbar() {
         )}
 
         {!auth?.user && (
-          <Link to="/login" className="btn-ghost text-xs sm:text-sm">Sign in</Link>
+          <Link to="/login" className="btn-ghost whitespace-nowrap text-xs sm:text-sm">Sign in</Link>
         )}
 
         <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme" aria-label="Toggle theme">
