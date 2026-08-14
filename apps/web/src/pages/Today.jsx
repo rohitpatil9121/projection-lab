@@ -2,12 +2,11 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { useProjection } from '../data/useProjection.js'
-import { fmtMoney, evaluateGoal } from '@projectlab/engine'
+import { fmtMoney } from '@projectlab/engine'
 import { Card, SectionLabel, HeroCard, Ring } from '../components/ui.jsx'
 import JourneyPanel from '../components/JourneyPanel.jsx'
 import CountUpMoney from '../components/CountUpMoney.jsx'
-import { IconChevron, IconTrend, IconPlan, IconAccounts, IconMilestone } from '../components/Icons.jsx'
-import { goalColor } from '../utils/goalStatus.js'
+import { IconChevron, IconTrend, IconPlan, IconTarget, IconSpark, IconMilestone } from '../components/Icons.jsx'
 
 // Colour language (brand palette).
 const GREEN = '#469b88' // money in / assets / positive
@@ -61,18 +60,6 @@ export default function Today() {
   const monthlyInvesting = contributions.reduce((s, c) => s + c.amount, 0) / 12
   const leftover = monthlyIncome - monthlyExpense
   const savingsRate = monthlyIncome > 0 ? Math.round((leftover / monthlyIncome) * 100) : 0
-
-  // --- Goals summary (engine-evaluated, so status matches the Goals page) ---
-  const goalRows = useMemo(
-    () => milestones.map((m) => {
-      const ev = evaluateGoal(m, { accounts, projection, profile, contributions, currentYear })
-      return { m, ev, color: goalColor(ev) }
-    }),
-    [milestones, accounts, projection, profile, contributions, currentYear],
-  )
-  const goalsTotal = goalRows.length
-  const goalsDone = goalRows.filter((r) => r.m.achieved || r.ev.progress >= 100).length
-  const avgGoalPct = goalsTotal ? Math.round(goalRows.reduce((s, r) => s + r.ev.progress, 0) / goalsTotal) : 0
 
   // --- Wealth journey: net worth to retirement, with dated goals marked ---
   const journeyData = useMemo(
@@ -185,63 +172,43 @@ export default function Today() {
         </Card>
       </div>
 
-      {/* ===== WHERE TO NEXT — the 3 destinations (Plan / Accounts / Goals) ===== */}
+      {/* ===== WHERE TO NEXT — the 3 destinations (Your plan / FIRE number / What if) ===== */}
       <div>
         <SectionLabel>Where to next</SectionLabel>
         <div className="space-y-3">
-          {/* Plan */}
-          <Link to="/plan" className="block">
+          {/* Your plan */}
+          <Link to="/enough/plan" className="block">
             <Card interactive className="!p-[15px] flex items-center gap-3">
               <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconPlan size={21} /></span>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-[15px]">Plan</div>
-                <div className="text-xs text-ink-400 mt-0.5">Retire at age {profile.retirementAge} · drag to test any future</div>
+                <div className="font-bold text-[15px]">Your plan</div>
+                <div className="text-xs text-ink-400 mt-0.5">Retire at age {profile.retirementAge} · spending, allocation & goals behind your number</div>
               </div>
               <IconChevron size={16} className="text-ink-300 shrink-0" />
             </Card>
           </Link>
 
-          {/* Accounts */}
-          <Link to="/accounts" className="block">
+          {/* FIRE number */}
+          <Link to="/enough" className="block">
             <Card interactive className="!p-[15px] flex items-center gap-3">
-              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconAccounts size={21} /></span>
+              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconTarget size={21} /></span>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-[15px]">Accounts</div>
-                <div className="text-xs text-ink-400 mt-0.5">{assetAccts.length} accounts · {fmtMoney(totalAssets, { compact: true })} in assets</div>
+                <div className="font-bold text-[15px]">FIRE number</div>
+                <div className="text-xs text-ink-400 mt-0.5">How much is enough · tested against every real market run</div>
               </div>
               <IconChevron size={16} className="text-ink-300 shrink-0" />
             </Card>
           </Link>
 
-          {/* Goals — the richer summary */}
-          <Link to="/milestones" className="block">
-            <Card interactive className="!p-[15px]">
-              <div className="flex items-center gap-3">
-                <Ring pct={avgGoalPct} color={GREEN} size={50} />
-                <div className="min-w-0 flex-1">
-                  <div className="font-bold text-[15px]">Goals</div>
-                  <div className="text-xs text-ink-400 mt-0.5">{goalsDone} of {goalsTotal} complete · {avgGoalPct}% overall</div>
-                </div>
-                <IconChevron size={16} className="text-ink-300 shrink-0" />
+          {/* What if */}
+          <Link to="/enough/what-if" className="block">
+            <Card interactive className="!p-[15px] flex items-center gap-3">
+              <span className="grid place-items-center h-11 w-11 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 shrink-0"><IconSpark size={21} /></span>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-[15px]">What if</div>
+                <div className="text-xs text-ink-400 mt-0.5">Try a change in plain words — a different age, a windfall, a break from work</div>
               </div>
-              {goalRows.length > 0 && (
-                <div className="mt-3.5 flex flex-col gap-2.5">
-                  {goalRows.slice(0, 3).map(({ m, ev, color }) => (
-                    <div key={m.id}>
-                      <div className="flex items-center justify-between gap-2 text-xs mb-1">
-                        <span className="font-bold truncate">{m.name}</span>
-                        <span className="money text-[11px] text-ink-400 shrink-0">
-                          {fmtMoney(ev.current, { compact: true })} / {ev.isPayoff ? 'Pay off' : fmtMoney(m.target, { compact: true })}
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-ink-100 dark:bg-ink-800 overflow-hidden">
-                        <div className="h-full rounded-full transition-[width] duration-500 ease-out-expo"
-                          style={{ width: `${ev.progress}%`, background: color }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <IconChevron size={16} className="text-ink-300 shrink-0" />
             </Card>
           </Link>
 

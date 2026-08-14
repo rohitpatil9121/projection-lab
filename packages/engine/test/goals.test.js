@@ -89,3 +89,28 @@ test('migratePlanPayload leaves a plan that never had events alone', () => {
   const payload = { milestones: [{ id: 'm1', name: 'Crore', kind: 'save', target: 10000000, cashImpact: 0 }], accounts: [] }
   assert.deepEqual(migratePlanPayload(payload), payload)
 })
+
+// A goal's "current value" must be TODAY's, not the projection's first row. The projection
+// grows balances and adds a year of contributions before pushing row zero, so reading it
+// credited the user with a year that has not happened: the sample plan showed 61% toward a
+// ₹1 Cr net-worth goal while the Today page, from the same accounts, showed ₹40 L.
+test('goal progress is measured against today, not a year from now', async () => {
+  const { milestoneValue } = await import('../src/goals.js')
+  const accounts = [
+    { id: 'cash', name: 'Savings', kind: 'asset', type: 'cash', balance: 500000, growth: 0.04, color: '#469b88' },
+    { id: 'eq', name: 'Equity', kind: 'asset', type: 'investment', balance: 3000000, growth: 0.12, color: '#377cc8' },
+    { id: 'loan', name: 'Loan', kind: 'liability', type: 'loan', balance: 1000000, growth: 0.09, color: '#e0533d' },
+  ]
+  const state = plan({ accounts, contributions: [{ id: 'c1', accountId: 'eq', amount: 600000 }] })
+  const projection = computeProjection(state)
+
+  const netWorthNow = 500000 + 3000000 - 1000000
+  assert.equal(milestoneValue({ metric: 'netWorth' }, accounts, projection), netWorthNow)
+  assert.equal(milestoneValue({ metric: 'investable' }, accounts, projection), 3000000)
+
+  // And it is genuinely different from row zero — otherwise this test proves nothing.
+  assert.ok(projection[0].netWorth > netWorthNow, 'row zero is already a year ahead')
+
+  // An account-linked goal always read the real balance; it must keep doing so.
+  assert.equal(milestoneValue({ accountId: 'eq' }, accounts, projection), 3000000)
+})

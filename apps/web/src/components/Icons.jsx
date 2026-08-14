@@ -16,6 +16,7 @@ export const IconPlus = (p) => <S {...p}><path d="M12 5v14M5 12h14" /></S>
 export const IconTrash = (p) => <S {...p}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></S>
 export const IconTrend = (p) => <S {...p}><path d="M3 17l6-6 4 4 8-8" /><path d="M17 7h4v4" /></S>
 export const IconTarget = (p) => <S {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /></S>
+export const IconSpark = (p) => <S {...p}><path d="M12 3l1.8 4.9L19 9.7l-4.2 2.2L13 17l-1.9-4.8L7 10.4l4.2-1.9L12 3z" /><path d="M18.5 15.5l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6.6-1.7z" /></S>
 export const IconCheck = (p) => <S {...p}><path d="M5 13l4 4L19 7" /></S>
 export const IconChevron = (p) => <S {...p}><path d="M9 6l6 6-6 6" /></S>
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Sankey, ResponsiveContainer, Tooltip, Layer, Rectangle } from 'recharts'
 import { useStore } from '../data/store.js'
 import { fmtMoney } from '@projectlab/engine'
-import { Card, SectionTitle } from '../components/ui.jsx'
+import { Card, SectionTitle, EmptyState } from '../components/ui.jsx'
 import { IconPlus, IconTrash } from '../components/Icons.jsx'
 
 const PALETTE = ['#377cc8', '#9da7d0', '#469b88', '#9da7d0', '#e78c9d', '#eed868', '#469b88', '#e0533d']
@@ -125,6 +125,16 @@ export default function CashFlow() {
                 : `Where your money goes each year (age ${profile.currentAge})`
           }
         />
+        {/* A Sankey with no links has nothing to lay out: recharts hands the lone Budget
+            node NaN coordinates, and the card becomes 440px of blank with a half-clipped
+            label floating in it. Every other section here says "Nothing yet" — so does this. */}
+        {data.links.length === 0 ? (
+          <EmptyState
+            icon="🪙"
+            title="No money moving yet"
+            hint="Add an income source or an expense below and the flow of every rupee — earned, spent, invested — is drawn here."
+          />
+        ) : (
         <div className="overflow-x-auto">
           <div className="h-[440px] w-full min-w-[560px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -141,6 +151,7 @@ export default function CashFlow() {
           </ResponsiveContainer>
           </div>
         </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -140,3 +140,12 @@ export async function fetchPlan(planId) {
 export async function syncPlan(planId, body) {
   return apiFetch(`/plans/${planId}`, { method: 'PUT', body: JSON.stringify(body) })
 }
+
+/**
+ * The "What if" model call. Sends only the sentence — never the plan — and gets back
+ * operations the engine applies on this device. Throws (status 503) when the server has no
+ * model configured, which the caller treats as "fall back to the on-device reader".
+ */
+export async function askEnoughModel(text) {
+  return apiFetch('/enough/ask', { method: 'POST', body: JSON.stringify({ text }) })
+}

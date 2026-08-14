@@ -12,6 +12,7 @@ import { requireAuth, errorHandler } from './middleware.js'
 import { users, sessions, plans, ready } from './db.js'
 import { TAX_CONFIG, TAX_FY } from '@projectlab/engine'
 import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
+import { askEnough, enoughAskConfigured } from './enough.js'
 import { withDevFields, isProduction } from './dev.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -83,6 +84,7 @@ app.get('/healthz', (_req, res) => {
     service: 'financial-blueprint-api',
     time: new Date().toISOString(),
     auth: { google: googleConfigured, email: emailConfigured },
+    features: { enoughAsk: enoughAskConfigured() },
   })
 })
 
@@ -271,6 +273,30 @@ app.delete('/v1/plans/:id', requireAuth, async (req, res, next) => {
 
 app.get('/v1/tax/config', (_req, res) => {
   res.json({ fy: TAX_FY, config: TAX_CONFIG[TAX_FY] })
+})
+
+/**
+ * The "What if" model seam. A single sentence in, operations out — never a figure, never
+ * the plan. Its own limiter (per IP) because the model is a shared, billable resource and
+ * this is where a bored visitor would otherwise burn the quota. No auth: the tab is usable
+ * before sign-in, and only the sentence ever leaves the device.
+ */
+const enoughAskLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'That is enough questions for now. Try again in a while.' },
+})
+app.post('/v1/enough/ask', enoughAskLimiter, async (req, res, next) => {
+  try {
+    const result = await askEnough(req.body?.text || '')
+    res.json(result)
+  } catch (err) {
+    if (err.status === 503) return res.status(503).json({ error: 'The What-if model is not configured.' })
+    if (err.status === 502) return res.status(502).json({ error: 'The model did not answer.' })
+    next(err)
+  }
 })
 
 app.use(errorHandler)
