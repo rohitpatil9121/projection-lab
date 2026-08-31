@@ -1,0 +1,2483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>How much is enough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  /* ===== THE IVORY SYSTEM =====
+     The house brand, applied whole. docs/BRAND.md is the source of truth; this block is
+     only its machine-readable form. Three laws are load-bearing here:
+
+       THE PAGE IS IVORY, NEVER WHITE. White glares under long reading and reads as
+       "designed"; ivory reads as paper. White is a component colour — cards only.
+
+       TURQUOISE IS RATIONED. It appears only on an answer or an action: the save button,
+       the slider, the active tab, and the one line on the chart that IS the answer —
+       "enough to retire then". Nowhere else. Rationing it is what makes it mean something.
+
+       GREY IS METADATA ONLY. Any line meant to be READ gets body colour. Pages feel dull
+       because they set real sentences in grey; --mut is for timestamps and labels.
+
+     Dark is the disclosure band grown to fill the screen: navy, not black, not grey. On
+     navy the deep teal goes muddy, so turquoise switches to its bright cut.
+
+     The chart is the one place more than one hue is allowed, because a line has to be told
+     apart from another line. The series hues are fixed and carry across both grounds; only
+     their VALUES are tuned per ground, so both meet AA. */
+  :root{
+    /* ivory ground — the default */
+    --bg:#F6F3EC;--studio:#F6F3EC;--card:#FFFFFF;--card2:#FFFFFF;--surf1:#FFFFFF;--surf2:#FFFFFF;
+    --line:#E7E0D6;--line2:#D6CCBE;
+    --ink:#0B2545;--ink2:#39434F;--mut:#5A6470;
+    --em:#0B6E6D;--em2:#0B6E6D;--on-em:#FFFFFF;
+    /* goal series — teal, violet, blue, gold, amber, dropped in value to hold on paper */
+    --series-1:#0F8F82;--series-2:#5647B8;--series-3:#2A63C4;--series-4:#8A6410;--series-5:#B05A12;
+    --violet:#5647B8;--amber:#7E5210;--red:#9A3B2A;
+    /* the three chart lines, same hues as they always were */
+    --c-worst:#B57511;--c-mid:#2A63C4;--c-best:#10874F;--c-enough:#0B6E6D;--c-worst-ink:#7E5210;
+    --t-hero:28px;--t-num:20px;--t-title:16px;--t-row:14px;--t-body:12px;--t-meta:10px;
+    /* THREE LINE-HEIGHTS. There were ten, between 1.0 and 1.9, chosen one element at a
+       time. Numbers and headings set tight, interface text at 1.5, prose you actually read
+       at 1.65. Nothing else. */
+    --lh-tight:1.25;--lh-ui:1.5;--lh-read:1.65;
+    --s-1:2px;--s-2:4px;--s-3:8px;--s-4:12px;--s-5:16px;--s-6:20px;--s-7:24px;--s-8:40px;
+    --field:#F6F3EC;--track:#D6CCBE;--grid:#EFEAE1;--axis:#D6CCBE;
+    --info:#BFDDDB;--info-bg:#E4F1F0;--info-ink:#0B4F4E;
+    --warn:#E0C79A;--warn-bg:rgba(181,117,17,.10);
+    --stop:#C98F80;--stop-bg:rgba(154,59,42,.09);
+    --scrim:rgba(11,37,69,.38);--fade0:rgba(246,243,236,0);--fade1:rgba(246,243,236,.92);
+    --bandfill:rgba(11,37,69,.03);--focus:rgba(11,110,109,.38);
+    --r-s:12px;--r-m:16px;--r-l:20px;--r-xl:28px;--e-emph:cubic-bezier(.2,0,0,1);--e-dec:cubic-bezier(.05,.7,.1,1);--e-std:cubic-bezier(.3,0,.2,1);
+    --sh1:0 1px 2px rgba(61,50,30,.05),0 6px 16px rgba(61,50,30,.04);--sh2:0 10px 26px -12px rgba(61,50,30,.22);
+    --page:radial-gradient(900px 560px at 18% -10%,#FBF9F4 0%,rgba(251,249,244,0) 55%),radial-gradient(760px 520px at 106% 2%,#F1ECE1 0%,rgba(241,236,225,0) 50%),#EFEAE1;
+    --screen:linear-gradient(180deg,#FBF9F4,#F6F3EC);--screen-solid:#F6F3EC;}
+
+  /* the disclosure band, grown to fill the screen */
+  :root[data-theme="dark"]{
+    --bg:#0B2545;--studio:#0E2B50;--card:#12345E;--card2:#17406F;--surf1:#0E2B50;--surf2:#12345E;
+    --line:#1D446F;--line2:#2C5786;
+    --ink:#F3F6F8;--ink2:#C6D6E4;--mut:#9FB6CC;
+    --em:#6FD6D2;--em2:#6FD6D2;--on-em:#07203D;
+    --series-1:#2DD4BF;--series-2:#9B8CFA;--series-3:#5B9DF9;--series-4:#E8B54D;--series-5:#F0A93B;
+    --violet:#9B8CFA;--amber:#F0A93B;--red:#E8877A;
+    --c-worst:#F0A93B;--c-mid:#5B9DF9;--c-best:#3DDC97;--c-enough:#6FD6D2;--c-worst-ink:#F0A93B;
+    --field:#092040;--track:#2C5786;--grid:#173A63;--axis:#2C5786;
+    --info:#2C5786;--info-bg:rgba(111,214,210,.10);--info-ink:#9FE3E0;
+    --warn:#6E5426;--warn-bg:rgba(240,169,59,.12);
+    --stop:#8A4536;--stop-bg:rgba(232,135,122,.14);
+    --scrim:rgba(4,14,28,.66);--fade0:rgba(11,37,69,0);--fade1:rgba(11,37,69,.92);
+    --bandfill:rgba(255,255,255,.035);--focus:rgba(111,214,210,.42);
+    --sh1:0 1px 2px rgba(0,0,0,.30);--sh2:0 10px 26px -12px rgba(0,0,0,.60);
+    --page:radial-gradient(900px 560px at 18% -10%,#12345E 0%,rgba(18,52,94,0) 55%),radial-gradient(760px 520px at 106% 2%,#0E2B50 0%,rgba(14,43,80,0) 50%),var(--bg);
+    --screen:linear-gradient(180deg,#0E2B50,#0B2545);--screen-solid:#0B2545;}
+  *{box-sizing:border-box}
+  /* THE WHOLE PAGE IS THE PHONE.
+     Galaxy S24 Ultra, 1440 × 3120. On a phone it fills the screen; on a desktop it is the
+     same shape, sized to the window height and centred, never stretched. Nothing around it. */
+  html,body{height:100%}
+  body{margin:0;background:var(--page);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:var(--lh-ui);-webkit-font-smoothing:antialiased;display:flex;align-items:center;justify-content:center;padding:0;overflow:hidden}
+  /* THE EVIDENCE IS MONOSPACED. Every figure, fee and label. It makes a number look
+     weighed rather than written, and it is the detail that makes the brand recognisable. */
+  .num{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  /* No device chrome. This is the app, not a picture of the app on a phone. */
+  .phone{position:relative;aspect-ratio:1440/3120;
+    width:min(100vw, calc(100vh * 1440 / 3120));
+    width:min(100vw, calc(100dvh * 1440 / 3120));}
+  .screen{background:var(--screen);border:0;border-radius:0;overflow:hidden;height:100%;display:flex;flex-direction:column;position:relative}
+  .body{flex:1;overflow-y:auto;padding:var(--s-3) var(--s-5) var(--s-6);scrollbar-width:none}.body::-webkit-scrollbar{display:none}
+  /* THE APP SAYS WHAT IT IS. There was no title anywhere in the document — someone opening a
+     link met a banner about a made-up person and two very large rupee figures, with nothing
+     saying what the thing was, who built it, or where the number came from. One block, outside
+     the body, so it survives every tab change and costs one row of height. */
+  .apphead{flex:0 0 auto;padding:var(--s-5) var(--s-5) var(--s-4);border-bottom:1px solid var(--line);background:var(--surf1)}
+  .appname{font-size:var(--t-row);font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+  .appsub{font-size:var(--t-body);line-height:var(--lh-ui);color:var(--mut);margin-top:2px}
+  .tabbar{flex:0 0 auto;height:62px;background:var(--surf1);border-top:1px solid var(--line);display:flex;padding:var(--s-3) var(--s-3) var(--s-3)}
+  .tabbar button{flex:1;min-width:0;background:none;border:none;color:var(--mut);font-family:inherit;font-size:var(--t-body);font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-2);transition:color .15s var(--e-std)}
+  .tabbar button.on{color:var(--em)}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:var(--t-meta);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:500}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:var(--s-5);position:relative;overflow:hidden;box-shadow:var(--sh1)}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .muted{color:var(--mut)}.ink2{color:var(--ink2)}
+  .item{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-4) 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:none}.item .m{flex:1;min-width:0;cursor:pointer}
+  /* 6px is the optical offset from the top of a 14px/1.5 line to the middle of a 9px chip.
+     It is a half-step on purpose: the grid positions blocks, the eye aligns marks. */
+  .item--multi{align-items:flex-start}
+  .item--multi > .dot{margin-top:6px}
+  .item--multi > .sw{align-self:center}
+  /* A row that navigates gets the four states a button gets. The chevron moves 2px on
+     hover — the smallest possible signal that the row leads somewhere. */
+  .item--go{margin:0 calc(-1 * var(--s-4));padding-left:var(--s-4);padding-right:var(--s-4);border-radius:var(--r-s);
+    transition:background .15s var(--e-std)}
+  .item--go:hover{background:var(--field)}
+  .item--go:hover .chev{transform:translateX(2px)}
+  .item--go:active{transform:scale(.995)}
+  .item--go:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  .chev{color:var(--mut);font-size:var(--t-title);transition:transform .15s var(--e-std)}
+  /* TWO CARDS, ONE FACT EACH. They collapse to one column below 340px rather than
+     letting a rupee figure wrap mid-number. */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)}
+  @media (max-width:339px){.duo{grid-template-columns:1fr}}
+  .duo .card{padding:var(--s-5);cursor:pointer;transition:border-color .15s var(--e-std),transform .1s var(--e-std)}
+  .duo .card:active{transform:scale(.985)}
+  .duo .card:focus-visible{outline:2px solid var(--em);outline-offset:2px}
+  .duo .dv{font-size:var(--t-num);font-weight:600;line-height:var(--lh-tight);margin-top:var(--s-3);letter-spacing:-.01em}
+  .duo .ds{font-size:var(--t-body);line-height:var(--lh-ui);color:var(--mut);margin-top:var(--s-2)}
+  /* ONE BUTTON. Five variants, one base, and the two states it never had: a press, because
+     that is the only affordance a phone gives back, and a visible focus ring, because a
+     keyboard could tab through forty-five of these and see nothing move. */
+  .btn{font-family:inherit;font-weight:700;font-size:var(--t-row);border:1px solid transparent;
+    border-radius:var(--r-m);cursor:pointer;min-height:44px;padding:var(--s-4) var(--s-5);
+    transition:background .15s var(--e-std),border-color .15s var(--e-std),color .15s var(--e-std),transform .08s var(--e-std)}
+  .btn:active,.askbar button:active,.tabbar button:active,.ibtn:active,.seg:active{transform:scale(.985)}
+  .btn:focus-visible,.askbar button:focus-visible,.tabbar button:focus-visible,.ibtn:focus-visible,.sw:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  .btn--save{background:var(--em);color:var(--on-em)}
+  .btn--danger{background:transparent;border-color:var(--red);color:var(--red)}
+  .btn--add{width:100%;margin-top:var(--s-4);background:transparent;border:1px dashed var(--line2);color:var(--ink2);font-weight:700;font-size:var(--t-body);padding:var(--s-4)}
+  .btn--add:hover{border-color:var(--em);color:var(--em)}
+  .btn--mini{flex:1;min-width:112px;background:var(--field);border-color:var(--line2);color:var(--ink);font-size:var(--t-body);font-weight:700;border-radius:var(--r-s);padding:var(--s-3) var(--s-4)}
+  .btn--ghost{background:transparent;border-color:var(--line2);color:var(--ink)}
+  .btn--mini.btn--danger{background:var(--field);border-color:var(--stop);color:var(--red)}
+  .btn--link{display:block;width:100%;margin-top:var(--s-6);padding:0;background:none;border:none;border-radius:0;color:var(--ink2);font-size:var(--t-body);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+  .field{margin-bottom:var(--s-4)}.field label{font-size:var(--t-body);color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:var(--s-3);margin-bottom:var(--s-3)}
+  .field label span{flex:1;min-width:0}
+  .fnote{display:none;font-size:var(--t-body);line-height:var(--lh-ui);color:var(--ink2);background:var(--field);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s-4) var(--s-4);margin:var(--s-3) 0 0}
+  .fnote.on{display:block}
+  .nudge.samp{display:flex;gap:var(--s-4);align-items:center;margin:var(--s-3) 0 var(--s-2)}
+    .qbub{background:var(--em);color:var(--on-em);font-size:var(--t-body);font-weight:600;line-height:var(--lh-ui);padding:var(--s-4);border-radius:var(--r-m) var(--r-m) 4px var(--r-m);margin:var(--s-3) 0 var(--s-3) auto;max-width:82%;width:fit-content}
+  .abub{margin:var(--s-3) auto var(--s-5) 0;max-width:96%}
+  .abub>.ink2,.abub>div>.ink2{background:var(--card);border:1px solid var(--line);border-radius:var(--r-m) var(--r-m) var(--r-m) 4px;padding:var(--s-4)}
+  .askinput{flex:1;min-width:0;background:var(--field);border:1px solid var(--line2);border-radius:var(--r-s);color:var(--ink);font-family:inherit;font-size:var(--t-title);padding:var(--s-4);min-height:44px}
+  .askinput:focus{outline:none;border-color:var(--em);box-shadow:0 0 0 3px var(--focus)}
+  .agein{width:64px;background:var(--field);border:1px solid var(--line2);border-radius:var(--r-s);color:var(--ink);font-family:inherit;font-size:var(--t-title);font-weight:700;text-align:center;padding:var(--s-3) var(--s-2);min-height:44px}
+  .agein:focus{outline:none;border-color:var(--em);box-shadow:0 0 0 3px var(--focus)}
+    .step{width:20px;height:20px;border-radius:50%;background:var(--line2);color:var(--ink);font-size:var(--t-meta);font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-family:'IBM Plex Mono',monospace}
+  /* THE ONE ACCENT ON THE PLAN TAB. A thin rule beside a row that is still empty and still
+     required. It is drawn at most once or twice, which is the only reason it reads at all —
+     an accent on every row is a texture, not a signal. A pseudo-element rather than a border
+     or an inset shadow, so it survives the focus ring and does not move the padding. */
+  .item--flag{position:relative}
+  .item--flag::before{content:'';position:absolute;left:2px;top:10px;bottom:10px;width:3px;border-radius:2px;background:var(--em)}
+  /* The two pages are different heights. Without this the container takes the taller of
+     them and leaves a hole under the chart. */
+  #c_pager{overflow:hidden;margin:var(--s-3) calc(-1 * var(--s-5)) 0;touch-action:pan-y;transition:height .3s cubic-bezier(.22,.61,.36,1)}
+  #c_track{display:flex;width:200%;transition:transform .3s cubic-bezier(.22,.61,.36,1);align-items:flex-start}
+  #c_track>div{width:50%;flex:0 0 50%}
+  /* THE ANCHOR. A status strip, not a card — no border and no shadow, because it is not an
+     object you act on, it is a fact that is always true. Tinted so it reads as a different kind
+     of thing from the panel under it. */
+  .anch{background:var(--field);border-radius:var(--r-s);padding:var(--s-4) var(--s-5);margin-top:var(--s-4);cursor:pointer}
+  .anch:active{transform:scale(.995)}
+  .anch:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  .anch-e{font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+  .anch-b{font-size:var(--t-body);line-height:var(--lh-ui);color:var(--ink2);margin-top:var(--s-2)}
+  /* THE SCENARIO PANEL. One panel is one complete answer: an ending in the accent colour, then
+     the figures behind it in a fixed order so the same row can be compared between panels. */
+  .pnl{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);
+    border-radius:var(--r-m);padding:var(--s-5);margin-top:var(--s-4);box-shadow:var(--sh1);
+    cursor:pointer;transition:border-color .15s var(--e-std),transform .1s var(--e-std)}
+  .pnl:active{transform:scale(.995)}
+  .pnl:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  .pnl-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-3)}
+  .pnl-t{font-size:var(--t-meta);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+  .pnl-w{font-size:var(--t-meta);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);white-space:nowrap}
+  .pnl-out{font-size:var(--t-num);font-weight:700;line-height:var(--lh-tight);margin-top:var(--s-4);color:var(--ink)}
+  .pnl-os{font-size:var(--t-body);line-height:var(--lh-ui);color:var(--mut);margin-top:var(--s-2)}
+  .pnl-rows{margin-top:var(--s-5);padding-top:var(--s-4);border-top:1px solid var(--line)}
+  .prow2{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s-4);padding:var(--s-2) 0}
+  .plab2{font-size:var(--t-body);color:var(--mut)}
+  .pval2{font-size:var(--t-row);font-weight:500;color:var(--ink);text-align:right}
+  .pnl-more{font-size:var(--t-body);color:var(--em);margin-top:var(--s-4);display:flex;align-items:center;gap:var(--s-2)}
+  /* TWO PAGES, ONE SMALL CONTROL. Two 44px dots cost more vertical space than they were
+     worth and said nothing about what the second page holds. A named segment does both. */
+  #c_dots{display:flex;gap:var(--s-1);justify-content:center;margin-top:var(--s-3);background:var(--field);border:1px solid var(--line);border-radius:var(--r-s);padding:2px;width:max-content;margin-left:auto;margin-right:auto}
+  .seg{border:none;background:transparent;font-family:inherit;font-size:var(--t-meta);font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);padding:0 var(--s-5);height:30px;border-radius:calc(var(--r-s) - 2px);cursor:pointer}
+  .seg.on{background:var(--card);color:var(--ink);box-shadow:var(--sh1)}
+  .seg:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  /* THE SLIDER IS THE CHART. A strip across the foot of the drawing, invisible because the
+     pill and the dashed line already say where it is and what it does. Its ends are set in JS
+     from the same padding the SVG used, so the pill cannot drift off its own line. */
+  #c_chart{position:relative}
+  #c_slbox{position:absolute;left:0;right:0;bottom:0;height:46px}
+  .rngchart{-webkit-appearance:none;appearance:none;position:absolute;left:0;right:0;bottom:0;width:100%;height:46px;background:transparent;cursor:ew-resize;margin:0;touch-action:none}
+  .rngchart::-webkit-slider-runnable-track{height:46px;background:transparent}
+  .rngchart::-webkit-slider-thumb{-webkit-appearance:none;width:36px;height:46px;background:transparent;border:none}
+  .rngchart::-moz-range-track{height:46px;background:transparent}
+  .rngchart::-moz-range-thumb{width:36px;height:46px;background:transparent;border:none}
+  .rngchart:focus-visible{outline:none}
+  .rngchart:focus-visible+#c_pill{box-shadow:0 0 0 3px var(--focus)}
+  /* pointer-events off on the body so a drag that starts on the pill still reaches the input;
+     only the two arrows take taps of their own. */
+  /* TWO LINES, LIKE A STEPPER OVER A CAPTION. One line put the word RETIREMENT beside the
+     arrows and made the pill about 150px wide, so near either end of the axis half of it hung
+     outside the chart — and the chart sits inside an overflow:hidden pager, so it was cut off
+     rather than merely overhanging. */
+  #c_pill{position:absolute;bottom:2px;pointer-events:none;
+    display:flex;flex-direction:column;align-items:center;background:var(--card);border:1px solid var(--line2);
+    border-radius:var(--r-s);box-shadow:var(--sh2);padding:2px var(--s-3) var(--s-2);white-space:nowrap}
+  #c_pill .prow{display:flex;align-items:center;gap:var(--s-2)}
+  #c_pill .pval{font-size:var(--t-row);font-weight:700;color:var(--ink);min-width:24px;text-align:center}
+  #c_pill .plab{font-size:var(--t-meta);color:var(--mut);letter-spacing:.08em;text-transform:uppercase;line-height:1;margin-top:1px}
+  .pnud{pointer-events:auto;border:none;background:transparent;color:var(--ink2);font-size:11px;line-height:1;
+    width:28px;height:28px;border-radius:var(--r-s);cursor:pointer;padding:0}
+  .pnud:active{background:var(--field)}
+  .pnud:focus-visible{outline:none;box-shadow:0 0 0 3px var(--focus)}
+  .ibtn.s{width:22px;height:22px;font-size:var(--t-body)}
+  .field input,.field select{width:100%;background:var(--field);border:1px solid var(--line2);border-radius:var(--r-s);color:var(--ink);font-family:inherit;font-size:var(--t-title);padding:var(--s-4) var(--s-4);font-variant-numeric:tabular-nums}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--em);box-shadow:0 0 0 3px var(--focus)}
+  .recho{font-size:var(--t-body);color:var(--ink2);margin-top:var(--s-3);min-height:15px;line-height:var(--lh-tight)}
+  .f2{display:flex;gap:var(--s-4)}.f2>div{flex:1}
+  .ibtn{width:24px;height:24px;border-radius:50%;border:1px solid var(--line2);background:var(--field);color:var(--ink2);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:var(--t-body);cursor:pointer;line-height:1;position:relative;overflow:visible;flex:0 0 auto}
+  .ibtn::after{content:'';position:absolute;left:50%;top:50%;width:44px;height:44px;transform:translate(-50%,-50%);border-radius:50%}
+  .sheet{position:absolute;inset:0;background:var(--scrim);display:none;align-items:flex-end;z-index:20;backdrop-filter:blur(3px)}.sheet.open{display:flex}
+  .sheetin{width:100%;background:var(--surf2);border-top:1px solid var(--line2);border-radius:var(--r-xl) var(--r-xl) 0 0;padding:var(--s-5) var(--s-6) var(--s-7);transform:translateY(100%);transition:transform .4s var(--e-dec);max-height:92%;overflow-y:auto}
+  .sheet.open .sheetin{transform:translateY(0)}
+  .grab{width:36px;height:4px;border-radius:99px;background:var(--line2);margin:0 auto var(--s-5)}
+  .sheetrow{display:flex;gap:var(--s-4);margin-top:var(--s-3)}.sheetrow .btn{flex:1;padding:var(--s-5)}
+  /* THE VOICE IS A SERIF. Headlines only. Never italic. */
+  h2.sc{font-family:'Source Serif 4',Georgia,serif;font-size:var(--t-num);font-weight:600;letter-spacing:-.015em;margin:var(--s-1) 0}
+  /* THREE TONES, NOT THREE HAND-WRITTEN COLOUR TRIPLES REPEATED AT EVERY USE. */
+  /* The most repeated inline pair in the file, said once. */
+  .t-body{font-size:var(--t-body);line-height:var(--lh-read)}
+  /* Bold is the ink colour by default; that removed forty-one inline overrides.
+     A nudge keeps its own tone, because the tone is the message. */
+  b,strong{color:var(--ink)}
+  .nudge b,.qbub b{color:inherit}
+  .nudge{background:var(--warn-bg);border:1px solid var(--warn);border-radius:var(--r-s);padding:var(--s-4);font-size:var(--t-body);color:var(--amber);margin:0 0 var(--s-4);line-height:var(--lh-ui)}
+  .nudge--info{background:var(--info-bg);border-color:var(--info);color:var(--info-ink)}
+  .nudge--stop{background:var(--stop-bg);border-color:var(--stop);color:var(--ink);border-left-width:3px;font-weight:600}
+  .nudge--ok{background:var(--info-bg);border-color:var(--info);color:var(--ink2)}  /* set from JS in mixSum */
+  .nudge--info b{color:var(--ink)}
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:var(--r-l);padding:var(--s-4) var(--s-5) var(--s-4);margin:var(--s-2) 0 var(--s-4);box-shadow:var(--sh1)}
+  .hero-lab{font-family:'IBM Plex Mono',monospace;font-size:var(--t-meta);letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:500}
+  .hero-num{font-family:'IBM Plex Mono',monospace;font-size:var(--t-hero);font-weight:600;letter-spacing:-.03em;line-height:var(--lh-tight);margin:var(--s-3) 0 var(--s-2);color:var(--ink)}
+  .stack{height:14px;border-radius:99px;overflow:hidden;display:flex;background:var(--field);margin:var(--s-2) 0 var(--s-4)}
+  .stack>span{height:100%;display:block}
+  .legrow{display:flex;align-items:center;gap:var(--s-3);padding:var(--s-3) 0;border-bottom:1px solid var(--line);font-size:var(--t-body)}
+  .legrow:last-child{border-bottom:none}
+  .dot{width:9px;height:9px;border-radius:2px;flex:0 0 auto}
+  .rng{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;cursor:pointer;margin:var(--s-1) 0}
+  .rng::-webkit-slider-runnable-track{height:6px;border-radius:99px;background:linear-gradient(90deg,var(--em) var(--p,50%),var(--track) var(--p,50%))}
+  .rng::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--card);border:3px solid var(--em);margin-top:-12px;box-shadow:var(--sh1)}
+  .rng::-moz-range-track{height:6px;border-radius:99px;background:var(--track)}
+  .rng::-moz-range-thumb{width:22px;height:22px;border:3px solid var(--em);border-radius:50%;background:var(--card)}
+  .sw{width:44px;height:26px;border-radius:99px;background:var(--track);position:relative;flex:0 0 auto;cursor:pointer;transition:background .28s var(--e-emph);border:none;padding:0;overflow:visible}
+  .sw::before{content:'';position:absolute;left:50%;top:50%;width:48px;height:44px;transform:translate(-50%,-50%)}
+  .sw.on{background:var(--em)}.sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--ink);transition:left .28s var(--e-emph)}.sw.on::after{left:21px}
+  .mixrow{display:flex;align-items:center;gap:var(--s-4);padding:var(--s-3) 0;border-bottom:1px solid var(--line)}
+  .mixrow:last-child{border-bottom:none}
+  .mixrow input{width:64px;background:var(--field);border:1px solid var(--line2);border-radius:var(--r-s);color:var(--ink);font-family:inherit;font-size:var(--t-row);padding:var(--s-3);text-align:right;font-variant-numeric:tabular-nums}
+  .ladder{width:100%;border-collapse:collapse;font-size:var(--t-body)}
+  .ladder td{padding:var(--s-4) var(--s-2);border-bottom:1px solid var(--line)}
+  .ladder tr:last-child td{border-bottom:none}
+  .ladder tr.on td{background:var(--info-bg)}
+  .ladder td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+  /* The bar floats over the page, so the page needs somewhere for its last card to go.
+     Without this the final card is always half under the button. */
+  .body.hasbar{padding-bottom:96px}
+  .askbar{position:absolute;left:0;right:0;bottom:62px;padding:var(--s-4) var(--s-5) var(--s-4);pointer-events:none;background:linear-gradient(180deg,var(--fade0),var(--fade1) 32%,var(--surf1));z-index:14}
+  .askbar button{width:100%;pointer-events:auto;background:var(--em);border:1px solid var(--em);color:var(--on-em);font-family:inherit;font-weight:600;font-size:var(--t-row);padding:var(--s-5);border-radius:var(--r-m);cursor:pointer;box-shadow:var(--sh2);min-height:44px;transition:filter .15s var(--e-std)}
+  .askbar button:hover{filter:brightness(1.08)}
+  details.disc{margin-top:var(--s-1)}details.disc>summary{list-style:none;cursor:pointer;color:var(--em);font-weight:700;font-size:var(--t-body)}
+  details.disc>summary::-webkit-details-marker{display:none}
+</style>
+</head>
+<body>
+  <div class="phone"><div class="screen">
+    <header class="apphead">
+      <div class="appname">How much is enough</div>
+      <div class="appsub">Your FIRE number, tested against 31 real NIFTY 500 sequences.</div>
+    </header>
+    <div class="body" id="body"></div>
+    <div class="tabbar">
+      <button id="tab_ask" onclick="go('ask')">What if</button>
+      <button id="tab_num" onclick="go('num')">FIRE number</button>
+      <button id="tab_life" class="on" onclick="go('life')">Your plan</button>
+    </div>
+    <div id="askbar" class="askbar" style="display:none"></div>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Details"><div class="sheetin" id="sheetin" tabindex="-1"></div></div>
+  </div></div>
+<script>
+(function(){
+  /* ============================================================================
+     THE KEY. Two ways to give the Ask tab a model, and only one of them is safe to
+     share.
+
+     ASK_PROXY (further down) — your own endpoint holding the key. This is the one to
+     use for anybody but you. The file can be published; the key cannot be read from
+     it; and the limits are enforced somewhere a visitor cannot switch off.
+
+     MY_KEY (below) — for a copy that never leaves your machine. A key written here is
+     readable by everyone you send the file to, with one look at the source, and there
+     is nothing this app can do about it: whoever takes it will not use the app, they
+     will point their own requests at the provider and you will get the invoice. Ship
+     the empty version.
+     ============================================================================ */
+  const MY_KEY='';
+
+  const NOW=new Date().getFullYear(), NOWM=new Date().getMonth()+1;
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  /* ===== RETURN SERIES — identical source and method to the main app ===== */
+  const RETURNS={meta:{series:'NIFTY 500 Total Returns Index — calendar-year returns (%)',
+    source:'NSE Indices — niftyindices.com › Reports › Historical Data › Total Returns Index Values.',
+    method:'Last trading day of December, year on year, computed in code. Never hand-typed.',
+    attribution:'NIFTY and NIFTY 500 are trademarks of NSE Indices Limited. This app is not affiliated with, endorsed by, sponsored by or connected to NSE Indices Limited or the National Stock Exchange of India. We do not republish their data. This app only carries yearly percentages that we calculated from it. Any error in how we used their numbers is ours.',
+    note:'A genuine total-return series: dividends are already in it.'},
+    startYear:1995,
+    r:[-34.35,-5.95,14.50,-6.84,100.92,-23.45,-21.55,13.92,104.85,21.07,38.77,36.16,64.58,-56.54,90.96,15.27,-26.40,33.48,4.82,39.30,0.22,5.12,37.65,-2.14,8.97,17.89,31.60,4.25,26.91,16.24,7.76]};
+  const EQ=RETURNS.r.map(x=>x/100), NEQ=EQ.length;
+
+  const CLSN={equity:'Equity',debt:'Debt & cash',commodity:'Gold',realestate:'Real estate',digital:'Others'};
+  const CLSC={equity:'var(--series-2)',debt:'var(--c-mid)',commodity:'var(--series-5)',realestate:'var(--violet)',digital:'var(--ink2)'};
+  /* Published defaults. Every one of these is editable, and the reasoning sits behind the i,
+     because an assumption that moves the answer and cannot be seen is poison in a tool whose
+     entire product is "trust me". Equity has no default here — it is replayed against history. */
+  const DEFRET={debt:6.5,commodity:8,realestate:7,digital:8};
+
+  const S={
+    dob:'1988-06', retireAge:55, planAge:90,
+    inflation:6,
+    spendMo:1.5,
+    /* THE EXAMPLE PLAN FILLS EVERY INPUT.
+       A half-filled example teaches the app badly: the goal list is empty, so nobody learns
+       that goals exist; nothing is held, so the FI date, the earliest age and the whole
+       arrival comparison are absent; no legacy, so that row reads "Nothing". A first-time
+       visitor was being shown the skeleton and asked to imagine the rest.
+       These are one invented person's figures, and the banner says so on every screen. */
+    goals:[
+      {id:1,n:"Daughter's college",amt:40,date:'2034-06',type:'one',infl:10,on:true},
+      {id:2,n:'A month away every year',amt:5,date:'2045-01',end:'2057-01',type:'recur',infl:6,on:true}
+    ],
+    bequest:{on:true,amt:200},
+    haveNow:180, saveMo:0.75,   // both optional in a real plan; the example fills them so the FI date exists
+    /* Nobody saves the same rupee amount at 30 and at 50. Income rises, and what goes
+       away every month rises with it. A level contribution understates what a working
+       person will actually manage, so it overstates what they must start with. This is
+       the yearly step-up, applied to the monthly amount at every anniversary. */
+    stepUp:6,
+    /* THE PLAN ON SCREEN IS AN EXAMPLE UNTIL THE USER TOUCHES IT.
+       It carries an example split so a first-time visitor can see what the app does. The
+       moment they change anything the plan becomes theirs, and the split empties — because
+       a default mix is a recommendation, and this app does not make recommendations. */
+    /* TAX ON SELLING.
+       Every rupee spent in retirement is a rupee sold, and in India a long-term equity gain
+       is taxed. Modelling it exactly needs cost-basis tracking per lot, which this app has
+       no way to know. So one honest approximation, stated on screen and editable: a share
+       of each withdrawal is gain, and that share is taxed. A rough figure that exists beats
+       a precise figure that pretends tax does not. */
+    taxRate:12.5, taxGain:60,
+    pause:null,   // preview-only: a break from work, set by Ask, never saved
+    /* HOW THE MONEY IS TAKEN OUT. 'rebalance' is the default because it is the closer of the two
+       to what the app has always done, so an existing plan does not change strategy underneath
+       its owner. */
+    drawdown:'rebalance',
+    sample:true,
+    mix:{equity:60,debt:30,commodity:10,realestate:0,digital:0},
+    ret:Object.assign({},DEFRET)
+  };
+  let GID=0;
+
+  const yrOf=d=>+((''+d).slice(0,4));const moOf=d=>+((''+d).slice(5,7))||1;
+  const mLabel=d=>MONTHS[moOf(d)-1]+' '+yrOf(d);
+  const age0=()=>Math.max(0,Math.floor(((NOW*12+NOWM)-(yrOf(S.dob)*12+moOf(S.dob)))/12));
+  const retYear=()=>NOW+(S.retireAge-age0());
+  const endYear=()=>NOW+(S.planAge-age0());
+  function money(l){l=+l||0;const neg=l<0;l=Math.abs(l);let s;
+    if(l>=100)s='₹'+(+(l/100).toFixed(2))+' Cr';else if(l>=1)s='₹'+(+l.toFixed(2))+' L';else s='₹'+Math.round(l*1e5).toLocaleString('en-IN');
+    return (neg?'-':'')+s;}
+  const moneyMo=l=>money(l)+'/mo';
+  const mixTotal=()=>Object.keys(CLSN).reduce((s,k)=>s+(+S.mix[k]||0),0);
+  const w=k=>(+S.mix[k]||0)/Math.max(1,mixTotal());
+  const mixSet=()=>mixTotal()>0;
+  /* To spend ₹100 you must sell more than ₹100. This is that multiplier. */
+  /* Long-run compound rate of the equity series, computed, never typed. */
+  const eqCAGR=()=>{let p=1;EQ.forEach(r=>p*=(1+r));return (Math.pow(p,1/NEQ)-1)*100;};
+  const inflationBeatsEverything=()=>{
+    const rates=[eqCAGR()];
+    Object.keys(CLSN).forEach(k=>{if(k!=='equity'&&(+S.mix[k]||0)>0)rates.push(+S.ret[k]||0);});
+    if((+S.mix.equity||0)<=0)rates.shift();
+    return rates.length?S.inflation>Math.max(...rates):false;};
+  const grossUp=()=>{const d=(+S.taxRate||0)/100*((+S.taxGain||0)/100);
+    return d>0&&d<0.95?1/(1-d):1;};
+  /* Called by every editor. Once, on the first edit of the session. */
+  /* THE SPLIT STILL EMPTIES ON THE FIRST EDIT — a pre-filled allocation is a recommendation,
+     and this app does not make them. What changes is when the user finds out. It used to be
+     silent: they edited their spending, opened the answer, and met a wall. The engine cannot
+     run without a split, so the moment the example's split is dropped we ask for the real one,
+     there and then. The answer is gone for one sheet, not for a tab change and a hunt. */
+  let MIXASK=false;
+  function unsample(keepMix){
+    if(!S.sample)return;
+    S.sample=false;
+    if(!keepMix){S.mix={equity:0,debt:0,commodity:0,realestate:0,digital:0};MIXASK=true;}}
+  // blended rate used ONLY for proportions and the from-zero saving figure, never for the headline
+  const disc=y=>Math.pow(1+S.inflation/100,y-NOW);
+
+  /* =========================================================================
+     ENGINE — the same method as the main app, pointed at a different unknown.
+     There we fix the corpus and report the outcome. Here we fix the outcome —
+     the money must last to plan age and leave the bequest — and solve for the
+     corpus. One capability, two directions.
+
+     No Monte Carlo. One run per starting year, replayed in the real order,
+     wrapping when the plan outlives the series.
+
+     The money is held at the target mix the user set, and rebalanced back to it
+     every year. That is not a recommendation: it is the only assumption
+     consistent with them having told us that is the mix they intend to hold.
+     ========================================================================= */
+  function goalsDueIn(yr){
+    let due=0;
+    for(const g of S.goals){
+      if(g.on===false)continue;
+      const gy=yrOf(g.date), inf=Math.pow(1+(+g.infl||0)/100, yr-NOW);
+      if(g.type==='recur'){const ge=yrOf(g.end||g.date); if(yr>=gy&&yr<=ge)due+=g.amt*inf;}
+      else if(yr===gy)due+=g.amt*inf;
+    }
+    return due;
+  }
+  // one life, starting with nominal corpus C at the retirement year, history index st.
+  /* ═══════════════════════════════════════════════════════════════════════════════════════
+     HOW THE MONEY IS TAKEN OUT
+
+     Until now there was one pot growing at the weighted target rate, which is arithmetically
+     the same as a portfolio held exactly at target every single year — rebalanced continuously,
+     free of cost and free of tax, and every withdrawal taken pro-rata. That is a fine
+     simplification and it is also a strategy nobody actually runs.
+
+     So the pot becomes five balances, each growing at its own rate, and the strategy decides
+     which one is sold. Nothing rebalances on its own in either mode: the only thing that moves
+     money between assets is a cash flow.
+
+       REBALANCE AT WITHDRAWAL — spending is funded by selling whatever is above its target
+       weight, in proportion to how far above it is. In a year equity has run up you spend
+       equity; after a crash equity is below target so you spend debt instead, and the act of
+       spending pulls the portfolio back toward target with no trade of its own. Money going IN
+       does the mirror image: a contribution buys whatever is furthest below target.
+
+       WATERFALL — spending drains the assets in a fixed order, safest first, and equity is
+       touched only when everything else is gone. Nothing is rebalanced ever, so the mix drifts
+       steadily toward equity as the years pass. That drift is the strategy, not a side effect.
+
+     WHAT THE TAX MODEL STILL CANNOT SEE, AND IT MATTERS MORE HERE THAN ANYWHERE ELSE. There is
+     one gross-up rate for every rupee withdrawn, whatever was sold to raise it. Waterfall sells
+     debt first and debt is taxed harder than equity, so the comparison charges waterfall too
+     little. The screen says so. Until per-asset rates exist, read a waterfall advantage as an
+     upper bound rather than as a figure.
+     ═══════════════════════════════════════════════════════════════════════════════════════ */
+  const WF_ORDER=['debt','commodity','realestate','digital','equity'];
+  const isWaterfall=()=>S.drawdown==='waterfall';
+  const splitAtTarget=(tot)=>{const b={};for(const k of Object.keys(CLSN))b[k]=(+tot||0)*w(k);return b;};
+  const balTotal=(b)=>{let t=0;for(const k in b)t+=b[k];return t;};
+
+  /* Take `need` out of the balances and return what could not be raised. Mutates b. */
+  function takeOut(b,need){
+    if(need<=0)return 0;
+    const tot=balTotal(b);
+    if(need>=tot){for(const k in b)b[k]=0;return need-tot;}
+    if(isWaterfall()){
+      /* Safest first. When one is emptied the remainder comes from the next, which is why a bad
+         year can still reach equity — it just takes everything else being gone first. */
+      let left=need;
+      for(const k of WF_ORDER){
+        if(left<=0)break;
+        const take=Math.min(b[k]||0,left);b[k]-=take;left-=take;}
+      return left>1e-9?left:0;}
+    /* Sell what is overweight, in proportion to how overweight it is. The differences from the
+       post-withdrawal target sum to exactly `need`, so scaling the positive ones to `need`
+       never buys anything and never sells an underweight asset. */
+    const after=tot-need, pos={};let sum=0;
+    for(const k in b){const d=b[k]-w(k)*after;if(d>0){pos[k]=d;sum+=d;}}
+    if(sum<=0){for(const k in b)b[k]-=b[k]/tot*need;return 0;}
+    const f=need/sum;
+    for(const k in pos)b[k]=Math.max(0,b[k]-pos[k]*f);
+    return 0;}
+
+  /* Put `add` in. Rebalance-at-withdrawal buys whatever is furthest below target — the mirror of
+     how it sells. Waterfall never rebalances, so new money simply follows the target split. */
+  function putIn(b,add){
+    if(add<=0)return;
+    if(isWaterfall()){for(const k in b)b[k]+=add*w(k);return;}
+    const after=balTotal(b)+add, neg={};let sum=0;
+    for(const k in b){const d=w(k)*after-b[k];if(d>0){neg[k]=d;sum+=d;}}
+    if(sum<=0){for(const k in b)b[k]+=add*w(k);return;}
+    const f=Math.min(1,add/sum);
+    let placed=0;
+    for(const k in neg){const put=neg[k]*f;b[k]+=put;placed+=put;}
+    const rest=add-placed;
+    if(rest>1e-9)for(const k in b)b[k]+=rest*w(k);}
+
+  /* One year of market. Each asset at its own rate — equity from the record, the rest at the
+     fixed rate set for it. */
+  function growYear(b,st,t){
+    for(const k in b){
+      const r=(k==='equity')?EQ[(st+t)%NEQ]:((+S.ret[k]||0)/100);
+      b[k]=Math.max(0,b[k]*(1+r));}}
+
+  // Always returns the full year-by-year path so the same run can be drawn, not just judged.
+  function runOnce(C,st,off){
+    const F=retYear(),END=endYear();const OFF=off||0;
+    const keys=Object.keys(CLSN);
+    /* C IS EITHER AN AMOUNT OR A SET OF BALANCES, AND THE DIFFERENCE MATTERS.
+       A standing start — the solved target handed over on the day — is split at the target
+       weights, because that is what the figure means. But a life that saved its way here
+       arrives with whatever the drift left it holding, and re-splitting that at target would be
+       a free rebalance at exactly the moment the strategy says nothing rebalances. Under
+       waterfall it would hand back the debt the strategy had been spending. So lifePath passes
+       the balances through and they are used as they are. */
+    let bal=(C&&typeof C==='object')?Object.assign({},C):splitAtTarget(C);
+    let pot=balTotal(bal), dead=false, ruinYr=null; const GU=grossUp();
+    const row=[pot];
+    const bequestNom=S.bequest.on?S.bequest.amt*Math.pow(1+S.inflation/100,END-NOW):0;
+    for(let yr=F+1;yr<=END;yr++){
+      if(dead){row.push(0);continue;}
+      const t=yr-F-1;
+      /* THE YEAR'S MONEY COMES OUT FIRST, THEN WHAT IS LEFT GROWS.
+         A retiree spends from January, not from December. Taking the year's spending out
+         before the market does anything is the reading that cannot flatter the plan, and it
+         is the same direction as adding contributions at the end of the saving years. */
+      const spend=S.spendMo*12*Math.pow(1+S.inflation/100,yr-NOW);
+      const short=takeOut(bal,(spend+goalsDueIn(yr))*GU);
+      if(short>0){dead=true;ruinYr=yr;pot=0;row.push(0);continue;}
+      growYear(bal,st+OFF,t);
+      pot=balTotal(bal);
+      if(pot<0)pot=0;
+      row.push(pot);
+    }
+    return {ok:!dead&&pot>=bequestNom-0.0001,ruinYr,end:pot,row,bequestNom};
+  }
+
+  /* WHICH RUN IS THE WORST ONE.
+     A run that runs out is worse than one that does not, and among those that run out the
+     one that runs out soonest is worst. Among the survivors, the one that ends with least.
+     One rule, used by the chart and by the year-by-year table, so they cannot disagree. */
+  function worstIdx(ends,ruins){
+    let best=0,bs=Infinity;
+    for(let i=0;i<ends.length;i++){
+      const sc=(ruins[i]!=null)?(-1e9+ruins[i]):(ends[i]||0);
+      if(sc<bs){bs=sc;best=i;}}
+    return best;}
+
+  /* Every run redrawn from the solved number. The highest line is a per-age extreme stitched
+     from different runs, so nobody travels along it — the app says so. The LOWEST line is one
+     real run: the single history that goes worst. It has to be one run, because the table
+     underneath is the same figures written out and a person adds up the rows. */
+  function pathData(C,sip){
+    const F=retYear(),END=endYear(),A0=age0(),nAcc=Math.max(0,F-NOW),nDec=END-F;
+    const ages=[];for(let a=A0;a<=S.planAge;a++)ages.push(a);
+    /* SAVING YEARS: the stitched lowest of the 31 saving histories, at the monthly amount
+       we solved for. It lands exactly on the target, because that is what it was solved to do.
+       We draw one line here, not three. In most histories you would arrive with more than the
+       number — but the number is what the retirement half is built on, so that is where the
+       second half starts. Said plainly behind the i. */
+    const acc=[]; let accNom=null;
+    if(sip!=null&&nAcc>0){
+      const rows=[];for(let st=0;st<NEQ;st++)rows.push(accumRow(sip,st,S.haveNow||0));
+      /* The binding saving run — the one that arrives at retirement with least. The monthly
+         amount was solved so that this run lands exactly on the number, so drawing this one
+         run joins the two halves at the same point a stitched minimum did, and it is a life. */
+      let wa=0;for(let st=1;st<NEQ;st++)if(rows[st][nAcc]<rows[wa][nAcc])wa=st;
+      accNom=rows[wa];
+      for(let i=0;i<=nAcc;i++)acc.push(accNom[i]);
+    }
+    const runs=[];for(let st=0;st<NEQ;st++)runs.push(runOnce(C,st));
+    const wi=worstIdx(runs.map(r=>r.end),runs.map(r=>r.ruinYr));
+    const loNom=runs[wi].row;
+    const med=[],lo=[],hi=[];
+    for(let i=0;i<=nDec;i++){
+      const c=runs.map(r=>(r.row[i]||0)).sort((x,y)=>x-y);
+      med.push(c[Math.floor((c.length-1)/2)]);lo.push(loNom[i]||0);hi.push(c[c.length-1]);
+    }
+    const beqToday=S.bequest.on?runs[0].bequestNom:0;
+    const ri=acc.length?nAcc:0;
+    return {ages,acc,med,lo,hi,accNom,loNom,loStart:wi,beqToday,sip,retIdx:ri,s0:ri,retAge:S.retireAge,...endings(runs.map(r=>r.end),runs.map(r=>r.ruinYr),END)};
+  }
+
+  /* Either number is enough to know the path. Holdings with nothing going in is still a
+     real life — the money compounds and you add nothing — and requiring both was the reason
+     someone with a corpus and no monthly saving still saw the old two-part picture. */
+  function lifePath(){
+    const F=retYear(),A0=age0(),nAcc=Math.max(0,F-NOW);
+    const ages=[];for(let a=A0;a<=S.planAge;a++)ages.push(a);
+    const runs=[];
+    for(let st=0;st<NEQ;st++){
+      const acc=accumRow(S.saveMo||0,st,S.haveNow||0,F);
+      /* The balances, not the total — see runOnce. Passing the total would rebalance for free
+         at the one moment the strategy forbids it. */
+      const dec=runOnce(acc.bal||acc[nAcc],st,nAcc).row;
+      runs.push(acc.concat(dec.slice(1)));
+    }
+    const last=ages.length-1;
+    const ends=runs.map(r=>r[last]);
+    const ruin=runs.map(r=>{for(let i=0;i<r.length;i++)if(r[i]<=0.0001)return NOW+i;return null;});
+    const wi=worstIdx(ends,ruin), loNom=runs[wi];
+    const med=[],lo=[],hi=[];
+    for(let i=0;i<ages.length;i++){
+      const c=runs.map(r=>(r[i]||0)).sort((x,y)=>x-y);
+      lo.push(loNom[i]||0);med.push(c[Math.floor((c.length-1)/2)]);hi.push(c[c.length-1]);
+    }
+    return {ages,acc:[],med,lo,hi,loNom,loStart:wi,beqToday:S.bequest.on?S.bequest.amt*Math.pow(1+S.inflation/100,endYear()-NOW):0,
+      retIdx:nAcc,s0:0,retAge:S.retireAge,life:true,sip:S.saveMo,...endings(ends,ruin,endYear())};
+  }
+
+  /* HOW EACH LIFE ENDS.
+     The engine has always known the year every failing run hits zero and thrown it away.
+     "In the worst history you run out at 71" is the most useful sentence a run of histories
+     can produce, and it was computed thirty-one times a render and never said. */
+  function endings(endsNom,ruinYears,END){
+    const e=endsNom.map(v=>Math.max(0,v)).sort((a,b)=>a-b);
+    const outYears=ruinYears.filter(y=>y!=null);
+    return {endLo:e[0],endMid:e[Math.floor((e.length-1)/2)],endHi:e[e.length-1],
+      outN:outYears.length, outAge:outYears.length?age0()+(Math.min(...outYears)-NOW):null};}
+
+  /* THE ENOUGH CURVE.
+     At every age, the smallest corpus that survives every history from that age to the end
+     of the plan. It falls as you get older, because there are fewer years left to pay for.
+     Your money rises. Where the two meet is the age you can retire — the answer the app exists
+     to give, readable without touching a control.
+     One full solve per age, so it is computed once per plan and cached, and drawn in after
+     the screen has painted. */
+  let _ecKey=null,_ecVal=null;
+  function enoughCurve(){
+    const k=JSON.stringify(S,(kk,v)=>kk==='retireAge'?0:v)+'|ec';
+    if(_ecKey===k)return _ecVal;
+    const keep=S.retireAge, A0=age0(), out=[];
+    for(let a=A0;a<=S.planAge;a++){
+      S.retireAge=a;
+      const c=(a>=S.planAge)?0:solve(survivesAll);
+      out.push(c);
+    }
+    S.retireAge=keep;_k=null;_ek=null;
+    _ecKey=k;_ecVal=out;return out;}
+
+  const livePlan=()=>S.haveNow!=null||S.saveMo!=null;
+  function chartPath(a,withCurve){
+    const P=livePlan()?lifePath():pathData(a.worstNom,a.sip);
+    P.target=a.worst;
+    if(withCurve){const c=enoughCurve();if(c&&c.some(v=>v!=null))P.enough=c;}
+    return P;}
+  /* 52 solves, about half a second. The chart is up long before it lands. */
+  function fillEnough(){
+    const a=answer(); if(a.worst==null)return;
+    setTimeout(()=>{
+      const wrap=document.getElementById('c_wrap'); if(!wrap)return;
+      const P=chartPath(a,true); if(!P.enough)return;
+      wrap.innerHTML=buildChart(P);wireChart();fitPager();
+    },30);}
+
+  const survivesAll=C=>{for(let st=0;st<NEQ;st++)if(!runOnce(C,st).ok)return false;return true;};
+
+  /* ACCUMULATION USES THE SAME ENGINE AS DECUMULATION.
+     It used to be a textbook annuity at one blended rate. That made the target
+     stress-tested and the path to it average-case: two different beliefs about how
+     markets behave, on one screen, in one app. The saving figure was therefore too
+     low for its own goal.
+     Now the same 31 histories run forwards. Contributions are level in rupees, added
+     at the end of each year, and the market does to them what it actually did. */
+  /* THE SAVING YEARS. Two things changed here.
+     Goals that fall due before you retire are paid out of these years, not ignored.
+     A 2032 bill cannot come from a 2035 corpus — but it is still money you have to find,
+     so it raises what you must save rather than vanishing from the plan.
+     And the run can start from money you already have, if you told us. */
+  function accumRow(sipMo,st,start,F){
+    F=F||retYear();let bal=splitAtTarget(+start||0);let pot=+start||0;const row=[pot];let ok=true;
+    const up=1+(+S.stepUp||0)/100, GU=grossUp();
+    /* A break from work. Nothing is added in those years and the living costs come out of
+       what has been saved so far. Preview only — the plan screen has no field for it, so a
+       break can be tried but not saved. */
+    const PB=S.pause, A0P=age0();
+    for(let yr=NOW+1;yr<=F;yr++){
+      const t=yr-NOW-1;
+      // the contribution for this year — the first year's amount, stepped up each anniversary
+      const ageThen=A0P+(yr-NOW);
+      const onBreak=PB&&ageThen>=PB.from&&ageThen<=PB.to;
+      const contrib=onBreak?0:sipMo*12*Math.pow(up,t);
+      const living=onBreak?S.spendMo*12*Math.pow(1+S.inflation/100,yr-NOW)*GU:0;
+      /* Out first, then growth, then this year's contribution at the end of the year. A goal
+         falling due while you are still saving is a withdrawal like any other, so it obeys the
+         same strategy — otherwise one plan would price a goal at 46 under one rule and a goal
+         at 60 under another. */
+      const short=takeOut(bal,goalsDueIn(yr)*GU+living);
+      if(short>0)ok=false;
+      growYear(bal,st,t);
+      putIn(bal,contrib);
+      pot=balTotal(bal);
+      if(pot<0){pot=0;ok=false;}
+      row.push(pot);
+    }
+    row.ok=ok;
+    /* The composition at the end, not just the total — the retirement half continues from it. */
+    row.bal=Object.assign({},bal);
+    return row;}
+  const accumRun=(sipMo,st,start,F)=>{const r=accumRow(sipMo,st,start,F);return r.ok?r[r.length-1]:-1;};
+  const accumAll=(sip,C,start,F)=>{for(let st=0;st<NEQ;st++)if(accumRun(sip,st,start,F)<C)return false;return true;};
+  const accumMedian=(sip,C,start,F)=>{let n=0;for(let st=0;st<NEQ;st++)if(accumRun(sip,st,start,F)>=C)n++;return n*2>NEQ;};
+  const survivesMedian=C=>{let n=0;for(let st=0;st<NEQ;st++)if(runOnce(C,st).ok)n++;return n*2>NEQ;};
+
+  // smallest nominal corpus at the retirement year that passes `test`
+  function solve(test){
+    let lo=0, hi=1;
+    for(let i=0;i<80&&!test(hi);i++)hi*=2;
+    if(!test(hi))return null;
+    for(let i=0;i<32;i++){const mid=(lo+hi)/2; if(test(mid))hi=mid; else lo=mid;}
+    return hi;
+  }
+
+  let _k=null,_v=null,_ek=null,_ev=null;
+  const earliest=m=>{const k=JSON.stringify(S)+m;if(_ek===k)return _ev;_ek=k;_ev=earliestAge(m);return _ev;};
+  function answer(){
+    const k=JSON.stringify(S); if(k===_k)return _v;
+    const F=retYear();
+    const worst=solve(survivesAll), mid=solve(survivesMedian);
+    /* The bill that used to sit under the answer — every rupee that leaves, added up — was
+       deleted with its card, but its arithmetic stayed behind: thirty-five years of loops per
+       call, displayed nowhere, and the last figures in the app still computed at today's
+       prices. Dead code in the wrong frame is worse than dead code. */
+    const END=endYear();
+    // from zero: the level monthly saving that reaches the target, tested the same way
+    // the target itself was — against every history, not against an average.
+    const yrs=Math.max(0,F-NOW);
+    let sip=null,sipMid=null;
+    if(worst!=null&&yrs>0){
+      sip=solve(x=>accumAll(x,worst,S.haveNow||0));
+      sipMid=solve(x=>accumMedian(x,worst,S.haveNow||0));
+    }
+    /* EVERY FIGURE THIS APP SHOWS IS NOW NOMINAL — the rupees of the year it happens in, the
+       number that will actually be on the statement. The engine always worked this way; the
+       presentation used to divide it all back to today's prices and then had to explain, on
+       every screen, that the year-by-year page did not. One frame, no translation, nothing to
+       reconcile. What it costs is that a figure at 55 and a figure today are not comparable by
+       eye, so anything that puts two years side by side has to name both years. */
+    _k=k;_v={F,END,worstNom:worst,worst:worst,mid:mid,real:worst==null?null:worst/disc(F),
+      sip,sipMid,yrs};
+    return _v;
+  }
+  /* WHEN CAN YOU STOP.
+     Only answerable if you told us what you have and what you save. Both optional.
+     Later is always easier — more years of saving, fewer years to fund — so the earliest
+     workable age can be found by halving the range rather than trying every year. */
+  function worksAt(A,mode){
+    const keep=S.retireAge;S.retireAge=A;
+    const C=solve(mode==='mid'?survivesMedian:survivesAll);
+    const F=retYear();let ok=C!=null;
+    if(ok){
+      const sm=S.saveMo||0, hv=S.haveNow||0;
+      if(mode==='mid'){let n=0;for(let st=0;st<NEQ;st++)if(accumRun(sm,st,hv,F)>=C)n++;ok=n*2>NEQ;}
+      else{for(let st=0;st<NEQ;st++)if(accumRun(sm,st,hv,F)<C){ok=false;break;}}
+    }
+    S.retireAge=keep;return ok;}
+  function earliestAge(mode){
+    if(S.haveNow==null&&S.saveMo==null)return null;   // we know nothing; a blank box is a zero
+    const A0=age0(),top=S.planAge-1;
+    if(!worksAt(top,mode))return null;
+    let lo=A0,hi=top;
+    while(lo<hi){const mid=Math.floor((lo+hi)/2);if(worksAt(mid,mode))hi=mid;else lo=mid+1;}
+    return lo;}
+
+
+  /* ===== THE CHART ===== */
+  const crLabel=v=>v===0?'₹0':(v>=1?'₹'+(+v.toFixed(2))+' Cr':'₹'+(+(v*100).toFixed(v<0.1?1:0))+' L');
+  let GEO=null, CHART_P=null;
+  /* The drawing is measured from the box it is actually given, never from the full-bleed
+     swipe area — that is what used to push the axis labels off both edges of the screen. */
+  const chartW=()=>{
+    const w=document.getElementById('c_wrap');
+    if(w&&w.clientWidth){const cs=getComputedStyle(w);
+      return Math.max(300,Math.min(720,w.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)));}
+    const bd=document.getElementById('body');if(!bd)return 344;
+    const cs=getComputedStyle(bd);
+    return Math.max(300,Math.min(720,bd.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)));};
+  const TIPHTML='';   // the legend is the readout now — see wireChart
+  /* ===== THE CHART =====
+     This is the tab, not an illustration on it. So it is drawn tall, it carries its own
+     controls, and everything that used to sit around it — a legend row, a caption, a swipe
+     hint, a whole card holding a slider — has been folded into the drawing or deleted.
+
+     THE MONEY AXIS IS EVENLY SPACED. Ten-times spacing fitted every line at full height and
+     cost the one thing a chart of compounding is for: on a log axis growth looks like a
+     gentle bend, and equal distance does not mean equal rupees, so nothing on it can be
+     compared by eye. Linear gives that back. A line half as high IS half the money.
+
+     What it costs, and it is a real cost: the first years are a flat line near the floor,
+     because ₹20 L against ₹190 Cr is under a pixel. That is not the chart failing — it is
+     what compounding actually looks like, and it is the reason the year-by-year page exists.
+
+     THE CEILING IS SET BY THE WORST RUN AND THE ENOUGH CURVE, NOT THE BEST RUN. The best run
+     ends several times higher than anything the answer depends on, and letting it set the
+     scale pushes the two lines that decide the question into the bottom tenth. So the band
+     flattens against the top when the best run leaves the frame, and the frame says so. */
+  function buildChart(P){
+    const GLS=S.goals.map((g,i)=>({g,i})).filter(o=>o.g.on!==false)
+      .map(o=>({g:o.g,i:o.i,y0:yrOf(o.g.date),y1:o.g.type==='recur'?yrOf(o.g.end||o.g.date):yrOf(o.g.date)}))
+      .filter(o=>o.y1>=NOW&&o.y0<=NOW+P.ages.length-1).sort((a,b)=>a.y0-b.y0);
+    /* One SVG unit is one screen pixel, so a wider column gets a bigger chart and the type
+       stays 10px. PORTRAIT, AT A FIXED RATIO — the drawing keeps its shape at every width;
+       only the table beside it is cut to match, so swiping moves nothing below. */
+    const W=chartW(),H=Math.round(Math.max(300,Math.min(520,W*1.05)));
+    const padL=16,padR=16,padT=28,padB=52;
+    CHART_P=P;
+    const plotH=Math.max(40,H-padT-padB);
+    const A0=P.ages[0],A1=P.ages[P.ages.length-1];
+    // what the scale has to hold: the worst run, the accumulation line, the enough curve
+    const must=[];
+    P.lo.forEach(v=>must.push(v));
+    if(P.acc&&P.acc.length)P.acc.forEach(v=>must.push(v));
+    if(P.enough)P.enough.forEach(v=>{if(v!=null)must.push(v);});
+    if(P.target!=null)must.push(P.target);
+    if(P.beqToday>0)must.push(P.beqToday);
+    const bestMax=Math.max(...P.hi,0);
+    /* THE SCALE HOLDS EVERYTHING, THE BEST RUN INCLUDED. Capping it at what the worst run and
+       the enough curve need turned the band into a solid slab for forty years — a grey mass
+       that said nothing. Letting the best run set the ceiling pushes the two lines that decide
+       the question into the bottom third, where they are tighter but still legible and still
+       visibly cross. A real band beats a readable one that is a lie. */
+    /* THE SCALE IS SET BY THE WORST RUN AND THE ENOUGH CURVE, AND THE BEST RUN IS NOT DRAWN.
+       In nominal rupees the best run ends 29 times higher than the worst run's peak — it was
+       6.9x when everything was discounted to today. At that spread there is no honest linear
+       frame holding both: scaled to the best run the two lines that decide the question are a
+       20px smudge on the floor, and capped below it the band becomes a grey slab for 35 years.
+       So the range is stated as figures — in the readout and in what you leave behind — rather
+       than drawn as a shape that cannot be drawn. */
+    const top=Math.max(...must,1)*1.10;
+    const clipped=bestMax>top*1.005;
+    const Y=v=>H-padB-(Math.max(0,Math.min(+v||0,top))/top)*plotH;
+    const X=a=>padL+(a-A0)/Math.max(1,A1-A0)*(W-padL-padR);
+    const dAge=i=>P.ages[(P.s0==null?P.retIdx:P.s0)+i];
+    const rx=X(P.retAge);
+
+    /* THE BAND IS THE RANGE; THE LOWEST LINE IS THE ANSWER. Best and worst are one shape
+       with one solid edge, because the worst run is the only one anybody plans against. */
+    let up='',dn='',loP='';
+    P.lo.forEach((v,i)=>{const x=X(dAge(i)).toFixed(1);
+      up+=(i?'L':'M')+x+' '+Y(P.hi[i]).toFixed(1)+' ';
+      loP+=(i?'L':'M')+x+' '+Y(v).toFixed(1)+' ';});
+    for(let i=P.lo.length-1;i>=0;i--)dn+='L'+X(dAge(i)).toFixed(1)+' '+Y(P.lo[i]).toFixed(1)+' ';
+    /* --bandfill is tuned for a hairline band between two close lines; across a whole frame it
+       disappears. The chart is the one place more than one hue is allowed, so the band takes the
+       hue of the edge that defines it, at a tenth. */
+    /* THE BAND IS DRAWN AND IT IS ALLOWED TO LEAVE. Y() clamps to the ceiling, so where the
+       best run runs off the top the band simply meets the frame edge — a range that continues
+       past the picture, which is the truth, rather than a range squeezed into a picture that
+       flattens the two lines the question actually turns on. */
+    /* THE BAND MUST NOT LOOK LIKE A LINE. Its upper edge is the best of the ${NEQ} sequences at
+       each age — stitched from different runs, travelled by nobody. On the navy ground the best
+       hue and the enough hue are both turquoise, so a stroked upper edge read as a second series
+       crossing the enough curve, and a plan that never catches up looked like one that did.
+       Fill only, no stroke, and the band says on the chart what it is. */
+    const band=`<path d="${up}${dn}Z" fill="var(--c-best)" fill-opacity=".08"/>`;
+    let accP='';P.acc.forEach((v,i)=>{accP+=(i?'L':'M')+X(P.ages[i]).toFixed(1)+' '+Y(v).toFixed(1)+' ';});
+    let enP='';
+    if(P.enough)P.enough.forEach((v,i)=>{if(v==null)return;enP+=(enP?'L':'M')+X(P.ages[i]).toFixed(1)+' '+Y(v).toFixed(1)+' ';});
+    const lines=(P.acc.length?`<path d="${accP}" fill="none" stroke="var(--c-worst)" stroke-width="2.5"/>`:'')
+      +`<path d="${loP}" fill="none" stroke="var(--c-worst)" stroke-width="2.5" stroke-linejoin="round"/>`
+      +(enP?`<path d="${enP}" fill="none" stroke="var(--c-enough)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`:'');
+
+    const axis=`<line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" stroke="var(--axis)"/>`;
+    const beq=P.beqToday>0?`<line x1="${padL}" y1="${Y(P.beqToday)}" x2="${W-padR}" y2="${Y(P.beqToday)}" stroke="var(--ink2)" stroke-width="1" opacity=".45" stroke-dasharray="4 4"/>`:'';
+    const marker=`<line x1="${rx}" y1="${padT}" x2="${rx}" y2="${H-padB}" stroke="var(--c-enough)" stroke-dasharray="3 4" opacity=".8"/>`;
+    const MONO='IBM Plex Mono, monospace';
+    const T=(x,y,an,fill,sz,wt,t,halo)=>`<text x="${x}" y="${y}" dominant-baseline="middle" text-anchor="${an}" fill="${fill}" font-size="${sz}" font-weight="${wt}" font-family="${MONO}"${halo?` paint-order="stroke" stroke="var(--screen-solid)" stroke-width="3.5" stroke-linejoin="round"`:''}>${t}</text>`;
+
+    /* THE READOUT LIVES IN THE CHART. There is no legend row and no floating tooltip: one
+       reserved line at the top that says what is under your finger, and falls back to the
+       answer when nothing is. Reserved, so nothing moves when it changes. */
+    /* The figure at the line you are dragging, printed where the line is. */
+    const tgt=(P.target!=null)?(()=>{const lab=money(P.target);
+      const w=lab.length*7.2+8, x=Math.max(padL+w/2,Math.min(W-padR-w/2,rx));
+      return T(x,padT+13,'middle','var(--c-enough)',13,600,lab,1);})():'';
+
+    /* THE LAST THING THE EYE LANDS ON, so it carries the fact that matters. When the worst run
+       empties, the amount left is ₹0 and printing that is useless — the age it happened is the
+       answer, so the pill moves to the year it happened and says so. */
+    const endV=P.lo.length?P.lo[P.lo.length-1]:null;
+    const ranOut=P.outN>0&&P.outAge!=null;
+    /* A run that empties gets a dot on the floor and its age on the axis row, which is empty by
+       definition. A pill there would sit exactly on top of the two lines crossing, which is the
+       one part of the picture that must stay clear. */
+    const outX=ranOut?X(P.outAge):0;
+    const endPill=ranOut
+      ? `<circle cx="${outX}" cy="${H-padB}" r="4" fill="var(--amber)" stroke="var(--screen-solid)" stroke-width="2"/>`
+        +`<line x1="${outX}" y1="${H-padB-9}" x2="${outX}" y2="${H-padB}" stroke="var(--amber)" stroke-width="1.5"/>`
+      : (endV!=null&&endV>=0.005)?(()=>{const lab=money(endV),w=lab.length*7.4+18;
+          const ey=Math.max(padT+24,Math.min(H-padB-16,Y(endV)-20));
+          return `<rect x="${W-padR-w}" y="${ey-11}" width="${w}" height="22" rx="6" fill="var(--ink)"/>`
+            +T(W-padR-w/2,ey,'middle','var(--card)',12,600,lab)
+            +`<circle cx="${X(A1)}" cy="${Y(endV)}" r="4" fill="var(--c-worst)" stroke="var(--screen-solid)" stroke-width="2"/>`;})():'';
+    const clipNote=clipped?T(W-padR,14,'end','var(--mut)',10,400,'best run continues past '+money(top),1):'';
+
+    /* The verdict block states a run-out age for retiring today; this one is for retiring at
+       the age on the plan. Two true ages for one apparent question, so each says which. */
+    const outLab=ranOut?('empties '+P.outAge+' \u00b7 retiring at '+P.retAge):'';
+    const outW=outLab.length*5.6;
+    let xl=T(X(A0),H-padB+14,'start','var(--mut)',10,400,A0);
+    if(ranOut){const ox=Math.max(padL+outW/2,Math.min(W-padR-outW/2,outX));
+      xl+=T(ox,H-padB+14,'middle','var(--amber)',10,600,outLab);
+      if(X(A1)-(ox+outW/2)>14)xl+=T(X(A1),H-padB+14,'end','var(--mut)',10,400,A1);}
+    else xl+=T(X(A1),H-padB+14,'end','var(--mut)',10,400,A1);
+
+    /* Goals sit on the money, not beside it — a pin on whichever line is lower that year. */
+    const lowAt=ai=>{const S0=(P.s0==null?P.retIdx:P.s0),di=ai-S0;
+      if(di>=0&&di<P.lo.length)return P.lo[di];
+      return (P.acc.length&&ai<P.acc.length)?P.acc[ai]:null;};
+    const trackAt=ai=>{const e=(P.enough&&P.enough[ai]!=null)?P.enough[ai]:null,l=lowAt(ai);
+      if(e==null)return l; if(l==null)return e; return Math.min(e,l);};
+    let gm='';
+    GLS.forEach(o=>{
+      const c=['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)'][o.i%5];
+      const one=o.y1<=o.y0;
+      for(let yr=Math.max(o.y0,NOW);yr<=Math.min(o.y1,NOW+P.ages.length-1);yr++){
+        const ai=yr-NOW, yv=trackAt(ai);
+        if(yv==null)continue;
+        gm+=one?`<circle cx="${X(A0+ai)}" cy="${Y(yv)}" r="4" fill="${c}" stroke="var(--screen-solid)" stroke-width="1.5"/>`
+               :`<circle cx="${X(A0+ai)}" cy="${Y(yv)}" r="2.6" fill="${c}" stroke="var(--screen-solid)" stroke-width="1"/>`;}});
+
+    const ov=`<rect id="c_hit" x="${padL}" y="${padT}" width="${W-padL-padR}" height="${plotH}" fill="transparent"/>`
+      +`<line id="c_cross" x1="0" y1="${padT}" x2="0" y2="${H-padB}" stroke="var(--ink2)" stroke-dasharray="2 3" opacity="0"/>`
+      /* A DOT PER LINE, NOT ONE THAT MOVES BETWEEN THEM. The old single marker rode whichever
+         line was lower, so it changed meaning as you dragged and the reader had no way to tell
+         which one they were reading. Two dots in the two line colours, matching two rows in the
+         readout below, and the mapping needs no explaining. */
+      +`<circle id="c_dEn" r="4.5" fill="var(--c-enough)" stroke="var(--screen-solid)" stroke-width="2" opacity="0"/>`
+      +`<circle id="c_dLo" r="4.5" fill="var(--c-worst)" stroke="var(--screen-solid)" stroke-width="2" opacity="0"/>`;
+    /* THE BAND IS NAMED ON THE CHART, not only behind the i. Its upper edge is the best of the
+       ${NEQ} sequences at each age, stitched from different runs and travelled by nobody — but on
+       the navy ground the best hue and the enough hue are both turquoise, so a reader took the top
+       of the band for their own money and read a plan that never catches up as one that crosses.
+       The label sits inside the band at its widest point, where there is room for it. */
+    let bandLab='';
+    if(P.hi&&P.hi.length>3){
+      let bi=0,bw=-1;
+      for(let i=0;i<P.hi.length;i++){const w=Y(P.lo[i])-Y(P.hi[i]);if(w>bw){bw=w;bi=i;}}
+      const by=Y(P.hi[bi])+14, bt='best of '+NEQ+', not one life', hw=bt.length*6.2/2+8;
+      if(bw>36&&by<H-padB-10&&W-padL-padR>hw*2+16)
+        bandLab=T(Math.max(padL+hw,Math.min(W-padR-hw,X(dAge(bi)))),by,'middle','var(--mut)',10,400,bt,1);}
+    GEO={X,Y,P,W,H,padL,padR,padT,padB,trackAt};
+    return `<svg id="c_svg" viewBox="0 0 ${W} ${H}" width="100%" style="display:block;height:auto">${band}${beq}${lines}${axis}${marker}${tgt}${bandLab}${clipNote}${endPill}${gm}${ov}${xl}</svg>`;}
+
+  /* The pill that rides the retirement line. Positioned from the same X() the chart used, so
+     it cannot drift away from the line it names. */
+  function pillPos(){
+    const g=GEO,box=document.getElementById('c_slbox'),pill=document.getElementById('c_pill');
+    if(!g||!box||!pill)return;
+    const sl=document.getElementById('sl');
+    /* The strip is inset by exactly the SVG's own padding, so a finger at the far right of
+       the track and the last age on the axis are the same place. */
+    if(sl){sl.style.left=(100*g.padL/g.W)+'%';sl.style.right=(100*g.padR/g.W)+'%';sl.style.width='auto';}
+    /* CLAMPED IN PIXELS, AGAINST ITS OWN MEASURED WIDTH. A percentage with translateX(-50%)
+       hangs half the pill past the frame at either end of the axis, and the pager clips it. */
+    const bw=box.clientWidth||0, pw=pill.offsetWidth||0;
+    const at=g.X(S.retireAge)/g.W*bw;
+    pill.style.left=(bw&&pw?Math.max(2,Math.min(bw-pw-2,at-pw/2)):at)+'px';}
+  window.nudgeAge=d=>{const lo=age0(),hi=S.planAge-1;
+    setAge(Math.max(lo,Math.min(hi,S.retireAge+d)));};
+
+  /* ===== THE READOUT =====
+     It used to be one 10px grey line inside the chart carrying four abbreviated figures with
+     nothing tying them to the strokes they came from. Two problems, and neither was solvable
+     inside the plot.
+
+     WHY IT IS NOT A FLOATING TOOLTIP. On a phone the finger is already covering the point the
+     tooltip wants to occupy, so it has to dodge the thumb and then it moves while you drag —
+     a target that runs away. And four rows is about a quarter of this plot's height, over the
+     part you are pointing at. Fixed, below the chart, is where the eyes are when the thumb is
+     on the glass, and it costs the drawing nothing because it sits outside it.
+
+     It is never blank: with nothing under the finger it shows the year you plan to retire. */
+  const rdCell=(lab,val,col)=>`<div><div class="muted" style="font-size:var(--t-meta);letter-spacing:.06em;text-transform:uppercase">${lab}</div>
+    <div class="num" style="font-size:var(--t-row);font-weight:600;line-height:var(--lh-tight);margin-top:2px;color:${col||'var(--ink)'}">${val}</div></div>`;
+  let _rdI=undefined;
+  function paintRead(i){
+    const g=GEO; if(!g)return;
+    const P=g.P, ages=P.ages, A0=ages[0];
+    /* null means nothing is under the finger, so fall back to the age on the plan. */
+    if(i==null)i=Math.max(0,Math.min(ages.length-1,P.retAge-A0));
+    if(i===_rdI)return; _rdI=i;                    // pointermove fires far more often than the year changes
+    const lab=document.getElementById('rd_age'), grid=document.getElementById('rd_grid');
+    if(!lab||!grid)return;
+    const yr=NOW+i, s0=(P.s0==null?P.retIdx:P.s0), j=i-s0, after=j>=0&&j<P.lo.length;
+    const GU=grossUp();
+    lab.textContent='AGE '+ages[i]+(i===P.retAge-A0?' · the year you retire':'');
+    const cells=[];
+    /* The enough curve is 52 solves and lands a moment after the screen paints. At the retirement age
+       we already know the same figure from the answer itself, so the row is never a dash there. */
+    const en=(P.enough&&P.enough[i]!=null)?P.enough[i]:((i===P.retAge-A0&&P.target!=null)?P.target:null);
+    cells.push(rdCell('Enough to retire',en!=null?money(en):'—','var(--c-enough)'));
+    /* ONE NAME FOR ONE THING. "Worst run" was used for the drawn line AND for the single
+       ordering the table prints, which were different objects. The line is the floor. */
+    cells.push(after?rdCell('Worst case',money(P.lo[j]),'var(--c-worst)')
+      :rdCell('Corpus by then',(P.acc.length&&P.acc[i]!=null)?money(P.acc[i]):'—','var(--c-worst)'));
+    /* Money moving that year. Before you retire something goes in, after it comes out — the same
+       row, relabelled, because they are the same fact seen from two sides. In that year's rupees
+       like everything else, and grossed up for the tax on selling, which is what really leaves. */
+    if(i>P.retIdx){
+      const outNom=(S.spendMo*12*Math.pow(1+S.inflation/100,yr-NOW)+goalsDueIn(yr))*GU;
+      /* The goal rows below print the BILL; this row prints the SALE, which is bigger because
+         selling is taxed. They are not meant to add up, so the label says which one it is. */
+      cells.push(rdCell('Withdrawn, incl. tax',money(outNom)));
+    }else if(i>0&&P.sip!=null){
+      const inNom=P.sip*12*Math.pow(1+(+S.stepUp||0)/100,i-1);
+      cells.push(rdCell('Invested that year',money(inNom)));
+    }
+    /* A goal only appears in the years it actually lands, in its own pin colour. */
+    S.goals.forEach((gg,gi)=>{
+      if(gg.on===false)return;
+      const a0=yrOf(gg.date),a1=gg.type==='recur'?yrOf(gg.end||gg.date):a0;
+      if(yr<a0||yr>a1)return;
+      const v=gg.amt*Math.pow(1+(+gg.infl||0)/100,yr-NOW);
+      cells.push(rdCell(gg.n,money(v),['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)'][gi%5]));});
+    grid.innerHTML=cells.join('');}
+
+  function wireChart(){
+    const svg=document.getElementById('c_svg'),
+          cross=document.getElementById('c_cross'),
+          dEn=document.getElementById('c_dEn'),dLo=document.getElementById('c_dLo');
+    if(!svg||!GEO)return;const g=GEO,P=g.P;
+    pillPos();
+    _rdI=undefined;paintRead(null);
+    const show=cx=>{const r=svg.getBoundingClientRect();let px=Math.max(0,Math.min(r.width,cx-r.left));
+      const ux=px/r.width*g.W;
+      let i=Math.round((ux-g.padL)/(g.W-g.padL-g.padR)*(P.ages.length-1));i=Math.max(0,Math.min(P.ages.length-1,i));
+      const X=g.X(P.ages[i]),s0=(P.s0==null?P.retIdx:P.s0),j=i-s0,after=j>=0&&j<P.lo.length;
+      cross.setAttribute('x1',X);cross.setAttribute('x2',X);cross.setAttribute('opacity','.55');
+      const put=(el,v)=>{if(!el)return;
+        if(v==null){el.setAttribute('opacity','0');return;}
+        el.setAttribute('cx',X);el.setAttribute('cy',g.Y(v));el.setAttribute('opacity','1');};
+      put(dEn,(P.enough&&P.enough[i]!=null)?P.enough[i]:((i===P.retAge-P.ages[0]&&P.target!=null)?P.target:null));
+      put(dLo,after?P.lo[j]:((P.acc.length&&P.acc[i]!=null)?P.acc[i]:null));
+      paintRead(i);};
+    const hide=()=>{cross.setAttribute('opacity','0');
+      if(dEn)dEn.setAttribute('opacity','0');if(dLo)dLo.setAttribute('opacity','0');
+      paintRead(null);};
+    const hit=document.getElementById('c_hit');
+    if(hit){hit.addEventListener('pointermove',e=>show(e.clientX));
+      hit.addEventListener('pointerdown',e=>show(e.clientX));}
+    svg.addEventListener('pointerleave',hide);}
+
+  window.explainBand=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Reading the chart</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">A band, one line, and where they cross</h2>
+    <div class="ink2 t-body">Every figure is <b>nominal</b> &mdash; the rupees of the year it happens in, the number that will really be on the statement. Nothing is discounted back to today's prices, so a figure at 76 is not comparable by eye to one at 40. Touch anywhere on the chart and the card below says what is under your finger; drag the <b>${'\u25C0'} age ${'\u25B6'}</b> pill along the bottom to retire at a different age.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)">
+      <div style="display:flex;gap:var(--s-4);margin-top:var(--s-4)"><span style="width:18px;height:3px;border-radius:2px;background:var(--c-enough);flex:0 0 auto;margin-top:9px"></span><div style="flex:1"><b>Enough to retire then</b><br/>The corpus you would need if you retired at that age. It falls because fewer years are left to fund. Where it meets the lowest line is your FI date.</div></div>
+      <div style="display:flex;gap:var(--s-4);margin-top:var(--s-4)"><span style="width:18px;height:2.5px;border-radius:2px;background:var(--c-worst);flex:0 0 auto;margin-top:9px"></span><div style="flex:1"><b>The lowest line</b><br/>The single worst of the ${NEQ} runs — one real life, and the only one worth planning against. The year-by-year page is this run written out. Your corpus was sized so this line just survives, which is what enough means here.</div></div>
+      <div style="display:flex;gap:var(--s-4);margin-top:var(--s-4)"><span style="width:18px;height:13px;border-radius:3px;background:var(--c-best);opacity:.22;flex:0 0 auto;margin-top:4px"></span><div style="flex:1"><b>The shaded band</b><br/>Everything between the worst of the ${NEQ} sequences and the best, at each age. Its top edge is stitched from whichever run happened to be luckiest that year, so <b>nobody travels along it</b> &mdash; it is a range, not a path, and it is drawn without a line of its own so it cannot be read as your money.<br/><br/>The best run itself is not drawn to the end: in these rupees it finishes about thirty times higher than the worst case ever reaches, and a frame that fits it flattens the two lines that answer the question. It is in the card under the chart instead, at whatever age you are touching.</div></div>
+    </div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">The scale is evenly spaced</div>
+      <div class="ink2 t-body">A line half as high is half the money, and ₹0 is the axis itself. Nothing is compressed and no gridline is worth ten of the one below it, so two heights can be compared by eye — inside one chart, at one age.<br/><br/>What cannot be compared is two different ages, because the rupees are different sizes. ₹19 L a year at 56 and ₹1.78 Cr a year at 76 are the same standard of living.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">What the worst case is, and is not</div>
+      <div class="ink2 t-body">Every run replays the same ${NEQ} years in a different order, so the worst case is the worst <b>sequence</b>, not a worse market. A market permanently poorer than the record is not in this data and cannot be.<br/><br/>The full list of what this cannot see is behind the i on the verdict.</div></div>`);
+
+  /* THE SECOND PAGE OF THE CHART.
+     The same run, written out. One set of figures only: the actual rupees of that year,
+     which is what you will really hand over. The same frame as the chart
+     itself, so printing it twice was two answers to one question. */
+  function cashTable(P,a){
+    let rows='';
+    const cell=(v,col)=>v<=0.004?`<td class="r" style="padding:var(--s-3) var(--s-1);color:var(--mut)">—</td>`
+      :`<td class="r" style="padding:var(--s-3) var(--s-1);color:${col}">${money(v)}</td>`;
+    const GU=grossUp(), PB=S.pause, A0P=age0();
+    for(let i=0;i<P.ages.length;i++){
+      const yr=NOW+i, after=i>=P.retIdx;
+      // money lands during a year, so nothing moves on the row for today
+      const put=P.life?(S.saveMo||0):(a.sip==null?null:a.sip);
+      const onBreak=PB&&P.ages[i]>=PB.from&&P.ages[i]<=PB.to&&i<=P.retIdx;
+      const inn=(i>=1&&i<=P.retIdx&&put!=null&&!onBreak)?put*12*Math.pow(1+(+S.stepUp||0)/100,i-1):0;
+      /* Everything the pot actually loses that year, tax included — the engine grosses every
+         withdrawal up, so a table that printed the amount before tax could never add up. */
+      const spendNow=S.spendMo*12*Math.pow(1+S.inflation/100,yr-NOW);
+      const out=(i>=1?(goalsDueIn(yr)+(i>P.retIdx?spendNow:0)+(onBreak?spendNow:0))*GU:0);
+      const S0=(P.s0==null?P.retIdx:P.s0), j2=i-S0;
+      /* The single worst run, in the rupees of its own year — the same run the chart's
+         lowest line draws, so the two cannot disagree. */
+      const left=P.loNom?((j2>=0&&j2<P.loNom.length)?P.loNom[j2]:(P.accNom?P.accNom[i]:0))
+                       :((j2>=0&&j2<P.lo.length)?P.lo[j2]:(P.acc[i]||0));
+      /* THE DEAD YEARS ARE NOT DIMMED. They used to be drawn at 45% opacity, which failed
+         contrast on the most important rows in the table and asked a faded grey to mean "the
+         money ran out" — a reader takes faded text for "less important", which is the reverse.
+         Full contrast throughout, ONE marked row on the year it happens, and an em dash after
+         it: a run of ₹0 implies a balance that is being tracked, and there is nothing left to
+         track. The OUT column keeps its real figures, because what you would still have had to
+         withdraw is the whole point of reading this far. */
+      const spent=(left<=0.0001&&i>0);
+      const firstDead=spent&&(()=>{const pj=i-1-S0;
+        const prev=P.loNom?((pj>=0&&pj<P.loNom.length)?P.loNom[pj]:(P.accNom?P.accNom[i-1]:0))
+                          :((pj>=0&&pj<P.lo.length)?P.lo[pj]:(P.acc[i-1]||0));
+        return prev>0.0001;})();
+      const leftCell=firstDead
+        ? `<td class="r" style="padding:var(--s-3) var(--s-1);color:var(--amber);font-weight:600">runs out</td>`
+        : spent
+          ? `<td class="r" style="padding:var(--s-3) var(--s-1);color:var(--mut)">—</td>`
+          : `<td class="r" style="padding:var(--s-3) var(--s-1)">${money(left)}</td>`;
+      rows+=`<tr${firstDead?' style="background:var(--warn-bg)"':(P.ages[i]===P.retAge?' style="background:var(--info-bg)"':'')}>
+        <td style="padding:var(--s-3) var(--s-1)">${P.ages[i]}</td>
+        ${cell(inn,'var(--ink)')}${cell(out,'var(--amber)')}
+        ${leftCell}</tr>`;}
+    return `<div class="card" id="c_tblcard" style="padding:var(--s-1) var(--s-5);max-height:262px;overflow-y:auto;margin:0 var(--s-5)">
+      <table class="ladder" style="width:100%">
+        <thead><tr style="position:sticky;top:0;background:var(--card)">
+          <th style="text-align:left;padding:var(--s-3) var(--s-1);font-size:var(--t-meta);color:var(--mut);letter-spacing:.1em">AGE</th>
+          <th style="text-align:right;padding:var(--s-3) var(--s-1);font-size:var(--t-meta);color:var(--mut);letter-spacing:.1em">IN</th>
+          <th style="text-align:right;padding:var(--s-3) var(--s-1);font-size:var(--t-meta);color:var(--mut);letter-spacing:.1em">OUT</th>
+          <th style="text-align:right;padding:var(--s-3) var(--s-1);font-size:var(--t-meta);color:var(--mut);letter-spacing:.1em">CORPUS</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+      <div style="margin:var(--s-4) var(--s-5) 0"><button class="btn btn--mini" style="width:100%;flex:none" onclick="exportCSV()">Download this table as CSV</button></div>
+      <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin:var(--s-3) var(--s-5) 0">The worst case. Every row follows from the one above it.</div>`;}
+  let CPAGE=0;
+  const hideTip=()=>{
+    const c=document.getElementById('c_cross');if(c)c.setAttribute('opacity','0');
+    ['c_dEn','c_dLo'].forEach(id=>{const d=document.getElementById(id);if(d)d.setAttribute('opacity','0');});
+    paintRead(null);};
+  window.cPage=n=>{const t=document.getElementById('c_track');if(!t)return;
+    hideTip();CPAGE=n;t.style.transform=`translateX(${-50*n}%)`;
+    document.querySelectorAll('#c_dots .seg').forEach((d,i)=>d.classList.toggle('on',i===n));
+    const lab=document.getElementById('c_plab');if(lab)lab.textContent=n?'Year by year':'Your corpus over time';
+    /* The readout describes the chart, so it goes away with the chart rather than sitting under
+       a table that already prints every one of its figures in full. */
+    const rd=document.getElementById('c_read');if(rd)rd.style.display=n?'none':'';
+    fitPager();};
+  /* ONE FOOTPRINT, TWO PAGES. The chart sets the height — it is landscape and fixed — and
+     the table's scroll box is cut to whatever is left after its own button and note. Both
+     pages are then exactly the same height, so nothing below the pager moves when you swipe
+     between them. No measuring loop and no redraw: the chart is never resized to fit. */
+  function fitPager(){
+    const t=document.getElementById('c_track'),pg=document.getElementById('c_pager');
+    if(!t||!pg||!t.children[CPAGE])return;
+    const c0=t.children[0],c1=t.children[1];
+    const card=c1&&c1.querySelector('#c_tblcard');
+    if(!c0||!card){pg.style.height=t.children[CPAGE].offsetHeight+'px';return;}
+    card.style.maxHeight='';                       // measure its natural chrome first
+    const target=c0.offsetHeight;
+    const chrome=c1.offsetHeight-card.getBoundingClientRect().height;
+    card.style.maxHeight=Math.max(120,target-chrome)+'px';
+    pg.style.height=target+'px';}
+  /* The chart and the table are the same run seen two ways, so they are two pages of one
+     thing rather than a chart and a disclosure hidden behind an i. Drag horizontally to
+     turn the page; vertical drags belong to the scroll and to the table. */
+  function wirePager(){
+    const pg=document.getElementById('c_pager'),tr=document.getElementById('c_track');
+    if(!pg||!tr)return;
+    let x0=null,y0=0,dx=0,drag=false;
+    /* THE SLIDER STRIP IS NOT THE PAGER'S. Both live inside #c_pager and both want horizontal
+       drags, and the pager was armed first — so holding the pill and pulling sideways turned the
+       page instead of moving the age, which is why it only ever behaved like a number field. A
+       gesture starting inside the strip belongs to the slider, and the pager stands down. */
+    pg.addEventListener('pointerdown',e=>{
+      if(e.target&&e.target.closest&&e.target.closest('#c_slbox')){x0=null;return;}
+      x0=e.clientX;y0=e.clientY;dx=0;drag=false;tr.style.transition='none';});
+    pg.addEventListener('pointermove',e=>{if(x0!=null&&drag)hideTip();});
+    pg.addEventListener('pointermove',e=>{if(x0==null)return;dx=e.clientX-x0;
+      if(!drag&&Math.abs(dx)>8&&Math.abs(dx)>Math.abs(e.clientY-y0))drag=true;
+      if(drag){const w=pg.getBoundingClientRect().width||1;
+        let off=-50*CPAGE+(dx/w)*50;off=Math.max(-50,Math.min(0,off));
+        tr.style.transform=`translateX(${off}%)`;}});
+    const done=()=>{if(x0==null)return;tr.style.transition='';
+      const w=pg.getBoundingClientRect().width||1;
+      let n=CPAGE;
+      if(drag&&Math.abs(dx)>w*0.18)n=dx<0?Math.min(1,CPAGE+1):Math.max(0,CPAGE-1);
+      cPage(n);x0=null;drag=false;};
+    ['pointerup','pointercancel','pointerleave'].forEach(ev=>pg.addEventListener(ev,done));
+    cPage(CPAGE);requestAnimationFrame(fitPager);
+    if(!wirePager._r){wirePager._r=1;window.addEventListener('resize',()=>fitPager());}}
+
+  /* ===== KEEPING THE PLAN =====
+     It lives in this browser and nowhere else. No account, no server, no request. The
+     example plan is never written down — only a plan the user has actually touched — so a
+     first visit always opens on the example and a second visit opens on their own work.
+     Everything here is wrapped in try/catch: some browsers and embedded viewers refuse
+     storage entirely, and a planner that throws on load is worse than one that forgets. */
+  /* Light or dark is a preference, not a plan, so it is kept apart from the plan file
+     and survives a delete-my-plan. */
+  const TKEY='wealthblueprint.theme';
+  window.THEME=()=>{try{return localStorage.getItem(TKEY)||'light';}catch(e){return 'light';}};
+  function applyTheme(t){const d=document.documentElement;
+    if(t==='dark')d.setAttribute('data-theme','dark');else d.removeAttribute('data-theme');}
+  window.toggleTheme=()=>{const t=THEME()==='dark'?'light':'dark';
+    try{localStorage.setItem(TKEY,t);}catch(e){}
+    applyTheme(t);render();};
+  applyTheme(THEME());
+
+  const LSK='wealthblueprint.enough.v1';
+  const KEYS=['dob','retireAge','planAge','inflation','spendMo','goals','bequest','haveNow','saveMo','stepUp','mix','ret','taxRate','taxGain','drawdown'];
+  let _sv=0;
+  function saveLocal(){
+    if(S.sample)return;
+    clearTimeout(_sv);_sv=setTimeout(()=>{
+      try{const o={};KEYS.forEach(k=>o[k]=S[k]);o._v=1;localStorage.setItem(LSK,JSON.stringify(o));}catch(e){}
+    },250);}
+  function loadLocal(){
+    try{const raw=localStorage.getItem(LSK);if(!raw)return false;
+      const o=JSON.parse(raw);if(!o||typeof o!=='object')return false;
+      KEYS.forEach(k=>{if(o[k]!==undefined)S[k]=o[k];});
+      S.sample=false;
+      GID=Math.max(0,...(S.goals||[]).map(g=>+g.id||0));
+      return true;}catch(e){return false;}}
+  window.wipePlan=()=>{
+    try{localStorage.removeItem(LSK);}catch(e){}
+    location.reload();};
+  function dl(name,text,mime){
+    try{const b=new Blob([text],{type:mime||'text/plain'});const u=URL.createObjectURL(b);
+      const a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();
+      setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},400);}catch(e){}}
+  const stamp=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  window.exportPlan=()=>{const o={};KEYS.forEach(k=>o[k]=S[k]);o._v=1;o._app='wealth-blueprint / how much is enough';
+    dl('wealth-blueprint-'+stamp()+'.json',JSON.stringify(o,null,2),'application/json');};
+  window.importPlan=()=>{const i=document.createElement('input');i.type='file';i.accept='application/json,.json';
+    i.onchange=()=>{const f=i.files&&i.files[0];if(!f)return;const r=new FileReader();
+      r.onload=()=>{try{const o=JSON.parse(r.result);
+        if(!o||typeof o!=='object')throw 0;
+        KEYS.forEach(k=>{if(o[k]!==undefined)S[k]=o[k];});
+        S.sample=false;GID=Math.max(0,...(S.goals||[]).map(g=>+g.id||0));
+        _k=null;_gk=null;_ek=null;saveLocal();closeSheet();go('life');
+      }catch(e){alert('That file is not a Wealth Blueprint plan.');}};
+      r.readAsText(f);};
+    i.click();};
+  window.exportCSV=()=>{
+    const a=answer(); if(a.worst==null)return;
+    const P=chartPath(a);
+    const rows=[['age','year','money_in','money_out','left_worst_run','all_in_rupees_of_that_year']];
+    for(let i=0;i<P.ages.length;i++){
+      const yr=NOW+i,after=i>=P.retIdx;
+      const put=P.life?(S.saveMo||0):(a.sip==null?null:a.sip);
+      const inn=(i>=1&&i<=P.retIdx&&put!=null)?put*12*Math.pow(1+(+S.stepUp||0)/100,i-1):0;
+      const out=(i>=1?goalsDueIn(yr)+(i>P.retIdx?S.spendMo*12*Math.pow(1+S.inflation/100,yr-NOW):0):0);
+      const S0=(P.s0==null?P.retIdx:P.s0), j2=i-S0;
+      const left=((j2>=0&&j2<P.lo.length)?P.lo[j2]:(P.acc[i]||0));
+      rows.push([P.ages[i],yr,Math.round(inn*1e5),Math.round(out*1e5),Math.round(left*1e5),'']);}
+    dl('wealth-blueprint-year-by-year-'+stamp()+'.csv',rows.map(r=>r.join(',')).join('\n'),'text/csv');};
+
+  /* A COLD OPEN LANDS ON THE ANSWER.
+     Landing on the form meant a first-time visitor met six input sections while a complete
+     worked example sat one tab away, unseen — the app's whole point hidden behind the price of
+     entry. The example is loaded and labelled, so the first thing anyone sees is what this
+     thing is for. Once a plan has been saved, that plan is what loads, and the answer is still
+     the right place to arrive. */
+  const body=document.getElementById('body');let tab='num';
+  const sheet=document.getElementById('sheet'),sIn=document.getElementById('sheetin');
+  /* THE SHEET IS THE ONLY MODAL IN THE APP AND IT HOLDS EVERY EXPLANATION AND EVERY EDITOR.
+     It now behaves like one: it announces itself as a dialog, Escape closes it, focus moves
+     inside on open and returns to whatever opened it on close, and Tab cannot walk out of
+     it into the screen underneath. */
+  let _returnFocus=null;
+  const FOCUSABLE='button,input,select,textarea,a[href],[tabindex]:not([tabindex="-1"])';
+  function open(h,pv){
+    _returnFocus=document.activeElement;
+    sIn.innerHTML='<div class="grab"></div>'+h;sheet.classList.add('open');
+    sIn.querySelectorAll('.recho').forEach(el=>rEcho(el.id.replace(/_e$/,'')));
+    /* An editor that shows the price of the change re-solves on every keystroke and on
+       every dropdown change. The solve runs on a clone; nothing is saved until Save. */
+    if(pv){ sIn.querySelectorAll('input,select').forEach(e=>{
+        e.addEventListener('input',pv); e.addEventListener('change',pv); });
+      setTimeout(pv,0); }
+    const first=sIn.querySelector('input,select,textarea')||sIn;
+    setTimeout(()=>{try{first.focus({preventScroll:true});}catch(e){}},60);}
+  window.closeSheet=()=>{
+    if(!sheet.classList.contains('open'))return;
+    sheet.classList.remove('open');
+    const r=_returnFocus;_returnFocus=null;
+    if(r&&document.contains(r))setTimeout(()=>{try{r.focus({preventScroll:true});}catch(e){}},0);};
+  sheet.addEventListener('click',e=>{if(e.target===sheet)closeSheet();});
+  document.addEventListener('keydown',e=>{
+    if(!sheet.classList.contains('open'))return;
+    if(e.key==='Escape'){e.preventDefault();closeSheet();return;}
+    if(e.key!=='Tab')return;
+    const f=[...sIn.querySelectorAll(FOCUSABLE)].filter(el=>el.offsetParent!==null);
+    if(!f.length)return;
+    const first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&(document.activeElement===first||document.activeElement===sIn)){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}});
+
+  const gv=id=>document.getElementById(id).value;
+  const numv=(id,def)=>{const el=document.getElementById(id);if(!el)return def;const t=(''+el.value).trim();if(t==='')return def;const v=+t;return isFinite(v)?v:def;};
+  /* A field is a label and a box. Anything we want to say about it lives behind the i,
+     folded shut. The screen's job is to take the number, not to lecture. */
+  const lb=(id,l,n)=>`<label><span>${l}</span>${n?`<button class="ibtn s" type="button" onclick="tgN('${id}')" aria-expanded="false" aria-controls="n_${id}" aria-label="About ${(''+l).replace(/"/g,'')}">i</button>`:''}</label>`;
+  const nt=(id,n)=>n?`<div class="fnote" id="n_${id}">${n}</div>`:'';
+  const fT=(id,l,v,n)=>`<div class="field">${lb(id,l,n)}<input id="${id}" type="text" value="${(''+v).replace(/"/g,'&quot;')}"/>${nt(id,n)}</div>`;
+  const fN=(id,l,v,st,n)=>`<div class="field">${lb(id,l,n)}<input id="${id}" type="number" inputmode="decimal" step="${st||1}" value="${v}"/>${nt(id,n)}</div>`;
+  const fD=(id,l,v,n)=>`<div class="field">${lb(id,l,n)}<input id="${id}" type="month" value="${v}"/>${nt(id,n)}</div>`;
+  const fR=(id,l,lakh,st,n)=>`<div class="field">${lb(id,l+' (₹)',n)}<input id="${id}" type="number" inputmode="numeric" step="${st||1000}" value="${Math.round((+lakh||0)*1e5)}" oninput="rEcho('${id}')"/><div class="recho" id="${id}_e"></div>${nt(id,n)}</div>`;
+  window.tgN=id=>{const e=document.getElementById('n_'+id);if(!e)return;
+    const open=e.classList.toggle('on');
+    const btn=document.querySelector('[aria-controls="n_'+id+'"]');
+    if(btn)btn.setAttribute('aria-expanded',open?'true':'false');};
+  const gvR=id=>(+gv(id)||0)/1e5;
+  window.rEcho=id=>{const el=document.getElementById(id+'_e'),inp=document.getElementById(id);if(!el||!inp)return;
+    const t=(''+inp.value).trim(),v=+t;
+    el.innerHTML=(t===''||!isFinite(v))?'':`that is <b>${money(v/1e5)}</b>`;};
+
+  /* ===== SHEETS ===== */
+  window.explainMethod=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">How this corpus is worked out</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-5)">We replay real years instead of guessing a return</h2>
+    <div class="ink2 t-body">
+    Nobody knows what equity will return over the next forty years. So we do not ask you to guess a number, and we do not guess one either.
+    <br/><br/>
+    We take what the NIFTY 500 TRI actually did from ${RETURNS.startYear} to ${RETURNS.startYear+NEQ-1} and run your retirement through it ${NEQ} times — each run starting in a different year, then following the real order. Then we work backwards to the <b>smallest corpus that survives all ${NEQ}</b>: living costs, every goal, and your legacy. Not on average. In every run.
+    <br/><br/>
+    <b>Order matters as much as returns — this is sequence of returns risk.</b> Bad years just after you retire mean you are redeeming into a fall: you sell more units for the same rupees, so less is left to recover. The same bad years twenty years later and the plan holds. An average return has no order, so it cannot show this.
+    </div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">Where is the SWR? Where is the 25X?</div>
+      <div class="ink2 t-body"><b>Neither is in here.</b> A 4% rule or a 25X target assumes a withdrawal rate and multiplies. We start from the other end and solve.<br/><br/>${(()=>{const a=answer();if(a.worst==null||!(S.spendMo>0))return '';
+        const x=a.worst/(S.spendMo*12), w=100/x;
+        return 'Read your answer that way if it helps: about <b>'+x.toFixed(1)+'X</b> your first year of expenses, a first-year withdrawal of about <b>'+w.toFixed(1)+'%</b>. Both move on their own whenever you change an input.';})()}<br/><br/>A fixed rate cannot know your goals, your allocation, your LTCG, or which year your bad decade lands in — and those decide whether the money lasts.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">What this cannot do. Read this.</div>
+      <div class="ink2 t-body">
+      <b>The runs overlap.</b> ${NEQ} sequences of one past, not ${NEQ} futures.<br/><br/>
+      <b>No cost of investing.</b> A TRI is an index, not a fund: no expense ratio, no tracking error, no brokerage or exit load, and nothing here pays to trade. Your real corpus is higher by roughly what your holdings cost you each year.<br/><br/>
+      <b>LTCG is one flat approximation.</b> One rate on a fixed gain share, both yours to set. Real tax depends on cost basis, holding period and the yearly exemption. Read it as a direction, not a filing.<br/><br/>
+      <b>Only equity is historical.</b> Debt, gold, real estate and others grow at your fixed rate every single year and never have a bad one, so the corpus looks smaller than it should.<br/><br/>
+      <b>Long plans wrap.</b> ${NEQ} years of data, a plan that may run fifty. A run that reaches the end starts again from the first year.<br/><br/>
+      <b>No market worse than the record.</b> Every run contains all ${NEQ} years, so this tests bad order, never a permanently poorer market.
+      </div></div>
+    <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-5)">Source: ${RETURNS.meta.source}<br/>Method: ${RETURNS.meta.method}<br/><br/>${RETURNS.meta.attribution}</div>`);
+
+  window.explainSaving=()=>{const a=answer();
+    open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Your monthly SIP</div>
+      <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Tested against every run, not the average one</h2>
+      <div class="ink2 t-body">The smallest SIP that reaches your corpus in <b>every</b> one of the ${NEQ} runs. Not on average — in all of them, including the worst.</div>
+      <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)">
+        <div class="row" style="font-size:var(--t-body)"><span class="ink2">Survives every history</span><b class="num">${moneyMo(a.sip)}</b></div>
+        ${a.sipMid!=null?`<div class="row" style="font-size:var(--t-body);margin-top:var(--s-3)"><span class="ink2">Middle history only</span><b class="num">${moneyMo(a.sipMid)}</b></div>`:''}
+        <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-4);padding-top:var(--s-3);border-top:1px solid var(--line)">The gap between the two is what it costs to be ready for a bad stretch instead of an average one.</div></div>
+      <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">What this assumes. Read this.</div>
+        <div class="ink2 t-body">
+        <b>You start from a zero corpus.</b> If you already hold something, you need less than this. Much less: an existing corpus gets the most years to compound.<br/><br/>
+        <b>The SIP rises only by the step-up you set.</b> If you raise it faster than that with each hike, you will need less than this.<br/><br/>
+        <b>The SIP runs every year without a break.</b> A gap of a few years changes this figure a lot, because the instalments you miss also miss all the compounding after them.</div></div>`);};
+
+  window.explainShares=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Where the number goes</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Which part of your life is expensive</h2>
+    <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read)">This splits your spending into its parts: day-to-day living, each goal, and anything you want to leave behind. It shows you which part to look at first if you want the number to come down.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">How the split is worked out</div>
+      <div class="ink2 t-body">These are the amounts that leave your pocket, added up, each one raised by its own rate to the year it is actually spent. No return is assumed, so nothing here depends on how your money is invested.<br/><br/>The number at the top of the screen is a different thing: it is the smallest amount you could start with and still get through the worst case. That is why the parts do not add up to it. The parts are what you spend. The number is what you need in hand to be able to spend it.</div></div>`);
+
+  window.explainMix=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Your asset allocation</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">You choose the allocation. We only do the arithmetic.</h2>
+    <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read)">
+    Set the allocation you plan to hold after you retire. The corpus is solved at that allocation, and how it is kept &mdash; or allowed to drift &mdash; depends on the withdrawal strategy you pick further down the plan tab. Neither strategy rebalances on its own; only money moving in or out shifts anything between assets.
+    <br/><br/>
+    <b>We will never tell you what your allocation should be</b> — not from your age, your goals, or a risk-profiling quiz. That is advice, and this app does not give advice.
+    <br/><br/>
+    You can see what your choice costs at other allocations, on the answer screen under <b>what the mix does to this number</b>.
+    </div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">The number does not fall in a straight line</div>
+      <div class="ink2 t-body">Equity earns more on average, so adding some of it lowers the corpus you need. But equity also has worse bad years, and the corpus is built on the <b>worst</b> run, not the middle one. Past a point the second effect is larger than the first, and the corpus starts rising again.<br/><br/>So the table usually dips somewhere in the middle. <b>That dip is not a suggestion.</b> It is only the allocation at which this one figure happens to be lowest for your inputs. It says nothing about the drawdowns you would have to sit through on the way, because those are not in the number.</div></div>`);
+
+  window.explainBequest=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">What you leave behind</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">It changes the number, so it is an input</h2>
+    <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read)">
+    If you want to leave a legacy, that amount has to still be there on the last day of the plan. So it has to be built into the corpus, not left to whatever happens to remain.
+    <br/><br/>
+    Put the amount in today's prices. We raise it with inflation up to the last year of your plan. The number above then pays for your whole life <b>and</b> still leaves that amount on the last day.
+    <br/><br/>
+    Leave it off and the plan is allowed to finish at zero.
+    </div>`);
+
+  window.explainScope=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">What this cannot tell you</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Three things this screen cannot answer</h2>
+    <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read)">
+    This screen answers one question: <b>what does your life cost?</b> We never asked what you own today, so there are three things it cannot tell you.
+    </div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read)">
+      <b>Not</b> whether you are on track.<br/>
+      <b>Not</b> your FI date.<br/>
+      <b>Not</b> your asset allocation.
+    </div></div>
+    <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read);margin-top:var(--s-5)">The first two need your current corpus and SIP. You can add both under <b>what you already have</b>. The third one we will never answer.</div>
+    <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-5)">The monthly SIP figure assumes a zero starting corpus. It is tested against every history, the same way the corpus itself is. If you already hold something, you need less than that — much less, because an existing corpus gets the most years to compound.</div>`);
+
+  /* ===== WHAT AN EDIT COSTS, SHOWN BEFORE IT IS SAVED =====
+     A clone of the plan, the fields as they currently read, one solve, then the plan
+     is put back exactly as it was. The same sandbox the Ask tab uses to preview. */
+  const PVBOX=`<div id="e_pv" class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin:var(--s-4) 0 0;min-height:34px"></div>`;
+  let _pvRaf=0;
+  function preview(mutate){
+    const keep=JSON.parse(JSON.stringify(PICK.reduce((o,k)=>(o[k]=S[k],o),{})));
+    const before=answer();
+    let after=null;
+    try{ mutate(); _k=null;_gk=null;_ek=null; after=answer(); }catch(e){}
+    PICK.forEach(k=>{if(keep[k]!==undefined)S[k]=keep[k];});
+    _k=null;_gk=null;_ek=null;
+    return {before,after};
+  }
+  window.pvUpdate=mutate=>{
+    if(_pvRaf)cancelAnimationFrame(_pvRaf);
+    _pvRaf=requestAnimationFrame(()=>{_pvRaf=0;
+      const el=document.getElementById('e_pv'); if(!el)return;
+      let r; try{ r=preview(mutate); }catch(e){ el.innerHTML=''; return; }
+      const b=r.before,a=r.after;
+      if(!a||a.worst==null){el.innerHTML='<b style="color:var(--amber)">No corpus survives every run with these figures.</b>';return;}
+      if(b.worst==null){el.innerHTML='Corpus would be <b style="color:var(--ink)">'+money(a.worst)+'</b>.';return;}
+      const dC=a.worst-b.worst, dS=(a.sip!=null&&b.sip!=null)?a.sip-b.sip:null;
+      if(Math.abs(dC)<0.005&&(dS==null||Math.abs(dS)<0.0005)){el.innerHTML='This changes nothing.';return;}
+      const arrow=(x,y,f)=>f(x)+' <span style="color:var(--mut)">→</span> <b style="color:'+(y>x?'var(--amber)':'var(--ink)')+'">'+f(y)+'</b>';
+      // only print a row that actually moved — "₹4.89 Cr → ₹4.89 Cr" tells you nothing
+      const rows=[];
+      if(Math.abs(dC)>=0.005)rows.push('Corpus '+arrow(b.worst,a.worst,money));
+      if(dS!=null&&Math.abs(dS)>=0.0005)rows.push('Monthly SIP '+arrow(b.sip,a.sip,money));
+      el.innerHTML=rows.join('<br/>');
+    });
+  };
+
+  window.pvLife=()=>pvUpdate(()=>{const sp=gvR('e_sp'),inf=numv('e_inf',S.inflation);
+    if(sp>0)S.spendMo=sp; if(inf>=0&&inf<=40)S.inflation=inf;});
+  window.pvYou=()=>pvUpdate(()=>{const pa=numv('e_pa',S.planAge);
+    if(pa>S.retireAge&&pa<=120)S.planAge=pa;});
+  window.pvBequest=()=>pvUpdate(()=>{const v=gvR('e_bq');S.bequest={on:v>0,amt:Math.max(0,v)};});
+  window.pvGoal=i=>pvUpdate(()=>{
+    const t=gv('e_gt'),amt=gvR('e_ga'),d=gv('e_gd')||((NOW+5)+'-06'),end=gv('e_ge')||d,infl=numv('e_gi',6);
+    if(!(amt>0)||yrOf(d)<=NOW||yrOf(d)>endYear())return;
+    const o={id:i<0?-1:S.goals[i].id,n:gv('e_gn')||'Goal',amt,date:d,type:t,end:t==='recur'?end:'',infl:Math.max(0,infl)};
+    S.goals=i<0?S.goals.concat([o]):S.goals.map((g,k)=>k===i?o:g);});
+  window.pvMix=()=>pvUpdate(()=>{
+    const m={};Object.keys(CLSN).forEach(k=>{const e=document.getElementById('m_'+k);m[k]=e?Math.max(0,+e.value||0):0;});
+    if(Object.values(m).reduce((x,y)=>x+y,0)<=0)return;
+    S.mix=m;
+    const r={};Object.keys(CLSN).filter(k=>k!=='equity').forEach(k=>{const e=document.getElementById('r_'+k);r[k]=e?(+e.value||0):S.ret[k];});
+    S.ret=r;
+    const tr=document.getElementById('t_rate'),tg=document.getElementById('t_gain');
+    if(tr)S.taxRate=Math.max(0,Math.min(60,+tr.value||0));
+    if(tg)S.taxGain=Math.max(0,Math.min(100,+tg.value||0));});
+
+  /* ===== EDITORS ===== */
+  window.editYou=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-4)">About you</div>
+    ${fD('e_dob','Date of birth',S.dob)}
+    ${fN('e_pa','Plan until age',S.planAge,1,'This is the longevity you are planning for. A younger age makes the corpus smaller, but nothing about your life has changed — you have only asked the money to last fewer years, and if you live past it the plan has no answer for those years. Most Indian plans use 85 to 95.')}
+    <div class="nudge nudge--info">The age you <b>retire</b> is set on <b>FIRE number</b>, on the slider under the chart — so you can see what each year costs you as you move it.</div>
+    ${PVBOX}
+    <div id="verr" class="nudge" style="display:none"></div>
+    <div class="sheetrow"><button class="btn btn--save" onclick="saveYou()">Save</button></div>`,
+    ()=>pvYou());
+  window.saveYou=()=>{
+    const dob=gv('e_dob')||S.dob, ra=S.retireAge, pa=numv('e_pa',S.planAge);
+    const el=document.getElementById('verr');
+    const cur=Math.max(0,Math.floor(((NOW*12+NOWM)-(yrOf(dob)*12+moOf(dob)))/12));
+    /* Retiring this year is a real question — "what would I need to walk out today" — and the
+       engine has always been able to answer it. Only the validator was in the way. */
+    if(ra<cur||pa<=ra||pa>120){el.style.display='block';
+      el.innerHTML=(ra<cur
+        ? '<b>That date of birth makes you '+cur+'.</b> You have already passed the age you set to retire ('+ra+'). Move the slider on <b>FIRE number</b> first, then change this.'
+        : '<b>Check the plan age.</b> It has to be later than the age you retire ('+ra+') and below 120. A plan that ends before you retire has no retirement to pay for.');return;}
+    unsample();S.dob=dob;S.retireAge=ra;S.planAge=pa;closeSheet();render();};
+
+  window.editLife=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-4)">Expenses in retirement</div>
+    ${fR('e_sp','Monthly expenses once you retire, at today\'s prices',S.spendMo,5000,'Most people spend 10–20% less after they retire, not 40%. Commuting and work clothes go, but free time costs money too. A number that is too low will make the plan look fine here and leave you short in real life.')}
+    ${fN('e_inf','Inflation % / yr',S.inflation,0.5,'One rate, used everywhere. The amount you need goes up by this much every year, so the figure above always means what it buys today. In India, prices have gone up about 5–6% a year over the long run.')}
+    ${PVBOX}
+    <div id="verr" class="nudge" style="display:none"></div>
+    <div class="sheetrow"><button class="btn btn--save" onclick="saveLife()">Save</button></div>`,
+    ()=>pvLife());
+  window.saveLife=()=>{
+    const sp=gvR('e_sp'),inf=numv('e_inf',6);
+    const el=document.getElementById('verr');
+    if(sp<=0||inf<0||inf>40){el.style.display='block';el.innerHTML='<b>Cannot save yet.</b> Monthly spending has to be more than zero, and the cost-of-living rate has to be between 0% and 40%. Zero spending gives an answer of zero, and a rate above 40% makes every later year so large that the earlier years barely matter.';return;}
+    unsample();S.spendMo=sp;S.inflation=inf;closeSheet();render();};
+
+  window.editGoal=i=>{const g=i<0?{n:'',amt:0,date:(NOW+5)+'-06',type:'one',end:'',infl:6}:S.goals[i];
+    open(`<div class="eyebrow" style="margin-bottom:var(--s-4)">${i<0?'Add a goal':'Edit goal'}</div>
+      <div class="field"><label>Goal type</label><select id="e_gt" onchange="gtToggle()">
+        <option value="one" ${g.type==='one'?'selected':''}>One-time</option>
+        <option value="recur" ${g.type==='recur'?'selected':''}>Recurring, every year</option></select></div>
+      ${fT('e_gn','Goal name',g.n)}
+      ${fR('e_ga',"Cost at today's prices (per year if recurring)",g.amt,10000)}
+      ${fD('e_gd','Year you need it',g.date,'Money needed in the <b>year you retire</b> is treated as paid while you are still earning — it raises what you must put away every month, not the number you retire on. From the year after, it comes out of the money you retired on, so it raises the number instead.')}
+      <div id="e_gew" style="display:${g.type==='recur'?'block':'none'}">${fD('e_ge','Last year it repeats',g.end||g.date)}</div>
+      ${fN('e_gi','Goal inflation % / yr',g.infl,0.5,'Goal inflation, set per goal. Leave it at zero and the cost stays at today\'s price for the whole plan, which no real cost does. Education inflation in India runs well above general inflation, and medical runs higher still.')}
+      ${PVBOX}
+      <div id="verr" class="nudge" style="display:none"></div>
+      <div class="sheetrow">${i<0?'':'<button class="btn btn--danger" onclick="rmGoal('+i+')">Delete</button>'}<button class="btn btn--save" onclick="saveGoal(${i})">Save</button></div>`,
+      ()=>pvGoal(i));};
+  window.gtToggle=()=>{document.getElementById('e_gew').style.display=gv('e_gt')==='recur'?'block':'none';};
+  window.saveGoal=i=>{
+    const t=gv('e_gt'),amt=gvR('e_ga'),d=gv('e_gd')||((NOW+5)+'-06'),end=gv('e_ge')||d,infl=numv('e_gi',6);
+    const el=document.getElementById('verr');
+    if(!(gv('e_gn')||'').trim()){el.style.display='block';el.innerHTML='<b>A goal needs a name.</b> In a year you will not remember what this one was for.';return;}
+    if(amt<=0){el.style.display='block';el.innerHTML='<b>A goal needs a cost.</b> A goal worth nothing changes nothing.';return;}
+    const A0=age0();
+    /* A goal dated this year or later than the plan used to save happily and then do nothing
+       at all — it fell outside every loop in the engine. A silent no-op is worse than a
+       refusal: the user sees the goal in the list and believes it counted. */
+    if(yrOf(d)<=NOW){el.style.display='block';el.innerHTML=`<b>That year has already started.</b> The plan runs from next year. Set it to age ${A0+1} or later.`;return;}
+    if(yrOf(d)>endYear()){el.style.display='block';el.innerHTML=`<b>That is after your plan ends.</b> Your plan runs to age ${S.planAge}. Move it earlier, or move your plan age out.`;return;}
+    if(t==='recur'&&yrOf(end)<yrOf(d)){el.style.display='block';el.innerHTML='<b>The last year is before the first.</b> A goal cannot end before it begins.';return;}
+    if(t==='recur'&&yrOf(end)>endYear()){el.style.display='block';el.innerHTML=`<b>The last year is after your plan ends.</b> Your plan runs to age ${S.planAge}. We can only count it up to then.`;return;}
+    const o={id:i<0?++GID:S.goals[i].id,n:gv('e_gn').trim(),amt,date:d,type:t,end:t==='recur'?end:'',infl:Math.max(0,infl)};
+    unsample();if(i<0)S.goals.push(o);else S.goals[i]=o;closeSheet();render();};
+  window.rmGoal=i=>{unsample();S.goals.splice(i,1);closeSheet();render();};
+
+  window.togGoal=i=>{unsample();S.goals[i].on=(S.goals[i].on===false);render();};
+  window.editHave=()=>open(`<div class="row" style="margin-bottom:var(--s-4)"><div class="eyebrow">Your corpus and SIP</div><button class="ibtn" onclick="explainHave()" aria-label="Why this is optional">i</button></div>
+    ${fR('e_hv','Invested corpus today, all of it together',S.haveNow==null?0:S.haveNow,100000,'Rough is fine. One total, not a folio-wise list. Nothing leaves this device.<br/><br/>This corpus is not sitting idle. It is invested at the allocation you set, and it runs through the same '+NEQ+' histories as every other rupee in the plan.')}
+    ${fR('e_sv','Monthly SIP',S.saveMo==null?0:S.saveMo,5000,'Your SIP across everything — funds, stocks, EPF, NPS, RD, all of it. Put both boxes in and we can give you an FI date. Leave them at zero and everything else still works.')}
+    ${fN('e_su','Step-up % / yr',S.stepUp,1,'A step-up SIP: the monthly amount rises by this much on every anniversary, the way most people raise their SIP with each hike. We assume the same of the figure we ask you for. Put zero for a flat SIP for life.')}
+    <div class="sheetrow"><button class="btn btn--ghost" onclick="clearHave()">Clear</button><button class="btn btn--save" onclick="saveHave()">Save</button></div>`);
+  window.saveHave=()=>{const h=gvR('e_hv'),v=gvR('e_sv');
+    S.stepUp=Math.max(0,Math.min(40,numv('e_su',S.stepUp)));
+    unsample();S.haveNow=h>0?h:null;S.saveMo=v>0?v:null;closeSheet();render();};
+  window.clearHave=()=>{unsample();S.haveNow=null;S.saveMo=null;closeSheet();render();};
+  window.confirmWipe=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-3)">Delete my plan</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">This removes everything from this browser</h2>
+    <div class="ink2 t-body">Your dates, your spending, every goal, what you hold and how it is invested. There is no copy anywhere else, so this cannot be undone. Export first if you want to keep it.</div>
+    <div class="sheetrow" style="margin-top:var(--s-5)"><button class="btn btn--danger" onclick="exportPlan()">Export first</button><button class="btn btn--danger" style="background:var(--red);color:var(--on-em)" onclick="wipePlan()">Delete it</button></div>`);
+
+  window.explainGoals=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Goals and a legacy</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Every goal you enter is taken out</h2>
+    <div class="ink2 t-body">There is no separate price to read. A goal you have entered and left switched on is withdrawn from your money in the year it falls due, grossed up for the tax on selling — whether that year is before or after you retire. Switching it off is the only way to leave it out.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">A goal before you retire, and after</div>
+      <div class="ink2 t-body">A bill that falls due while you are still saving comes out of the pot as it builds, so it does not change the corpus you need on the day you retire — that figure is set by what you spend afterwards. It changes how much you must put away to still arrive at it, and it can push back the earliest age you could retire.<br/><br/>A bill after you retire comes out of the corpus, so it raises the corpus itself.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">What we do not know. Read this.</div>
+      <div class="ink2 t-body">We never ask your income, so we cannot know whether you would fund a goal from salary or by redeeming. <b>We assume you redeem</b> — the assumption that can never flatter the plan. If you would truly pay from salary and never touch the corpus, switch the goal off.</div></div>`);
+
+  window.explainHave=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Your corpus and SIP</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Two numbers, and only if you want to</h2>
+    <div class="ink2 t-body">Everything else here works without knowing what you own. That is on purpose — this is not a tracker and it will never ask for your holdings.<br/><br/>But two numbers change what it can answer: your invested corpus today, and your monthly SIP. With both, you get an <b>FI date</b> instead of only a corpus. Rough is fine, and it never leaves this device.</div>
+    ${(()=>{if(S.haveNow==null||S.haveNow<=0)return '';
+      const F=retYear(),n=Math.max(0,F-NOW); if(!n)return '';
+      const ends=[];for(let st=0;st<NEQ;st++){const r=accumRow(0,st,S.haveNow,F);ends.push(r[r.length-1]);}
+      ends.sort((a,b)=>a-b);
+      const lo=ends[0], md=ends[Math.floor((ends.length-1)/2)], hi=ends[ends.length-1];
+      return `<div class="card" style="margin-top:var(--s-5);padding:var(--s-5)">
+        <div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">What this money does on its own</div>
+        <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read);margin-bottom:var(--s-4)">Your <b>${money(S.haveNow)}</b> is invested at your mix and left alone — no new money added — for the ${n} year${n===1?'':'s'} to ${S.retireAge}. Across the ${NEQ} histories it becomes, in the rupees of ${retYear()}:</div>
+        <div class="row" style="font-size:var(--t-body)"><span class="ink2">Worst history</span><b class="num" style="color:var(--red)">${money(lo)}</b></div>
+        <div class="row" style="font-size:var(--t-body);margin-top:var(--s-2)"><span class="ink2">Middle</span><b class="num" style="color:var(--em)">${money(md)}</b></div>
+        <div class="row" style="font-size:var(--t-body);margin-top:var(--s-2)"><span class="ink2">Best history</span><b class="num" style="color:var(--series-2)">${money(hi)}</b></div>
+        <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-4)">The plan is built on the worst one. The monthly figure we ask you for is whatever it takes to close the gap from there.</div></div>`;})()}
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">What we still will not do</div>
+      <div class="ink2 t-body">Ask you to break the corpus down by fund, folio or account. Ask you to keep it updated. Tell you where to put it.</div></div>`);
+
+
+  window.editBequest=()=>open(`<div class="row" style="margin-bottom:var(--s-4)"><div class="eyebrow">What you leave behind</div><button class="ibtn" onclick="explainBequest()" aria-label="Why this is an input">i</button></div>
+    ${fR('e_bq','What you leave behind',S.bequest.amt,100000,'In today\'s money. We raise it with inflation to the year your plan ends. Put zero if you do not want to leave a legacy — then the corpus is allowed to finish at zero.')}
+    ${PVBOX}
+    <div class="sheetrow"><button class="btn btn--save" onclick="saveBequest()">Save</button></div>`,
+    ()=>pvBequest());
+  window.saveBequest=()=>{unsample();const v=gvR('e_bq');S.bequest.amt=Math.max(0,v);S.bequest.on=v>0;closeSheet();render();};
+
+  /* When the ask is armed, the sheet explains itself — a modal that opens on its own and does
+     not say why is indistinguishable from a bug. */
+  window.editMix=(asked)=>{
+    const rows=Object.keys(CLSN).map(k=>`<div class="mixrow"><span class="dot" style="background:${CLSC[k]}"></span>
+      <span style="flex:1;font-size:var(--t-row);font-weight:600">${CLSN[k]}</span>
+      <input id="m_${k}" type="number" inputmode="numeric" step="5" value="${+S.mix[k]||0}" oninput="mixSum()"/><span class="muted" style="font-size:var(--t-body)">%</span></div>`).join('');
+    const rets=Object.keys(CLSN).filter(k=>k!=='equity').map(k=>`<div class="mixrow"><span style="flex:1;font-size:var(--t-row)">${CLSN[k]}</span>
+      <input id="r_${k}" type="number" inputmode="decimal" step="0.5" value="${+S.ret[k]||0}"/><span class="muted" style="font-size:var(--t-body)">%/yr</span></div>`).join('');
+    open(`<div class="row" style="margin-bottom:var(--s-4)"><div class="eyebrow">Your asset allocation</div><button class="ibtn" onclick="explainMix()" aria-label="Whose choice this is">i</button></div>
+      ${asked?`<div class="nudge nudge--info" style="margin-bottom:var(--s-4)"><div><b>That plan is yours now, so the example split has gone.</b> We do not pick an allocation for you — it is the one input that would be a recommendation. Set yours and the answer comes straight back.</div></div>`:''}
+      <div class="card" style="padding:var(--s-1) var(--s-5)">${rows}</div>
+      <div id="msum" class="nudge" style="margin-top:var(--s-4)"></div>
+      <div class="row" style="margin:var(--s-6) 0 var(--s-3)"><span class="eyebrow">What you expect the rest to earn</span><button class="ibtn s" type="button" onclick="tgN('mixret')" aria-expanded="false" aria-controls="n_mixret" aria-label="About these rates">i</button></div>
+      <div class="fnote" id="n_mixret" style="margin:0 0 var(--s-4)">Equity is not in this list. We do not assume a rate for it — we use ${NEQ} years of real market history instead. These four grow at a fixed rate every year and never have a bad year. Real life is not like that, so the answer looks better than it should. Change any of them.</div>
+      <div class="card" style="padding:var(--s-1) var(--s-5)">${rets}</div>
+      <div class="row" style="margin:var(--s-6) 0 var(--s-3)"><span class="eyebrow">What tax takes when you sell</span><button class="ibtn s" type="button" onclick="tgN('taxn')" aria-expanded="false" aria-controls="n_taxn" aria-label="About tax">i</button></div>
+      <div class="fnote" id="n_taxn" style="margin:0 0 var(--s-4)">Spending in retirement means selling, and in India a long-term gain on equity is taxed above an exemption. We do not know what you paid for anything, so we use one number: the share of each sale that is gain, taxed at the rate you set. At these settings, to spend ₹100 you sell about ₹${(100*grossUp()).toFixed(0)}. Set the rate to zero to go back to a pre-tax figure.</div>
+      <div class="card" style="padding:var(--s-1) var(--s-5)">
+        <div class="mixrow"><span style="flex:1;font-size:var(--t-row)">LTCG rate on gains</span><input id="t_rate" type="number" inputmode="decimal" step="0.5" value="${+S.taxRate||0}"/><span class="muted" style="font-size:var(--t-body)">%</span></div>
+        <div class="mixrow"><span style="flex:1;font-size:var(--t-row)">Gain as a share of what you sell</span><input id="t_gain" type="number" inputmode="decimal" step="5" value="${+S.taxGain||0}"/><span class="muted" style="font-size:var(--t-body)">%</span></div>
+      </div>
+      ${PVBOX}
+      <div class="sheetrow" style="margin-top:var(--s-5)"><button class="btn btn--save" onclick="saveMix()">Save</button></div>`,
+      ()=>pvMix());
+    mixSum();};
+  window.mixSum=()=>{const el=document.getElementById('msum');if(!el)return;
+    const t=Object.keys(CLSN).reduce((s,k)=>s+(+(document.getElementById('m_'+k)||{}).value||0),0);
+    // the tone is a class, not three inline colours
+    const tone=t===100?'nudge--ok':(t<=0?'nudge--stop':'');
+    el.className='nudge'+(tone?' '+tone:'');
+    el.innerHTML=t===100?'Adds up to 100%.'
+      :t<=0?'<b>Nothing is invested.</b> Put at least one of these above zero. We cannot scale nothing up to a hundred.'
+      :`Adds up to <b>${t}%</b>. We will scale it to 100% for the maths, but it is worth checking you meant that.`;};
+  window.saveMix=()=>{
+    const tot=Object.keys(CLSN).reduce((a,k)=>a+Math.max(0,+(document.getElementById('m_'+k)||{}).value||0),0);
+    if(tot<=0){mixSum();return;}
+    unsample(true);
+    S.taxRate=Math.max(0,Math.min(60,numv('t_rate',S.taxRate)));
+    S.taxGain=Math.max(0,Math.min(100,numv('t_gain',S.taxGain)));
+    Object.keys(CLSN).forEach(k=>{S.mix[k]=Math.max(0,+(document.getElementById('m_'+k)||{}).value||0);
+    if(k!=='equity')S.ret[k]=Math.max(0,+(document.getElementById('r_'+k)||{}).value||0);});
+    closeSheet();render();};
+
+  /* ===== SCREENS ===== */
+  window.setDrawdown=v=>{if(S.drawdown===v)return;unsample();S.drawdown=v;
+    _k=null;_ek=null;_gk=null;_tvKey=null;_fwKey=null;render();};
+
+  window.explainDraw=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Withdrawal strategy</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Which asset gets sold, and when</h2>
+    <div class="ink2 t-body">Both strategies hold the same five assets at the same split and grow each at its own rate. Neither rebalances on its own &mdash; the only thing that moves money between assets is a cash flow. What differs is which asset a withdrawal comes out of, and over thirty-five years that changes the corpus you need by a few per cent.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">Rebalance at withdrawal</div>
+      <div class="ink2 t-body">Spending is raised by selling whatever sits above its target weight, in proportion to how far above it is. In a year equity has run up, you spend equity. After a crash, equity is below target so debt is sold instead. The act of spending drags the portfolio back toward your split, with no rebalancing trade of its own.<br/><br/>Money going in does the mirror image: a contribution buys whatever is furthest below target.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">Safest first &middot; elsewhere called a waterfall</div>
+      <div class="ink2 t-body">Spending drains the assets in a fixed order &mdash; ${WF_ORDER.map(k=>CLSN[k]).join(' \u2192 ')} &mdash; and equity is touched only when everything before it is gone. Nothing is rebalanced ever, so debt drains away and the mix drifts steadily toward equity.<br/><br/>That drift is the strategy, not a side effect: you stop selling equity into bad years, which is what sequence risk actually is. It usually asks for a smaller corpus.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">Where the comparison is unfair, and in which direction</div>
+      <div class="ink2 t-body">There is one tax rate in this app, applied to every rupee withdrawn whatever raised it. In reality debt is taxed harder than equity, and waterfall spends debt first &mdash; so waterfall is charged too little tax and looks better than it is.<br/><br/>The direction is known and the size is not. Until this app prices each asset separately, treat any waterfall advantage as the most it could be rather than as what it is.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">And what neither can see</div>
+      <div class="ink2 t-body">That real portfolios cost money to trade, that a fund you sell may have a lock-in or an exit load, and that nobody follows a rule for thirty-five years without ever breaking it.</div></div>`);
+
+  window.explainData=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Where the figures come from</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">What is in the model, and what is not</h2>
+    <div class="ink2 t-body">No holdings are asked for and no folio list is kept. Every figure on every screen is <b>nominal</b>: the rupees of the year it happens in, which is the number that will really be on the statement. Nothing is discounted back to today's prices. What you type in — your spending, a goal, a legacy — is at today's prices, and the app inflates it for you; a screen showing both will name both years.<br/><br/>Equity uses the NIFTY 500 TRI from NSE Indices, ${RETURNS.startYear}\u2013${RETURNS.startYear+NEQ-1}. Every other class uses the rate you set. Not advice.</div>
+    <div class="card" style="margin-top:var(--s-5)"><div class="eyebrow" style="margin-bottom:var(--s-3)">Your plan never leaves this device</div>
+      <div class="ink2 t-body">It is written to this browser's own storage. There is no account and no server, so exporting is the only way to move it, and deleting it here deletes it everywhere.</div></div>`);
+
+  function renderLife(){
+    const yrs=Math.max(0,retYear()-NOW);
+    /* ORDER OF ASKING.
+       Spending first, because it decides about four fifths of the answer and it is the one
+       question the person already knows the answer to — a number they can say out loud in
+       five seconds. Dates second. Then the allocation, which the engine cannot run without.
+       What you hold comes next because it unlocks the FI date, and the two things that are
+       off for most people — goals and a legacy — come last. */
+
+    /* ONE CARD PER GROUP, ONE ROW PER THING.
+       Every section used to cost two blocks: a heading row carrying a numbered badge, and
+       below it a card whose entire contents were a single row. A card drawn around one row is
+       a border around nothing, and a heading floating above it spends a second row on a label
+       the row could carry itself. Both are gone. Consecutive rows now share one card and the
+       hairline between them, and the label sits on the row.
+       The numbered badges went with them. They said there were six steps to complete when
+       three of the six are optional, so they were counting wrong and charging for it. */
+    const row=(t,val,sub,fn,ib,flag)=>`
+      <div class="item item--go${flag?' item--flag':''}" role="button" tabindex="0" onclick="${fn}"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        aria-label="${t}" style="cursor:pointer"><div class="m">
+        <div class="row" style="gap:var(--s-3)"><span class="eyebrow" style="flex:1">${t}</span>${ib?`<button class="ibtn" onclick="event.stopPropagation();${ib}" aria-label="About ${t}">i</button>`:''}</div>
+        <div style="font-size:var(--t-title);font-weight:600;line-height:var(--lh-tight);margin-top:var(--s-2)${flag?';color:var(--em)':''}">${val}</div>
+        <div class="muted" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-2)">${sub}</div>
+        </div><span class="chev">&rsaquo;</span></div>`;
+    /* A GROUP LABEL IS A LABEL. The sentence that used to sit under each one repeated something
+       the rows below already said — the allocation row says the corpus depends on it, the
+       corpus row says it adds your FI date, the empty goal list explains what a goal is. */
+    const cap=(t,top,ib)=>ib
+      ? `<div class="row" style="margin:${top} 0 var(--s-3);gap:var(--s-3)"><span class="eyebrow" style="flex:1">${t}</span><button class="ibtn" onclick="${ib}" aria-label="About ${t}">i</button></div>`
+      : `<div class="eyebrow" style="margin:${top} 0 var(--s-3)">${t}</div>`;
+    const cardOpen='<div class="card" style="padding:var(--s-1) var(--s-5)">';
+
+    /* A GOAL IS THREE FACTS, ONE PER LINE, LABELLED.
+       What it costs today, what it costs in the year it lands, and what it does to the corpus.
+       The inflation rate is not on the face of the card — it is a working, and it lives in the
+       goal's own sheet where it is typed.
+       NOR IS A PRICE. There used to be a row saying what the goal added to the corpus, and it
+       cost two full re-solves a goal to produce a figure that answered nothing: the engine
+       withdraws every goal it is given, before or after you retire, so entering one already means
+       it is counted. What a goal costs is what it costs — the two amount rows say that. */
+    const gl=S.goals.map((g,i)=>{
+      const st=yrOf(g.date),en=g.type==='recur'?yrOf(g.end||g.date):st,onx=g.on!==false;
+      const age=st-NOW+age0(), ageE=en-NOW+age0();
+      const r=+g.infl||0, at=y=>g.amt*Math.pow(1+r/100,y-NOW);
+      const rec=g.type==='recur', per=rec?' a year':'';
+      /* With nothing inflated, today's figure and the figure on the day are the same number,
+         so it is stated once. Two identical rows is not structure. */
+      let rows;
+      if(r>0){
+        rows=vrow('Cost today',money(g.amt)+per)
+          +vrow(rec?('Ages '+age+'\u2013'+ageE):('At '+age),
+                rec?(money(at(st))+'\u2013'+money(at(en))):money(at(st)));
+      }else{
+        rows=vrow(rec?('Ages '+age+'\u2013'+ageE):('Cost at '+age),money(g.amt)+per);
+      }
+      return `<div class="item item--multi" style="opacity:${onx?1:.55}"><span class="dot" style="background:${['var(--series-1)','var(--series-2)','var(--series-3)','var(--series-4)','var(--series-5)'][i%5]}"></span>
+      <div class="m" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="editGoal(${i})"><div style="font-size:var(--t-row);font-weight:700">${g.n}</div>
+      ${rows}</div>
+      <button class="sw ${onx?'on':''}" onclick="event.stopPropagation();togGoal(${i})" aria-label="count ${g.n}"></button></div>`;}).join('');
+
+    body.innerHTML=`
+      ${S.sample?`<div class="samp nudge nudge--info"><div><b>This is an example plan, not yours.</b> Change anything and it becomes yours — and the asset allocation empties, because we do not pick one for you.</div></div>`:''}
+      ${(()=>{
+        /* WHERE YOU STAND, IN ONE LINE. The group used to be labelled "Needed for an answer",
+           which tells you to do work without telling you whether you are done. A stranger
+           could not tell the difference between a finished plan and an empty one. */
+        if(!mixSet())return `<div style="font-size:var(--t-row);line-height:var(--lh-ui);margin:var(--s-4) var(--s-1) var(--s-3)"><b style="color:var(--em)">One thing left</b> &mdash; your asset allocation.</div>`;
+        const a=answer();
+        const said=a.worst==null
+          ? `All three set, but <b>no amount is enough</b> at these rates.`
+          : `All three set. Your FIRE number is <b class="num">${money(a.worst)}</b> by ${a.F}.`;
+        return `<div class="ink2" style="font-size:var(--t-row);line-height:var(--lh-ui);margin:var(--s-4) var(--s-1) var(--s-3)">${said}</div>`;})()}
+      ${cardOpen}
+        ${/* The yearly figure and the monthly one were the same money twice, and everything else
+             on this tab is monthly. */''}
+        ${row('Expenses in retirement',money(S.spendMo)+' a month',
+          "at today's prices &middot; inflation "+S.inflation+"%/yr for the whole plan",'editLife()','')}
+        ${/* "About you" over the words "Plan till 90": the heading was not the subject of its own
+             value, and the three dates a reader actually wants sat in the grey line under it. */''}
+        ${row('Ages and dates','Age '+age0()+' &middot; retire at '+S.retireAge+' &middot; plan till '+S.planAge,
+          (yrs>0?'a '+yrs+'-year horizon of saving':'no saving years left')+' &middot; born '+mLabel(S.dob),'editYou()','')}
+        ${row('Your asset allocation',
+          mixSet()?Object.keys(CLSN).filter(k=>+S.mix[k]>0).map(k=>(+S.mix[k])+'% '+CLSN[k].toLowerCase()).join(' &middot; '):'Set this to get an answer',
+          mixSet()?(S.sample?'our example allocation &middot; set your own and it becomes yours':'your allocation &middot; we never suggest one')+' &middot; '+(+S.taxRate>0?'LTCG '+S.taxRate+'% on gains when you sell':'no tax counted'):'the corpus depends on this &middot; we never suggest an allocation',
+          'editMix()','explainMix()',!mixSet())}
+      </div>
+      ${cap('What you already have &middot; optional','var(--s-7)')}
+      ${cardOpen}
+        ${row('Your corpus and SIP',
+          S.haveNow==null&&S.saveMo==null?'Not set':(S.haveNow!=null?money(S.haveNow):'—')+' corpus &middot; '+(S.saveMo!=null?money(S.saveMo)+'/mo':'—')+' SIP',
+          S.haveNow==null&&S.saveMo==null?'both optional &middot; add them for your FI date, the age you could retire'
+            :(S.haveNow!=null?'invested at your allocation':'')+(S.haveNow!=null&&S.saveMo!=null?' &middot; ':'')
+             +(S.saveMo!=null?((+S.stepUp||0)>0?'the SIP is a year-one figure, rising '+S.stepUp+'%/yr':'the SIP is flat for life'):'')
+             +(S.haveNow==null||S.saveMo==null?' &middot; add both for your FI date':''),
+          'editHave()','explainHave()')}
+      </div>
+      ${cap('Goals and big expenses','var(--s-7)','explainGoals()')}
+      ${cardOpen}${gl||'<div class="muted" style="font-size:var(--t-body);padding:var(--s-5) var(--s-3);line-height:var(--lh-ui)">No goals yet. A house down payment, a child\'s education, a wedding, a long trip. Anything with a cost and a year.</div>'}</div>
+      <button class="btn btn--add" onclick="editGoal(-1)">+ Add a goal</button>
+      ${cap('Withdrawal strategy','var(--s-7)','explainDraw()')}
+      ${(()=>{const wf=S.drawdown==='waterfall';
+        return `<div class="card" style="padding:var(--s-5)">
+        <div id="dd_seg" style="display:flex;gap:var(--s-1);background:var(--field);border:1px solid var(--line);border-radius:var(--r-s);padding:2px">
+          <button class="seg${wf?'':' on'}" style="flex:1;padding:0 var(--s-3)" onclick="setDrawdown('rebalance')">Rebalance</button>
+          <button class="seg${wf?' on':''}" style="flex:1;padding:0 var(--s-3)" onclick="setDrawdown('waterfall')">Safest first</button>
+        </div>
+        <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-ui);margin-top:var(--s-4)">${wf
+          ? `Spending drains your assets in a fixed order and equity is sold only when everything else is gone. Nothing is rebalanced, so the mix drifts toward equity as the years pass.`
+          : `Spending is funded by selling whatever is <b>above</b> its target weight. After a fall, equity is below target and debt is sold instead &mdash; so spending pulls the mix back toward your split without a trade of its own.`}</div>
+        ${wf?`<div class="num" style="font-size:var(--t-body);color:var(--mut);margin-top:var(--s-3);line-height:var(--lh-ui)">${WF_ORDER.map(k=>CLSN[k]).join(' \u2192 ')}</div>
+        <div class="nudge nudge--stop" style="margin-top:var(--s-4)"><div><b>One tax rate for everything.</b> This app charges the same rate on every rupee withdrawn, whatever was sold. Waterfall sells debt first and debt is taxed harder than equity, so the corpus it asks for here is <b>too low</b> by an amount the app cannot yet work out. Read the saving as an upper bound.</div></div>`:''}
+      </div>`;})()}
+      <div class="card" style="padding:var(--s-1) var(--s-5);margin-top:var(--s-4)">
+        ${row('What you leave behind',S.bequest.on?money(S.bequest.amt):'Nothing',
+          S.bequest.on?"at today's prices &middot; inflated to "+money(S.bequest.amt*Math.pow(1+S.inflation/100,endYear()-NOW))+" by "+endYear():'no legacy &middot; the corpus is allowed to finish at zero',
+          'editBequest()','explainBequest()')}
+      </div>
+      ${cap('Saved plan','var(--s-7)')}
+      <div class="card" style="padding:var(--s-5)">
+        <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-ui)">${S.sample?'Nothing is saved yet. The moment you change something, your plan is kept in this browser — no account, no server.':'Saved in this browser. No account, no server. It never leaves this device unless you export it.'}</div>
+        <div style="display:flex;gap:var(--s-3);margin-top:var(--s-4);flex-wrap:wrap">
+          <button class="btn btn--mini" onclick="toggleTheme()">${THEME()==='dark'?'Paper':'Night'}</button>
+          <button class="btn btn--mini" onclick="exportPlan()">Export plan</button>
+          <button class="btn btn--mini" onclick="importPlan()">Import plan</button>
+          <button class="btn btn--mini btn--danger" onclick="confirmWipe()">Delete my plan</button>
+        </div>
+        <button class="btn btn--link" style="margin-top:var(--s-3)" onclick="explainData()">Where the figures come from</button>
+      </div>
+      <div style="height:96px"></div>`;
+    const bar=document.getElementById('askbar');bar.style.display='block';body.classList.add('hasbar');
+    bar.innerHTML=`<button onclick="go('num')">See the corpus I need →</button>`;}
+
+  /* ===== THE VERDICT =====
+     This tab is not a measurement instrument. Every block on it has to land as a sentence a
+     person could repeat out loud: either you have enough to retire today or you do not, either
+     there is an age you can retire at or there is not, either something is left at the end or
+     nothing is. Anything that only describes the plan without deciding something belongs
+     behind an i, on the plan tab, or nowhere.
+
+     STOPPING TODAY IS THE FIXED QUESTION. It is asked the same way whatever the inputs are,
+     so the top of the screen never changes meaning — which is the whole job of a verdict.
+     Retiring at the age on the plan is the second card, and the slider further down is what
+     moves it. */
+  /* WHAT YOU WILL HAVE ON THE DAY, NOT WHAT YOU HAVE NOW.
+     Once the need is quoted in the rupees of the year you retire, subtracting a corpus stated in
+     today's rupees is not arithmetic — it is two different units. So the holding is carried
+     forward through the same 31 histories, at the saving you actually do, and the worst of
+     those arrivals is what the need is compared against. Same year, same rupees, and the
+     comparison finally answers the question it appears to answer.
+     The worst arrival, because the worst run is the arbiter everywhere else in this app. */
+  let _fwKey=null,_fwVal=null;
+  function forward(){
+    const k=JSON.stringify(S)+'|fw';
+    if(_fwKey===k)return _fwVal;
+    let v=null;
+    if(S.haveNow!=null||S.saveMo!=null){
+      const F=retYear();
+      if(F>NOW){
+        v=Infinity;
+        for(let st=0;st<NEQ;st++){const r=accumRow(S.saveMo||0,st,S.haveNow||0,F);
+          const e=r[r.length-1]; if(e<v)v=e;}
+      }else v=S.haveNow||0;
+    }
+    _fwKey=k;_fwVal=v;return v;}
+
+  let _tvKey=null,_tvVal=null;
+  function todayVerdict(){
+    /* Nothing here depends on the age you chose to retire at, so the answer survives a slider
+       drag untouched — the same cache trick enoughCurve uses. */
+    const k=JSON.stringify(S,(kk,v)=>kk==='retireAge'?0:v)+'|tv';
+    if(_tvKey===k)return _tvVal;
+    const keep=S.retireAge, A0=age0();
+    /* Set the retirement age to this year and the engine answers about today. retYear() is now the
+       current year, so nothing needs discounting: every figure is already in today's money. */
+    S.retireAge=A0;
+    const need=(A0>=S.planAge)?0:solve(survivesAll);
+    let outAge=null,endLo=null,ok=null;
+    const have=S.haveNow;
+    if(have!=null&&A0<S.planAge){
+      // the same 31 histories as every other screen, started from what you hold, this year
+      const runs=[];for(let st=0;st<NEQ;st++)runs.push(runOnce(have,st));
+      const ruin=runs.map(r=>r.ruinYr).filter(y=>y!=null);
+      outAge=ruin.length?A0+(Math.min.apply(null,ruin)-NOW):null;
+      endLo=endings(runs.map(r=>r.end),runs.map(r=>r.ruinYr),endYear()).endLo;
+      ok=runs.every(r=>r.ok);
+    }
+    S.retireAge=keep;_k=null;_ek=null;
+    _tvKey=k;_tvVal={need,have,outAge,endLo,ok,age:A0};
+    return _tvVal;
+  }
+
+  /* One shape for every verdict card: what it answers, the figure, one line of consequence. */
+  const vrow=(l,v,c)=>`<div class="row" style="font-size:var(--t-body);margin-top:var(--s-3);gap:var(--s-4)"><span class="muted">${l}</span><span class="num" style="font-weight:500${c?';color:'+c:''}">${v}</span></div>`;
+
+  /* ═══════════════════════════════════════════════════════════════════════════════════
+     THE RETIREMENT NUMBER TAB — rebuilt around the six questions a person arrives with.
+
+       1  What happens if I retire today
+       2  How much would that take
+       3  What happens if I retire at the age I picked
+       4  How much would THAT take
+       5  What would I have to put away every month to get there
+       6  What is left at the end
+
+     THE STRUCTURE IS THE INSIGHT: these are not six cards. Questions 1, 2 and 6 are one
+     scenario; 3, 4, 5 and 6 are another. So the tab is TWO COMPLETE ANSWERS, each self
+     contained, and then the chart as the instrument that moves the second one. Nothing has
+     to be cross-referenced against anything else on the screen, because no question is
+     answered in a different block from where it is asked.
+
+     WHY STACKED AND FULL WIDTH, NOT SIDE BY SIDE. Each panel carries an outcome and three or
+     four figures. Half of 344px is 166px, which holds a heading and one number. Two columns
+     would force the figures out of the panels and into a shared block below, which is exactly
+     the arrangement that made the last version need column headings to explain itself.
+
+     THE OUTCOME IS THE HEADLINE, THE MONEY IS THE DETAIL. A person asks "what happens";
+     "₹13.35 Cr" is not an answer to that, it is the working. So each panel leads with the
+     ending in the one accented colour on the screen, and the figures sit below it, quiet and
+     in a fixed order so the eye can compare the same row between the two panels.
+
+     WHAT THE PANELS DELIBERATELY DO NOT DO: panel one subtracts what you hold from what it
+     would take, because both are this year's rupees and that subtraction is real. Panel two
+     does NOT, because its target is priced on the day you retire and tested from a standing
+     start, while its outcome replays whole lives — two different tests, and putting their
+     figures in one column invites a subtraction that means nothing. The arrival figure and
+     the reason live one tap away instead.
+
+     ON TONE. Every line states a consequence or names a figure. Nothing instructs. "Putting
+     away ₹1.36 L a month" reports a state of the world; "save ₹1.36 L a month" is advice, and
+     advice is not ours to give.
+     ═══════════════════════════════════════════════════════════════════════════════════ */
+
+  const prow=(lab,val,col,strong)=>`<div class="prow2">
+    <span class="plab2">${lab}</span>
+    <span class="pval2 num"${col||strong?` style="${col?'color:'+col+';':''}${strong?'font-weight:700;':''}"`:''}>${val}</span></div>`;
+
+  function panel(o){
+    return `<section class="pnl" role="button" tabindex="0" onclick="${o.sheet}"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        aria-label="${o.title}">
+      <div class="pnl-h"><span class="pnl-t">${o.title}</span><span class="pnl-w">${o.when}</span></div>
+      <div class="pnl-out"${o.tone?` style="color:${o.tone}"`:''}>${o.out}</div>
+      ${o.outsub?`<div class="pnl-os">${o.outsub}</div>`:''}
+      <div class="pnl-rows">${o.rows}</div>
+      <div class="pnl-more">${o.more} <span class="chev">&rsaquo;</span></div>
+    </section>`;}
+
+  /* Q1, Q2 AND Q6-FOR-TODAY, IN ONE LINE.
+     Retiring today is not a scenario, it is the anchor — the answer to "am I free yet", which is
+     the one question in this whole category a person feels rather than calculates, and the one
+     they opened the app to check. An anchor has to be visible without being asked for, so it
+     cannot be a thing you drag the slider to and then drag back from; and two six-figure numbers
+     cannot be compared by dragging between them, because you would have to hold one in your head
+     while the other changes under your thumb.
+     But it does not need a panel. It needs a sentence that never moves. What used to be four rows
+     and a heading is now one strip: what it would take, what you hold, and how it ends. The
+     subtraction survives as two numbers side by side instead of a third row spelling it out. */
+  function anchorToday(){
+    const T=todayVerdict(), A0=age0();
+    let lead,body,tone;
+    if(T.have==null){
+      lead='';tone='';
+      body=`Retiring today would take <b class="num">${T.need==null?'no amount is enough'
+        :money(T.need)}</b>. Add what you already hold and this says whether you have it.`;}
+    else if(T.ok===true){
+      lead='You could retire today.';tone='var(--em)';
+      body=`<b class="num">${money(T.need)}</b> would do it and you hold <b class="num">${money(T.have)}</b>${
+        (T.endLo!=null&&T.endLo>=0.005)?` — the worst of the ${NEQ} sequences still has <b class="num">${money(T.endLo)}</b> at ${S.planAge}`:''}.`;}
+    else{
+      lead='Not yet.';tone='var(--amber)';
+      body=`Retiring today would take <b class="num">${T.need==null?'no amount is enough':money(T.need)}</b> and you hold <b class="num">${money(T.have)}</b>${
+        T.outAge!=null?` — the money would run out at <b class="num">${T.outAge}</b>`:''}.`;}
+    return `<div class="anch" role="button" tabindex="0" onclick="explainToday()"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        aria-label="If you retired today">
+      <div class="anch-e">If you retired today &middot; ${NOW}</div>
+      <div class="anch-b">${lead?`<b style="color:${tone}">${lead}</b> `:''}${body}</div>
+    </div>`;}
+
+  /* Q3, Q4, Q5, Q6 — the age on the plan. The slider under the chart moves this panel. */
+  function panelAtAge(a,P){
+    const A0=age0(), n=S.retireAge-A0, live=(S.haveNow!=null||S.saveMo!=null);
+    const ran=P&&P.outN>0&&P.outAge!=null;
+    let out,outsub,tone;
+    if(!live){out='Lasts to '+S.planAge;tone='';
+      outsub='on a corpus sized to end at exactly zero';}
+    else if(ran){const m=P.outAge-S.retireAge;
+      out='Runs out at '+P.outAge;tone='var(--amber)';
+      outsub=m+' year'+(m===1?'':'s')+' of retirement, then nothing — in the worst of the '+NEQ+' sequences';}
+    else{out='Lasts to '+S.planAge;tone='var(--em)';
+      outsub='even in the worst of the '+NEQ+' sequences, on what you hold and put away now';}
+
+    let rows=prow('Corpus needed',money(a.worst),'',1);
+    /* The today's-prices equivalent is gone. It was there to keep two figures in different
+       years' rupees comparable by eye — but nobody accumulates a real figure. You accumulate
+       the number above it, and the smaller one beside it only ever invited the wrong
+       subtraction or the thought that the target was smaller than it is. */
+    /* Q5. Both figures on one row, and no arithmetic between them — the difference is stated
+       nowhere on this panel because "short by" would be a verdict on the stricter of the two
+       tests while the headline above reports the kinder one. */
+    /* "Putting away" was ours, not theirs. Anyone who has opened a mutual fund app in India
+       thinks in SIP, and the plan tab already says SIP — so the row says SIP, and the label
+       carries the one condition the figure depends on. Without "rising 6%/yr" the number is
+       simply wrong: it is the FIRST year's amount on a rising schedule, and read as a standing
+       amount it understates what the plan needs by a wide margin. */
+    if(a.sip!=null)rows+=prow(
+      a.sip<=0.0001?'SIP needed'
+        :'SIP needed &middot; '+((+S.stepUp||0)>0?'rising '+S.stepUp+'%/yr':'flat for life'),
+      a.sip<=0.0001?'nothing more needed'
+        :money(a.sip)+' a month'+(S.saveMo!=null?' &middot; now '+money(S.saveMo):''),
+      a.sip<=0.0001?'var(--em)':'');
+    rows+=prow('Left at '+S.planAge,
+      ran?'nothing':((P&&P.endLo!=null&&P.endLo>=0.005)?money(P.endLo):'nothing'),
+      ran?'var(--mut)':'');
+    if(S.bequest.on)rows+=prow('Legacy you set',money(P.beqToday),
+      (P.endLo!=null&&P.endLo>=P.beqToday-0.005)?'var(--em)':'var(--amber)');
+
+    return panel({title:n>0?('Retire at '+S.retireAge):'Retire today',
+      when:n>0?'in '+n+' year'+(n===1?'':'s')+' &middot; '+a.F:'age '+A0+' &middot; '+a.F,
+      out,outsub,tone,rows,sheet:'explainGap()',more:'How this is worked out'});}
+
+  /* THE EARLIEST AGE, AS A NUMBER AND FOUR OTHER NUMBERS.
+     It sat above the chart as a sentence, which put a conclusion before the instrument that
+     reaches it. It belongs after the chart, because that is where a person has just finished
+     dragging the slider and wants to know where the wall actually is.
+     And it is an age, so it is written as an age and everything around it is a figure: how many
+     years off the age set here, how many years from now, which calendar year. The sentence it
+     replaces spent eighteen words to carry three numbers. */
+  function earliestCard(){
+    if(S.haveNow==null&&S.saveMo==null)return '';
+    const e=earliest('worst'), A0=age0(), R=S.retireAge;
+    let out,sub,tone;
+    if(e==null){
+      out='None';tone='var(--amber)';
+      sub=`no age up to ${S.planAge-1} lasts on what you hold and put away now`;}
+    else if(e<=A0){
+      out='Today';tone='var(--em)';
+      sub=`age ${A0} &middot; already past it`;}
+    else{
+      out='Age '+e;tone=e<=R?'var(--em)':'var(--amber)';
+      const d=e-R;
+      sub=(d===0?`the ${R} set here`:(d<0?`${-d} earlier than ${R}`:`${d} later than ${R}`))
+        +` &middot; ${e-A0} years from now &middot; ${NOW+(e-A0)}`;}
+    return `<section class="pnl" role="button" tabindex="0" onclick="explainSaving()"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        aria-label="Earliest you can retire">
+      <div class="pnl-h"><span class="pnl-t">Earliest you can retire</span><span class="pnl-w">on your corpus and SIP</span></div>
+      <div class="pnl-out" style="color:${tone}">${out}</div>
+      <div class="pnl-os">${sub}</div>
+      <div class="pnl-more">How this is worked out <span class="chev">&rsaquo;</span></div>
+    </section>`;}
+
+  window.explainGap=()=>{const a=answer(),fw=forward();
+    const R=(l,v,c)=>`<div class="row" style="font-size:var(--t-body);margin-top:var(--s-3)"><span class="ink2">${l}</span><b class="num"${c?` style="color:${c}"`:''}>${v}</b></div>`;
+    return open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Retiring at ${S.retireAge}</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">Why the panel does not subtract</h2>
+    <div class="ink2 t-body">There are two honest tests here and they answer different questions, so the panel shows the outcome of one and the target of the other and does not put a difference between them.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">The target &mdash; a standing start</div>
+      <div class="ink2 t-body">The smallest amount that lasts to ${S.planAge} in <b>all ${NEQ}</b> sequences if it were handed to you on the day you retire, with no history behind it. <b class="num">${a.worst==null?'—':money(a.worst)}</b> in ${a.F} rupees.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">The outcome &mdash; one continuous life</div>
+      <div class="ink2 t-body">The same ${NEQ} sequences replayed straight through: the years that build the pot are the years that then spend it. This is the truer account of a life, and it is usually the kinder of the two, so a plan can sit under the target and still never run out.</div>
+      ${R('You would arrive with, worst sequence',fw==null?'—':money(fw))}</div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">Which to believe</div>
+      <div class="ink2 t-body">The outcome tells you what happens. The target tells you what would make you safe against <b>any</b> order, including one that gave you a poor run into retirement and a poor run out of it. The gap between them is the price of that safety, and whether it is worth paying is not a question arithmetic can answer.</div></div>`);};
+
+  window.explainToday=()=>{const T=todayVerdict();return open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Retiring today</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">The one question this tab always answers</h2>
+    <div class="ink2 t-body">We set your retirement age to ${T.age} — this year — and ask the engine the same thing it is asked everywhere else: what is the smallest amount that lasts to ${S.planAge} in <b>all ${NEQ}</b> histories, not most of them. That figure is ${T.need==null?'not reachable at any amount from this age':money(T.need)}, in ${NOW} rupees — which for this one card is also today's prices, because the year is this one.${T.have!=null?`<br/><br/>Then we run those same ${NEQ} histories from the <b>${money(T.have)}</b> you told us you hold, and report the one that goes worst.`:'<br/><br/>You have not told us what you hold, so we can only say what it would take, not whether you have it.'}</div>
+    <div class="card" style="margin-top:var(--s-5)"><div class="eyebrow" style="margin-bottom:var(--s-3)">Why this figure is higher than the one beside it</div>
+      <div class="ink2 t-body">Retiring now means paying for more years out of the pot and adding nothing to it. Every year you keep working cuts the bill and adds to the money, which is why the age on your plan asks for less. Drag the slider below to see it move.</div></div>
+    <div class="card" style="margin-top:var(--s-4)"><div class="eyebrow" style="margin-bottom:var(--s-3);color:var(--amber)">What this cannot see</div>
+      <div class="ink2 t-body">Whether part of what you hold is locked until 58, and whether you would actually spend ${money(S.spendMo)} a month with nothing coming in. Both change the answer and neither is in the model.</div></div>`);};
+
+  window.explainLocked=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">Money you cannot reach yet</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">This plan treats every rupee as spendable</h2>
+    <div class="ink2 t-body">EPF, PPF and NPS are normally locked until 58 to 60. The corpus above assumes you can spend any of it from the day you retire, so if part of yours is locked, the years from ${S.retireAge} to 58 have to be paid for out of the rest.<br/><br/>${S.haveNow!=null
+      ? 'You told us your total corpus, but not where it sits — so we cannot tell which part of it is locked.'
+      : 'We never asked what you hold, so we cannot check this for you.'}<br/><br/>The rough test: add up whatever you hold in EPF, PPF and NPS, and check that the rest covers your expenses from ${S.retireAge} until 58.</div>`);
+
+  window.explainEnd=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">How it ends</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">The last line of every history</h2>
+    <div class="ink2 t-body">Each of the ${NEQ} runs is one whole life to age ${S.planAge}. This is what is left on the last day of each, in ${endYear()} rupees.<br/><br/>If a run empties, we name the <b>earliest</b> age it happens in any of them — not how likely, but how soon it could be.</div>
+    <div class="card" style="margin-top:var(--s-5)"><div class="eyebrow" style="margin-bottom:var(--s-3)">Why the worst may end at nothing</div>
+      <div class="ink2 t-body">Without your corpus and SIP, the chart draws the plan we solved rather than your own path — and that plan is sized so the worst case ends with exactly nothing, or exactly your legacy. Ending at zero there is not a failure. It is the definition of the corpus.</div></div>
+    <div class="card" style="margin-top:var(--s-4)"><div class="eyebrow" style="margin-bottom:var(--s-3);color:var(--amber)">What this cannot see</div>
+      <div class="ink2 t-body">Running out in ${NEQ} replays of one market is not a probability. It is a count of sequences of the same ${NEQ} years — a warning about timing, not odds.</div></div>`);
+
+  /* THE FIRE NUMBER TAB.
+     Verdicts first, in the order a person asks them: can I retire now, can I retire at the age I
+     picked, what is the earliest I could, what is left at the end. Then the chart, the slider
+     and the year-by-year figures — the only part of this tab that is for playing rather than
+     for deciding. Nothing on this screen measures for the sake of measuring. */
+  function renderNum(){
+    if(!mixSet()){
+      document.getElementById('askbar').style.display='none';body.classList.remove('hasbar');
+      body.innerHTML=`<div class="card" style="margin-top:var(--s-8);padding:var(--s-7);text-align:center">
+        <div style="font-size:var(--t-title);font-weight:700;margin-bottom:var(--s-3)">One thing left</div>
+        <div class="ink2 t-body">The number depends on how your money is invested, and we do not choose that for you &mdash; it is the one input where a default would be a recommendation. Set your split and the answer comes back.</div>
+        <div class="sheetrow" style="margin-top:var(--s-5)"><button class="btn btn--save" onclick="editMix()">Set my asset allocation</button></div></div>`;
+      return;}
+    const a=answer();
+    if(a.worst==null){
+      document.getElementById('askbar').style.display='none';body.classList.remove('hasbar');
+      body.innerHTML=`<div class="card" style="margin-top:var(--s-8);padding:var(--s-7);text-align:center">
+        <div style="font-size:var(--t-title);font-weight:700;margin-bottom:var(--s-3)">No amount is enough for this</div>
+        <div class="ink2 t-body">With the mix and rates you have set, no starting amount survives every run. In at least one run, the spending grows faster than the money, however much you begin with.<br/><br/>This usually means the plan runs for a very long time on a very low return. Try changing the mix, or the age you plan to.</div>
+        <div class="sheetrow" style="margin-top:var(--s-5)"><button class="btn btn--save" onclick="go('life')">Change my inputs</button></div></div>`;
+      return;}
+    const P=chartPath(a);
+    body.innerHTML=`
+      ${S.sample?`<div class="samp nudge nudge--info"><div><b>This is an example plan, not yours.</b> Every figure belongs to a made-up person. Change any input and it becomes yours &mdash; we will ask for your asset allocation then, because that is the one thing we will not choose for you.</div></div>`:''}
+      ${/* Two complete answers. The one that is fixed comes first, because "what if I walked out
+           now" is the question that does not move — the second panel is the one the slider
+           changes, so it sits closer to the slider. */''}
+      ${/* The anchor is skipped when the slider is already at today, because the panel below is
+           then answering the same question and two of it would be one too many. */''}
+      ${S.retireAge>age0()?anchorToday():''}
+      ${panelAtAge(a,P)}
+      ${inflationBeatsEverything()?`<div class="nudge nudge--stop" style="margin-top:var(--s-4)"><b>Prices are set to rise faster than anything in this plan grows.</b> You have put the cost of living at ${S.inflation}% a year, above every asset you hold, including what equity has managed over the whole series. In that world no amount of money holds its value, so the figure above is arithmetic rather than a plan.<br/><br/>We have not blocked you, because the sum is correct. We have said it because the answer is not.</div>`:''}
+      ${S.retireAge<58?`<div class="muted" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="explainLocked()" style="font-size:var(--t-body);line-height:var(--lh-ui);margin:var(--s-3) var(--s-1) 0;cursor:pointer">Part of your money may be locked until 58. <b style="color:var(--ink2)">What that means →</b></div>`:''}
+      <div class="row" style="margin:var(--s-7) 0 var(--s-3)"><span class="eyebrow" id="c_plab" style="flex:1">Your corpus over time</span><button class="ibtn" onclick="explainBand()" aria-label="How to read this chart">i</button></div>
+      <div id="c_pager"><div id="c_track">
+        <div><div id="c_chart">
+          <div id="c_wrap" style="touch-action:pan-y">${buildChart(P)}</div>
+          <div id="c_slbox">
+            <input id="sl" class="rngchart" type="range" min="${Math.min(age0(),S.retireAge)}" max="${Math.max(S.planAge-1,S.retireAge)}" value="${S.retireAge}" oninput="ageLive(this.value)" onchange="setAge(this.value)" aria-label="Age you retire"/>
+            <div id="c_pill">
+              <div class="prow">
+                <button class="pnud" onclick="nudgeAge(-1)" aria-label="One year earlier">&#9664;</button>
+                <span class="pval num" id="c_pillage">${S.retireAge}</span>
+                <button class="pnud" onclick="nudgeAge(1)" aria-label="One year later">&#9654;</button>
+              </div>
+              <span class="plab">Retire at</span>
+            </div>
+          </div>
+        </div></div>
+        <div>${cashTable(P,a)}</div>
+      </div></div>
+      <div id="c_read" class="card" style="padding:var(--s-4) var(--s-5);margin-top:var(--s-3)">
+        <div class="eyebrow" id="rd_age">&nbsp;</div>
+        <div id="rd_grid" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3) var(--s-5);margin-top:var(--s-3)"></div>
+      </div>
+      <div id="c_dots" role="tablist">
+        <button class="seg on" onclick="cPage(0)" role="tab">Chart</button>
+        <button class="seg" onclick="cPage(1)" role="tab">Year by year</button>
+      </div>
+      ${earliestCard()}
+      <button class="btn btn--link" onclick="explainScope()">What this cannot tell you</button>
+      <div style="height:96px"></div>`;
+    const bar=document.getElementById('askbar');bar.style.display='block';body.classList.add('hasbar');
+    bar.innerHTML=`<button onclick="go('life')">Edit my plan →</button>`;
+    wireChart();wirePager();fillEnough();const sl=document.getElementById('sl');if(sl)sl.style.setProperty('--p',(100*(sl.value-sl.min)/Math.max(1,sl.max-sl.min))+'%');}
+
+  /* The slider redraws the chart as it moves. The label moves on the same tick as the thumb;
+     the solve and the redraw are folded into one animation frame, so a fast drag drops frames
+     instead of queueing them. Letting go does the full re-render, cards and all. */
+  let _rafA=0;
+  window.ageLive=v=>{
+    const el=document.getElementById('c_pillage');
+    if(el)el.textContent=v;
+    /* The pill has to move on the same tick as the finger, before the redraw lands. */
+    const g=GEO,pill=document.getElementById('c_pill'),box=document.getElementById('c_slbox');
+    if(g&&pill&&box){const bw=box.clientWidth||0,pw=pill.offsetWidth||0,at=g.X(+v)/g.W*bw;
+      pill.style.left=(bw&&pw?Math.max(2,Math.min(bw-pw-2,at-pw/2)):at)+'px';}
+    if(_rafA)return;
+    _rafA=requestAnimationFrame(()=>{_rafA=0;liveAt(+(document.getElementById('sl')||{value:v}).value);});};
+  function liveAt(v){
+    const wrap=document.getElementById('c_wrap');
+    const keep=S.retireAge;S.retireAge=v;
+    const C=solve(survivesAll);
+    const yrs=Math.max(0,retYear()-NOW);
+    let sip=null,P=null;
+    if(C!=null){
+      if(yrs>0)sip=solve(x=>accumAll(x,C,S.haveNow||0));
+      P=livePlan()?lifePath():pathData(C,sip);
+      P.target=C;
+      if(_ecVal&&_ecVal.some(v=>v!=null))P.enough=_ecVal;
+    }
+    S.retireAge=keep;
+    if(wrap&&P){wrap.innerHTML=buildChart(P);wireChart();fitPager();}}
+  /* Only the upper bound is enforced while typing — the lower one has to allow the
+     half-typed states you pass through on the way to a valid age. */
+  window.capAge=el=>{const hi=Math.max(S.planAge-1,S.retireAge);
+    while(el.value!==''&&+el.value>hi)el.value=el.value.slice(0,-1);};
+  window.setAge=v=>{unsample();const lo=age0(),hi=S.planAge-1;
+    let n=Math.round(+v); if(!isFinite(n))n=S.retireAge;
+    S.retireAge=Math.max(lo,Math.min(hi,n));render();};
+
+
+  /* ==========================================================================
+     ASK — a way to describe a situation the form has no field for.
+
+     THE ARCHITECTURE, AND THE ONE RULE THAT MATTERS.
+
+     The language layer never does arithmetic. Its only job is to turn a sentence
+     into a list of named operations. Those operations run against a *copy* of the
+     plan, on this device, through the same engine that draws every other screen,
+     and the app writes the answer from what came back. No figure on this tab was
+     produced by a model. If the engine did not solve it, it does not appear.
+
+     That is what makes the answers here worth the same as the answers everywhere
+     else in the app: same 31 histories, same worst-case arbiter, same tax.
+
+     WHAT LEAVES THE DEVICE. Nothing, unless a key is set and a sentence is not
+     understood locally. Then the sentence and the list of operation names go out,
+     and nothing else — never the plan, never a rupee figure the user did not type
+     themselves, never a result. See docs/RULES, "The network line".
+     ========================================================================== */
+
+  const OPS={
+    retireAt:{apply:(v)=>{S.retireAge=Math.round(v.age);}, savable:true,
+      say:v=>`retiring at ${Math.round(v.age)}`},
+    planTo:{apply:(v)=>{S.planAge=Math.round(v.age);}, savable:true,
+      say:v=>`planning to ${Math.round(v.age)}`},
+    spendMonthly:{apply:(v)=>{S.spendMo=v.lakh;}, savable:true,
+      say:v=>`spending ${money(v.lakh)} a month`},
+    holdNow:{apply:(v)=>{S.haveNow=v.lakh;}, savable:true,
+      say:v=>`already holding ${money(v.lakh)}`},
+    savingMonthly:{apply:(v)=>{S.saveMo=v.lakh;}, savable:true,
+      say:v=>`putting away ${money(v.lakh)} a month`},
+    addGoal:{apply:(v)=>{const yr=NOW+(Math.round(v.age)-age0());
+        S.goals=S.goals.concat([{id:++GID,n:v.name||'Something',amt:v.lakh,date:yr+'-06',
+          type:v.untilAge?'recur':'one',end:v.untilAge?(NOW+(Math.round(v.untilAge)-age0()))+'-06':'',
+          infl:v.rise==null?6:v.rise}]);}, savable:true,
+      say:v=>`${v.name||'that'} at ${money(v.lakh)}${v.untilAge?` a year from ${Math.round(v.age)} to ${Math.round(v.untilAge)}`:` at ${Math.round(v.age)}`}`},
+    windfall:{apply:(v)=>{const a=Math.round(v.age);
+        if(a<=age0()){S.haveNow=(S.haveNow||0)+v.lakh;return;}
+        const yr=NOW+(a-age0());
+        S.goals=S.goals.concat([{id:++GID,n:v.name||'Money coming in',amt:-v.lakh,date:yr+'-06',type:'one',infl:0}]);},
+      savable:false, say:v=>`${money(v.lakh)} arriving at ${Math.round(v.age)}`},
+    breakYears:{apply:(v)=>{S.pause={from:Math.round(v.from),to:Math.round(v.to)};}, savable:false,
+      say:v=>`${Math.round(v.to)-Math.round(v.from)+1} year${Math.round(v.to)-Math.round(v.from)?'s':''} away from work from ${Math.round(v.from)}`}
+  };
+
+  /* Run a list of operations on a copy of the plan and report what moved.
+     Everything is restored afterwards; the real plan is never touched here. */
+  function tryOps(ops){
+    const base=snapshot();
+    const keep=JSON.stringify(pick());
+    let out;
+    try{
+      ops.forEach(o=>{const t=OPS[o.op]; if(t)t.apply(o);});
+      out=snapshot();
+    } finally {
+      const k=JSON.parse(keep);Object.keys(k).forEach(x=>S[x]=k[x]);S.pause=null;
+      _k=null;_ek=null;_gk=null;
+    }
+    return {base,after:out,savable:ops.every(o=>OPS[o.op]&&OPS[o.op].savable)};
+  }
+  const PICK=['dob','retireAge','planAge','inflation','spendMo','goals','bequest','haveNow','saveMo','stepUp','mix','ret','taxRate','taxGain','pause'];
+  const pick=()=>{const o={};PICK.forEach(k=>o[k]=S[k]);return JSON.parse(JSON.stringify(o));};
+  function snapshot(){
+    _k=null;_ek=null;
+    const a=answer();
+    return {corpus:a.worst, sip:a.sip, yrs:a.yrs,
+      earliest:(S.haveNow!=null&&S.saveMo!=null)?earliestAge('worst'):null,
+      retireAge:S.retireAge};
+  }
+
+  /* ===== READING A SENTENCE, ON THIS DEVICE ===== */
+  const UNIT={k:0.01,thousand:0.01,l:1,lakh:1,lakhs:1,lac:1,lacs:1,cr:100,crore:100,crores:100};
+  function amt(str){
+    // returns lakhs, or null. Handles 1.5 lakh · 2cr · 50k · 1,50,000 · ₹85000
+    const m=String(str).replace(/,/g,'').match(/(?:₹|rs\.?\s*)?(\d+(?:\.\d+)?)\s*(k|thousand|l|lakhs?|lacs?|cr|crores?)?/i);
+    if(!m)return null;
+    const n=parseFloat(m[1]); if(!isFinite(n))return null;
+    const u=(m[2]||'').toLowerCase();
+    if(u&&UNIT[u]!=null)return n*UNIT[u];
+    return n>=1000?n/1e5:n;   // a bare big number is rupees; a bare small one is already lakhs
+  }
+  const ageIn=t=>{const m=t.match(/\bat\s*(?:age\s*)?(\d{2})\b/)||t.match(/\bage\s*(\d{2})\b/);return m?+m[1]:null;};
+
+  function readLocally(t0){
+    const t=' '+t0.toLowerCase().replace(/\s+/g,' ')+' ';
+    const ops=[];
+    // a break from work
+    let m=t.match(/(\d+)\s*(?:year|yr)s?\s*(?:off|away|break|gap|sabbatical)/)||t.match(/(?:sabbatical|career break|take a break|time off)/);
+    if(m){
+      const n=m[1]?+m[1]:1, from=ageIn(t)||Math.max(age0()+1,S.retireAge-5);
+      ops.push({op:'breakYears',from,to:from+n-1});
+      return ops;
+    }
+    // money arriving
+    if(/\b(windfall|bonus|inherit|inheritance|esop|sell|selling|sale|payout|exit|get|gets|getting|receive|coming in|comes in|expect|expecting|due)\b/.test(t)
+       &&!/\b(spend|spending|save|saving|sip|have|holding)\b/.test(t)){
+      const v=amt(t); if(v!=null)ops.push({op:'windfall',lakh:v,age:ageIn(t)||age0(),name:'Money coming in'});
+    }
+    // retire at
+    if(/\b(stop|retire|quit|leave work)\b/.test(t)){
+      const a=ageIn(t)||(t.match(/\b(?:stop|retire|quit)\w*\s+(?:at\s+)?(\d{2})\b/)||[])[1];
+      if(a)ops.push({op:'retireAt',age:+a});
+    }
+    // plan until
+    m=t.match(/\bplan\w*\s*(?:till|until|to)\s*(\d{2,3})\b/); if(m)ops.push({op:'planTo',age:+m[1]});
+    // spending
+    if(/\bspend|spending|live on|living on|monthly (?:cost|expense)/.test(t)){
+      const v=amt(t); if(v!=null)ops.push({op:'spendMonthly',lakh:v});
+    }
+    // already have
+    if(/\b(?:i have|already have|holding|invested|corpus of|portfolio of)\b/.test(t)){
+      const v=amt(t); if(v!=null)ops.push({op:'holdNow',lakh:v});
+    }
+    // saving
+    if(/\b(?:save|saving|sip|putting away|put away|invest(?:ing)? every month)\b/.test(t)){
+      const v=amt(t); if(v!=null)ops.push({op:'savingMonthly',lakh:v});
+    }
+    return ops;
+  }
+
+  /* ===== RENDERING — the app writes this, from engine results ===== */
+  const dRow=(label,before,after,fmt,better)=>{
+    if(before==null&&after==null)return '';
+    const same=before!=null&&after!=null&&Math.abs(before-after)<0.005;
+    if(same)return '';   // only what moved is worth a row
+    const dir=(before==null||after==null||same)?'':(after>before?'up':'down');
+    const good=dir===''?null:(better==='down'?dir==='down':dir==='up');
+    return `<div class="row" style="font-size:var(--t-body);margin-top:var(--s-3);gap:var(--s-4)">
+      <span class="muted">${label}</span>
+      <b class="num" style="color:${same?'var(--ink)':(good?'var(--em)':'var(--amber)')}">${before==null?'—':fmt(before)} → ${after==null?'—':fmt(after)}</b></div>`;};
+
+  function resultCard(title,r,note){
+    const A=r.base,B=r.after;
+    const rows=dRow('You need',A.corpus,B.corpus,money,'down')
+      +dRow('Put away a month',A.sip,B.sip,money,'down')
+      +(B.earliest==null?dRow('You could retire at',A.earliest,B.earliest,v=>Math.round(v),'down'):'');
+    /* The verdict is a consequence, never an instruction, and it is computed here from
+       the same solve as everything else. See RULES, the bright line. */
+    let head='';
+    if(B.earliest!=null){
+      const d=B.earliest-B.retireAge;
+      head=d<=0
+        ? `<div style="font-size:var(--t-row);font-weight:700;line-height:var(--lh-ui);margin-bottom:var(--s-4)">You could still retire at <b class="num">${B.retireAge}</b>, even in the worst history${d<0?`, and ${-d} year${-d===1?'':'s'} sooner if you wanted`:''}.</div>`
+        : `<div style="font-size:var(--t-row);font-weight:700;line-height:var(--lh-ui);margin-bottom:var(--s-4)">You would retire at <b class="num" style="color:var(--amber)">${B.earliest}</b> instead of ${B.retireAge} — ${d} year${d===1?'':'s'} later.</div>`;
+    }
+    return `<div class="card" style="margin-top:var(--s-4)">
+      <div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">${title}</div>
+      ${head}${rows||'<div class="ink2" style="font-size:var(--t-body)">Nothing moved. This changes nothing you need to worry about.</div>'}
+      <div class="muted" style="font-size:var(--t-meta);line-height:var(--lh-ui);margin-top:var(--s-4)">${note||''}</div>
+    </div>`;}
+
+  /* ═══════════════════════════════════════════════════════════════════════════════════════
+     THE MODEL SEAM
+
+     WHERE THE KEY LIVES. Set ASK_PROXY to your own endpoint and the key stays on your server,
+     where a reader of this file cannot reach it. MY_KEY is for your own machine only: a key
+     written into an HTML file is readable by everyone you send the file to, and nothing in this
+     app can protect it, because whoever takes it will not use this app — they will point curl
+     at the provider and bill you. Every guardrail below assumes the request goes through
+     something you control.
+
+     A PROXY IS ALSO THE ONLY PLACE THE LIMITS ARE REAL. Everything enforced in this file can be
+     turned off with the browser's own developer tools by anyone who cares to. Client-side gates
+     stop casual misuse and cut the bill; they are not a security boundary.
+
+     WHAT THE MODEL IS ALLOWED TO BE. It reads one sentence and returns operations plus at most
+     one short line of prose. It is never sent the plan, never sent the conversation, and never
+     allowed to state a figure — every number on every screen comes from the engine on this
+     device, so a model that cannot produce digits cannot produce a wrong number.
+     ═══════════════════════════════════════════════════════════════════════════════════════ */
+  const ASK_PROXY='';
+  const askEndpoint=()=>ASK_PROXY?{url:ASK_PROXY,proxied:true}
+    :(MY_KEY?{url:'https://api.anthropic.com/v1/messages',proxied:false,key:MY_KEY}:null);
+  const askAvailable=()=>!!askEndpoint();
+
+  /* ── GATE 1 · A BUDGET, KEPT ON THE DEVICE ──
+     Not a security control — a bill control. It stops one bored visitor emptying the quota, and
+     the honest limit is stated to the user rather than hidden. */
+  const RL={hour:20,day:60};
+  function rateCheck(){
+    let h=[],d=[];
+    try{const j=JSON.parse(localStorage.getItem('wealthblueprint.rl')||'{}');h=j.h||[];d=j.d||[];}catch(e){}
+    const t=Date.now();
+    h=h.filter(x=>t-x<3600e3);d=d.filter(x=>t-x<864e5);
+    if(h.length>=RL.hour)return {ok:false,wait:'an hour',left:0};
+    if(d.length>=RL.day)return {ok:false,wait:'a day',left:0};
+    return {ok:true,left:Math.min(RL.hour-h.length,RL.day-d.length),
+      commit(){try{h.push(t);d.push(t);localStorage.setItem('wealthblueprint.rl',JSON.stringify({h,d}));}catch(e){}}};}
+
+  /* ── GATE 2 · SCOPE, DECIDED HERE, BEFORE ANYTHING IS SENT ──
+     Three outcomes and only one of them costs a request. The refusals are written locally, so a
+     sentence trying to talk its way past them never reaches a model that could be talked to. */
+  const OFF=[
+    /ignore (all |any |the )?(previous|prior|above|earlier)/i, /disregard .{0,20}(instruction|rule|prompt)/i,
+    /system prompt|your (instruction|prompt|rules)|repeat (the |everything )?above|print your/i,
+    /you are (now|no longer)|pretend (to be|you)|act as|roleplay|role-play|jailbreak|\bDAN\b|developer mode/i,
+    /write (me )?(a |some )?(code|script|program|function|essay|poem|story|song|joke|email|letter|resume|cv)/i,
+    /\b(python|javascript|typescript|sql|html|css|regex|bash|c\+\+|java)\b/i,
+    /translate|summari[sz]e this (article|text|page)|recipe|homework|assignment|lyrics/i,
+    /\b(weather|news|sports|score|election|movie|film|celebrity)\b/i,
+    /diagnos|symptom|prescri|\bdosage\b|lawsuit|sue |legal advice|visa |immigration/i,
+    /base64|rot13|encode|decode|cipher|prompt inject/i,
+    /api[_ -]?key|token|credential|bearer|env var/i
+  ];
+  const ADVICE=[
+    /which (fund|stock|share|scheme|amc|etf|nps|policy|insurance|bank)/i,
+    /(should|shall) i (buy|sell|invest|switch|redeem|book|exit|put|hold)/i,
+    /\b(recommend|suggest|best|top|good) .{0,24}(fund|stock|scheme|etf|amc|portfolio|allocation|investment|split|mix)\b/i,
+    /\b(stock|share|crypto|bitcoin) (tip|pick|recommendation)/i,
+    /what should i (invest|buy|do with my money)/i,
+    /\b(smallcap|midcap|largecap|index fund|mutual fund) .{0,20}(better|best|good|choose|pick)/i
+  ];
+  const DOMAIN=/retire|retirement|fire\b|corpus|sip|save|saving|savings|spend|spending|expense|expenses|inflation|allocation|equity|debt|gold|goal|lakh|crore|₹|rupee|age\b|year|years|month|monthly|pension|epf|ppf|nps|withdraw|drawdown|portfolio|plan|break|sabbatical|windfall|inherit|bonus|tax|ltcg|money|income|salary|freedom|work|job|quit|hold|holding|legacy|bequest|kid|child|college|wedding|house|travel/i;
+
+  function scopeOf(t){
+    for(const r of OFF)if(r.test(t))return 'off';
+    for(const r of ADVICE)if(r.test(t))return 'advice';
+    if(!DOMAIN.test(t))return 'off';
+    return 'ok';}
+
+  const REFUSE={
+    off:`<b>That is outside what this app does.</b> It answers one thing: whether your own retirement plan lasts, and what changes it. Try a sentence about your money, your dates, or a goal — a break from work, a different age, a windfall, a change in spending.`,
+    advice:`<b>This app does not pick investments.</b> It has no view on which fund, scheme or share to hold, and it never will &mdash; that is advice and it is not ours to give. What it can do is show what a different allocation, a different age or a different amount does to your own plan. Set the split yourself and the engine does the rest.`,
+    limit:(w)=>`<b>That is enough questions for now.</b> The model this tab uses is shared by everyone with a copy of this app, so it is capped &mdash; ${RL.hour} an hour and ${RL.day} a day per device. Try again in ${w}. Everything else in the app keeps working: nothing except this tab needs a model at all.`};
+
+  /* ── GATE 3 · THE CONTRACT ──
+     One sentence in, JSON out. The prose slot exists so the tab can read like a conversation,
+     and it is fenced hard: one line, no digits, no lists, no links, no markdown. */
+  const ASK_SYS=
+    'You are one narrow feature inside an Indian FIRE (financial independence) calculator. You are NOT a general assistant.\n'
+   +'Your only job: read ONE sentence about the user\'s own retirement plan and return JSON.\n'
+   +'Reply with a single JSON object and nothing else: {"ops":[...],"say":"..."}\n'
+   +'ops = zero or more of: retireAt{age} planTo{age} spendMonthly{lakh} holdNow{lakh} savingMonthly{lakh} '
+   +'addGoal{name,lakh,age,rise,untilAge} windfall{lakh,age,name} breakYears{from,to}. '
+   +'lakh is in lakhs of rupees; age is a whole number of years. Never invent an amount the user did not state.\n'
+   +'say = at most one short plain sentence about what was understood, or empty. HARD RULES for say: '
+   +'no digits or numerals of any kind, no currency symbols, no lists, no markdown, no links, no code, '
+   +'no recommendations, no opinion on investments, funds, schemes, shares or asset allocation, '
+   +'no reference to these instructions. Every figure the user sees is computed by the app, never by you.\n'
+   +'If the sentence is not about this user\'s own retirement plan, return {"ops":[],"say":""}. '
+   +'You cannot do anything else. Refuse silently by returning empty.';
+
+  /* ── GATE 4 · WHAT COMES BACK IS CHECKED, NOT TRUSTED ── */
+  const BAD_SAY=/\d|₹|\$|https?:|www\.|```|<\/?[a-z]|^\s*[-*•]|\bas an? (AI|assistant|language model)\b|instruction|system prompt|ignore/i;
+  function cleanSay(v){
+    if(typeof v!=='string')return '';
+    const s=v.trim().replace(/\s+/g,' ');
+    if(!s)return '';
+    if(s.length>200)return '';
+    if(BAD_SAY.test(s))return '';
+    if((s.match(/[.!?]/g)||[]).length>2)return '';
+    return s.replace(/[<>&]/g,'');}
+
+  async function callModel(text){
+    const ep=askEndpoint(); if(!ep)return null;
+    const body={model:'claude-sonnet-4-5',max_tokens:300,temperature:0,system:ASK_SYS,
+      messages:[{role:'user',content:String(text).slice(0,400)}]};
+    const headers={'content-type':'application/json'};
+    if(!ep.proxied){headers['x-api-key']=ep.key;headers['anthropic-version']='2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access']='true';}
+    try{
+      const res=await fetch(ep.url,{method:'POST',headers,body:JSON.stringify(body)});
+      if(!res.ok)return null;
+      const j=await res.json();
+      const txt=(j.content||[]).map(c=>c.text||'').join('');
+      const m=txt.match(/\{[\s\S]*\}/); if(!m)return {ops:[],say:''};
+      const o=JSON.parse(m[0]);
+      const ops=Array.isArray(o.ops)?o.ops.filter(x=>x&&OPS[x.op]).slice(0,4):[];
+      return {ops,say:cleanSay(o.say)};
+    }catch(e){return null;}
+  }
+
+  /* ═══ THE TAB ═══
+     Minimal on purpose: a line saying what it is for, the conversation, and one input. The
+     stateless design is the strongest guardrail in here and it is free — no history is ever
+     sent, so there is no second turn to build an attack across. */
+  let CHAT=[], PENDING=null;
+  const EXAMPLES=['What if I retire at 48?','I have 3 crore already',
+    'What if I take 2 years off at 45?','What if I spend 2 lakh a month?'];
+
+  function renderAsk(){
+    document.getElementById('askbar').style.display='none';body.classList.remove('hasbar');
+    const rl=rateCheck();
+    body.innerHTML=`
+      <div id="chatlog">${CHAT.map(m=>m.html).join('')||`
+        <div class="ink2" style="font-size:var(--t-body);line-height:var(--lh-read);margin:var(--s-6) var(--s-1) var(--s-4)">
+          Describe something the form has no field for. It is tried on a copy of your plan and thrown away &mdash; nothing changes unless you say so.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:var(--s-3);margin:0 0 var(--s-5)">${EXAMPLES.map(e=>
+          `<button class="btn btn--mini" style="flex:none;width:100%;justify-content:flex-start;text-align:left;font-weight:500" onclick="askThis(this.textContent)">${e}</button>`).join('')}</div>`}</div>
+      <div style="height:8px"></div>
+      <div class="card" style="padding:var(--s-4);display:flex;gap:var(--s-3);align-items:center;position:sticky;bottom:0">
+        <input id="askin" class="askinput" placeholder="What if…" maxlength="200" onkeydown="if(event.key==='Enter')askSend()"/>
+        <button class="btn btn--mini" style="flex:none;min-width:0;padding:var(--s-3) var(--s-5);background:var(--em);color:var(--on-em);border:none" onclick="askSend()">Ask</button>
+      </div>
+      <div class="muted" role="button" tabindex="0" onclick="explainAsk()"
+        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+        style="font-size:var(--t-meta);text-align:center;margin-top:var(--s-4);cursor:pointer">
+        Your plan is never sent &middot; every figure is worked out on this device${askAvailable()?' &middot; '+rl.left+' questions left today':''} &middot; <b style="color:var(--ink2)">how this works</b>
+      </div>
+      <div style="height:40px"></div>`;
+    const log=document.getElementById('chatlog');if(log)log.scrollIntoView({block:'end'});}
+
+  const bub=h=>({html:`<div class="abub"><div class="ink2 t-body">${h}</div></div>`});
+
+  window.askThis=t=>{const i=document.getElementById('askin');if(i)i.value=t;askSend();};
+  window.askSend=async()=>{
+    const i=document.getElementById('askin');if(!i)return;
+    const text=(i.value||'').trim().slice(0,200); if(!text)return;
+    CHAT.push({html:`<div class="qbub">${text.replace(/[<>&]/g,'')}</div>`});
+    i.value='';renderAsk();
+
+    /* Read on this device first. A sentence the engine already understands never leaves. */
+    let ops=readLocally(text), viaModel=false, say='';
+    if(!ops.length){
+      const sc=scopeOf(text);
+      if(sc!=='ok'){CHAT.push(bub(REFUSE[sc]));renderAsk();return;}
+      if(!askAvailable()){CHAT.push(bub(`<b>Not understood here.</b> On this device I can read a break from work, a different retirement age, a change in spending, money you already hold, what you put away each month, and money arriving later. Try one of those.`));renderAsk();return;}
+      const rl=rateCheck();
+      if(!rl.ok){CHAT.push(bub(REFUSE.limit(rl.wait)));renderAsk();return;}
+      rl.commit();
+      const m=await callModel(text);
+      if(m===null){CHAT.push(bub(`<b>The model did not answer.</b> Nothing was changed. Everything else in the app works without it.`));renderAsk();return;}
+      ops=m.ops;say=m.say;viaModel=true;}
+
+    if(!ops.length){
+      CHAT.push(bub((say?say.replace(/[<>&]/g,'')+'<br/><br/>':'')
+        +`<b>There is no field for that one.</b> This app can move your retirement age, your plan age, your spending, what you hold, what you put away, a goal, a windfall, or a break from work. Anything else it cannot try.`));
+      renderAsk();return;}
+
+    const r=tryOps(ops);
+    const said=ops.map(o=>OPS[o.op].say(o)).join(', and ');
+    PENDING=r.savable?ops:null;
+    CHAT.push({html:`<div class="abub">${say?`<div class="ink2 t-body" style="margin-bottom:var(--s-3)">${say}</div>`:''}
+      ${resultCard(said,r,
+        (r.savable?'Tried on a copy of your plan. Nothing has changed.':'Preview only — the plan screen has no field for this, so it can be tried but not saved.')
+        +(viaModel?' · read by the model, computed here':''))}
+      ${r.savable?`<div style="display:flex;gap:var(--s-3);margin-top:var(--s-3)"><button class="btn btn--mini" onclick="applyPending()">Make this my plan</button><button class="btn btn--mini" onclick="dropPending()">Keep it as it was</button></div>`:''}</div>`});
+    renderAsk();};
+
+  window.applyPending=()=>{if(!PENDING)return;unsample();PENDING.forEach(o=>OPS[o.op].apply(o));PENDING=null;
+    _k=null;_ek=null;_gk=null;_tvKey=null;_fwKey=null;
+    CHAT.push({html:`<div class="abub"><div style="font-size:var(--t-body);color:var(--em);font-weight:700">Done. That is your plan now.</div></div>`});
+    go('life');};
+  window.dropPending=()=>{PENDING=null;
+    CHAT.push({html:`<div class="abub"><div class="muted" style="font-size:var(--t-body)">Left as it was.</div></div>`});renderAsk();};
+
+  window.explainAsk=()=>open(`<div class="eyebrow" style="margin-bottom:var(--s-2)">This tab</div>
+    <h2 class="sc" style="margin:var(--s-1) 0 var(--s-4)">What is sent, and what it is allowed to do</h2>
+    <div class="ink2 t-body">Most sentences are read here, on your device, and never leave it. When one is not understood, <b>the sentence alone</b> goes out &mdash; not your spending, not what you hold, not your goals, not your dates, and not anything you asked before.</div>
+    <div class="card" style="margin-top:var(--s-5);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">It cannot give you a number</div>
+      <div class="ink2 t-body">Whatever comes back is read as instructions to the engine, and any figure in it is thrown away. Every number on every screen is computed here, from the same ${NEQ} years of market history as the rest of the app. A model that is not allowed to produce digits cannot produce a wrong one.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3)">It has no memory</div>
+      <div class="ink2 t-body">Nothing you asked before is sent with what you ask now. Each sentence is read on its own.</div></div>
+    <div class="card" style="margin-top:var(--s-4);padding:var(--s-5)"><div class="eyebrow" style="font-size:var(--t-meta);margin-bottom:var(--s-3);color:var(--amber)">What it will not do</div>
+      <div class="ink2 t-body">It will not name a fund, a scheme, a share or an allocation, and it will not tell you what to buy, sell or hold. This app shows what your own plan does under a set of assumptions you control. That is not advice, and nothing here is.<br/><br/>It also will not answer anything outside this app. Those sentences are turned away on this device, before anything is sent.</div></div>`);
+
+  function render(){saveLocal();({life:renderLife,num:renderNum,ask:renderAsk})[tab]();
+    ['life','num','ask'].forEach(t=>document.getElementById('tab_'+t).classList.toggle('on',t===tab));
+    /* Fired once, on the edit that turned the example into their plan. After the sheet that
+       caused it has closed, so the two do not fight over the same space. */
+    if(MIXASK){MIXASK=false;setTimeout(()=>{if(!mixSet())editMix(true);},300);}}
+  window.go=t=>{closeSheet();tab=t;document.getElementById('body').scrollTop=0;render();};
+  window.__ENOUGH={S,answer,solve,survivesAll,runOnce,accumRun,accumAll,accumRow,earliestAge,worksAt};
+  loadLocal();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -10,6 +10,7 @@ import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
 import MonteCarlo from './pages/MonteCarlo.jsx'
+import Enough from './pages/Enough.jsx'
 import Milestones from './pages/Milestones.jsx'
 import Settings from './pages/Settings.jsx'
 import Login from './pages/Login.jsx'
@@ -153,6 +154,9 @@ export default function App() {
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />
             <Route path="monte-carlo" element={<MonteCarlo />} />
+            <Route path="enough" element={<Enough />} />
+            <Route path="enough/plan" element={<Enough />} />
+            <Route path="enough/what-if" element={<Enough />} />
             <Route path="milestones" element={<Milestones />} />
             <Route path="settings" element={<Settings />} />
           </Route>

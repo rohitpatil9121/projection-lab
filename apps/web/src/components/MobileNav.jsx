@@ -1,11 +1,11 @@
 import { NavLink } from 'react-router-dom'
-import { IconAccounts, IconMilestone, IconSettings, IconPlan, IconHome } from './Icons.jsx'
+import { IconSettings, IconPlan, IconHome, IconTarget, IconSpark } from './Icons.jsx'
 
 const links = [
   { to: '/', label: 'Today', Icon: IconHome, end: true },
-  { to: '/plan', label: 'Plan', Icon: IconPlan },
-  { to: '/accounts', label: 'Accounts', Icon: IconAccounts },
-  { to: '/milestones', label: 'Goals', Icon: IconMilestone },
+  { to: '/enough/plan', label: 'Your plan', Icon: IconPlan },
+  { to: '/enough', label: 'FIRE number', Icon: IconTarget, end: true },
+  { to: '/enough/what-if', label: 'What if', Icon: IconSpark },
   { to: '/settings', label: 'Settings', Icon: IconSettings },
 ]
 
