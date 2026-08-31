@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { IconPlan, IconAccounts, IconFlow, IconMilestone, IconSettings, IconDice, IconHome, IconTarget, IconSpark } from './Icons.jsx'
+import { IconPlan, IconSettings, IconHome, IconTarget, IconSpark } from './Icons.jsx'
 import AppLogo from './AppLogo.jsx'
 
 const links = [
@@ -7,10 +7,6 @@ const links = [
   { to: '/enough/plan', label: 'Your plan', Icon: IconPlan },
   { to: '/enough', label: 'FIRE number', Icon: IconTarget, end: true },
   { to: '/enough/what-if', label: 'What if', Icon: IconSpark },
-  { to: '/accounts', label: 'Accounts', Icon: IconAccounts },
-  { to: '/cash-flow', label: 'Cash Flow', Icon: IconFlow },
-  { to: '/monte-carlo', label: 'Monte Carlo', Icon: IconDice },
-  { to: '/milestones', label: 'Goals', Icon: IconMilestone },
   { to: '/settings', label: 'Settings', Icon: IconSettings },
 ]
 
