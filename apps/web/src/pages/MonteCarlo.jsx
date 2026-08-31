@@ -6,7 +6,8 @@ import { useStore } from '../data/store.js'
 import { runMonteCarlo } from '../data/store.js'
 import { useProjection } from '../data/useProjection.js'
 import { fmtMoney } from '@projectlab/engine'
-import { Card, SectionTitle, StatCard } from '../components/ui.jsx'
+import { Card, SectionTitle, StatCard, EmptyState } from '../components/ui.jsx'
+import { Link } from 'react-router-dom'
 
 const RUN_OPTIONS = [250, 500, 1000]
 
@@ -32,6 +33,24 @@ export default function MonteCarlo() {
 
   const mc = useMemo(() => runMonteCarlo(state, { runs, seed }), [state, runs, seed])
   const retireYear = (state.currentYear || 2026) + (profile.retirementAge - profile.currentAge)
+
+  // A plan with no accounts has nothing to simulate, and 500 runs of nothing all "fail" —
+  // so this page used to greet a brand-new user with "0% · Unlikely" and advise them to trim
+  // their retirement spending. That is a verdict on a plan that does not exist yet. A success
+  // rate is only meaningful once there is something whose survival can be in question.
+  if (!state.accounts?.length) {
+    return (
+      <Card>
+        <SectionTitle title="Monte Carlo — Range of Outcomes" subtitle="how your plan holds up under randomised market returns" />
+        <EmptyState
+          icon="🎲"
+          title="Nothing to simulate yet"
+          hint="Monte Carlo runs your plan through hundreds of randomised market histories. Add the accounts you hold and it will tell you how often the money lasts."
+          action={<Link to="/accounts" className="btn-primary">Add my accounts</Link>}
+        />
+      </Card>
+    )
+  }
 
   const success = Math.round(mc.successRate * 100)
   const verdict = success >= 85 ? 'Very likely' : success >= 70 ? 'On track' : success >= 50 ? 'At risk' : 'Unlikely'

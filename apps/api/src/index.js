@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
@@ -12,16 +12,37 @@ import { requireAuth, errorHandler } from './middleware.js'
 import { users, sessions, plans, ready } from './db.js'
 import { TAX_CONFIG, TAX_FY } from '@projectlab/engine'
 import { emailConfigured, sendOtpEmail, sendCodeEmail } from './email.js'
+import { askEnough, enoughAskConfigured } from './enough.js'
 import { withDevFields, isProduction } from './dev.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const privacyPolicyPath = path.join(__dirname, '../../web/public/privacy-policy.html')
+const webDistPath = path.join(__dirname, '../../web/dist')
 
 const app = express()
 const PORT = process.env.PORT || 3001
 
 app.set('trust proxy', 1) // behind Render's proxy — needed for correct rate-limit IPs
-app.use(helmet())
+// CSP is written for the web app this server also hosts: Google Identity Services
+// (script + iframe + popup) and Google Fonts are the only external origins it touches.
+// COOP must be 'same-origin-allow-popups' or GSI's sign-in popup cannot message back.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'script-src': ["'self'", 'https://accounts.google.com'],
+      'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://accounts.google.com'],
+      'font-src': ["'self'", 'https://fonts.gstatic.com'],
+      // The Render origin is listed explicitly so a bundle built with an absolute
+      // VITE_API_URL (the APK's .env.production) still works when served locally.
+      'connect-src': ["'self'", 'https://accounts.google.com', 'https://projection-lab.onrender.com'],
+      'frame-src': ['https://accounts.google.com'],
+      'img-src': ["'self'", 'data:', 'https:'],
+    },
+  },
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  crossOriginEmbedderPolicy: false,
+}))
 // Auth is via Bearer tokens (not cookies), so we allow any origin without credentials.
 app.use(cors({ origin: true, credentials: false }))
 app.use(express.json({ limit: '512kb' }))
@@ -83,6 +104,7 @@ app.get('/healthz', (_req, res) => {
     service: 'financial-blueprint-api',
     time: new Date().toISOString(),
     auth: { google: googleConfigured, email: emailConfigured },
+    features: { enoughAsk: enoughAskConfigured() },
   })
 })
 
@@ -272,6 +294,54 @@ app.delete('/v1/plans/:id', requireAuth, async (req, res, next) => {
 app.get('/v1/tax/config', (_req, res) => {
   res.json({ fy: TAX_FY, config: TAX_CONFIG[TAX_FY] })
 })
+
+/**
+ * The "What if" model seam. A single sentence in, operations out — never a figure, never
+ * the plan. Its own limiter (per IP) because the model is a shared, billable resource and
+ * this is where a bored visitor would otherwise burn the quota. No auth: the tab is usable
+ * before sign-in, and only the sentence ever leaves the device.
+ */
+const enoughAskLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'That is enough questions for now. Try again in a while.' },
+})
+app.post('/v1/enough/ask', enoughAskLimiter, async (req, res, next) => {
+  try {
+    const result = await askEnough(req.body?.text || '')
+    res.json(result)
+  } catch (err) {
+    if (err.status === 503) return res.status(503).json({ error: 'The What-if model is not configured.' })
+    if (err.status === 502) return res.status(502).json({ error: 'The model did not answer.' })
+    next(err)
+  }
+})
+
+// Serve the built web app (apps/web/dist) so one Render service hosts both the API
+// and the webapp on the same origin — the frontend's API_BASE falls back to '/v1'.
+// Registered after all API routes; the SPA fallback only answers GET requests that
+// aren't API paths, so unknown /v1/* calls still 404 as JSON via errorHandler.
+if (existsSync(path.join(webDistPath, 'index.html'))) {
+  // Hashed assets cache long; index.html must revalidate or users keep a stale
+  // shell pointing at asset files that no longer exist after the next deploy.
+  app.use(express.static(webDistPath, {
+    index: 'index.html',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache')
+      // Only Vite's content-hashed /assets/ files are safe to cache forever;
+      // public/ files (logo.png etc.) keep stable names and get a short cache.
+      else if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      else res.setHeader('Cache-Control', 'public, max-age=3600')
+    },
+  }))
+  app.get(/^\/(?!v1\/|healthz).*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache')
+    res.sendFile(path.join(webDistPath, 'index.html'))
+  })
+  console.log('Serving web app from', webDistPath)
+}
 
 app.use(errorHandler)
 

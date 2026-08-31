@@ -13,6 +13,41 @@ export {
   corpusLastsToAge,
   consistencyCells,
 } from './journey.js'
+export {
+  EQUITY_HISTORY,
+  SEQUENCE_COUNT,
+  EQUITY_END_YEAR,
+  ENOUGH_ASSETS,
+  DEFAULT_ENOUGH_RETURNS,
+  DEFAULT_ENOUGH_MIX,
+  WATERFALL_ORDER,
+  equityCagr,
+  normalizeEnoughInput,
+  inflationOutrunsEverything,
+  goalsDueInYear,
+  bequestNominal,
+  runRetirement,
+  runAccumulation,
+  solveSmallest,
+  enoughAtAge,
+  solveEnough,
+  enoughCurve,
+  projectEnoughPaths,
+  enoughYearRows,
+  worksAtAge,
+  earliestRetirementAge,
+  retireTodayVerdict,
+  forwardCorpus,
+} from './enough.js'
+export {
+  parseAmount,
+  scopeOfSentence,
+  readEnoughSentence,
+  WHAT_IF_OPS,
+  applyWhatIfOps,
+  describeOps,
+  opsSavable,
+} from './whatIf.js'
 import { deductionsFromPlan as _deductionsFromPlan, computeTax as _computeTax } from './tax.js'
 
 export const CURRENT_YEAR = 2026

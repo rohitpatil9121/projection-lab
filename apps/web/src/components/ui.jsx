@@ -4,7 +4,9 @@ import { IconTrend } from './Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
 // Centered modal dialog with backdrop. Portals to body so sticky/filter ancestors don't offset it.
-export function Modal({ open, onClose, title, children }) {
+// `className` widens the panel for content-heavy dialogs; max-w-sm is right for a
+// confirm, and wrong for a form with fifteen fields in it.
+export function Modal({ open, onClose, title, className = 'max-w-sm', children }) {
   useEffect(() => {
     if (!open) return
     const onKey = (e) => { if (e.key === 'Escape') onClose?.() }
@@ -32,7 +34,7 @@ export function Modal({ open, onClose, title, children }) {
       role="dialog" aria-modal="true"
     >
       <div
-        className="card w-full max-w-sm shadow-lift animate-scale-in"
+        className={`card w-full ${className} shadow-lift animate-scale-in`}
         onClick={(e) => e.stopPropagation()}
       >
         {title && <h3 className="text-base font-bold tracking-tight mb-3">{title}</h3>}

@@ -1,11 +1,30 @@
 // CFP-style goal evaluation: on-track status, required SIP, inflation-adjusted targets.
 
+/**
+ * What the goal is worth RIGHT NOW.
+ *
+ * This used to read `projection[0]`, which looks like today and is not. The projection
+ * loop grows every balance and adds a full year of contributions BEFORE pushing its first
+ * row, so row zero is this time next year. A goal measured against it counted a year of
+ * growth and twelve SIP instalments that have not happened — the sample plan showed ₹61 L
+ * and 61% toward a ₹1 Cr net-worth goal while the Today page, reading the same accounts,
+ * showed a net worth of ₹40 L.
+ *
+ * An account-linked goal always read the real balance, which is why only the two derived
+ * metrics drifted. Both now come from the same balances, so every screen agrees.
+ */
 export function milestoneValue(m, accounts, projection) {
   if (m.accountId) {
     return accounts.find((a) => a.id === m.accountId)?.balance ?? 0
   }
-  if (m.metric === 'netWorth') return projection[0]?.netWorth ?? 0
-  if (m.metric === 'investable') return projection[0]?.investable ?? 0
+  if (m.metric === 'netWorth') {
+    return accounts.reduce((s, a) => s + (a.kind === 'liability' ? -a.balance : a.balance), 0)
+  }
+  if (m.metric === 'investable') {
+    return accounts
+      .filter((a) => a.kind === 'asset' && (a.type === 'investment' || a.type === 'retirement'))
+      .reduce((s, a) => s + a.balance, 0)
+  }
   return 0
 }
 
