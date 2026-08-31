@@ -4,7 +4,7 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm run build -w web
     startCommand: npm run start -w api
     healthCheckPath: /healthz
     envVars:
@@ -13,6 +13,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Baked into the web bundle at build time; same value as GOOGLE_CLIENT_ID.
+      - key: VITE_GOOGLE_CLIENT_ID
         sync: false
       - key: NODE_ENV
         value: production
