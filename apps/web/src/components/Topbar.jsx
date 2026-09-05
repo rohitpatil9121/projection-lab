@@ -14,6 +14,9 @@ const titles = {
   '/monte-carlo': 'Monte Carlo',
   '/milestones': 'Goals',
   '/settings': 'Settings',
+  '/enough': 'FIRE number',
+  '/enough/plan': 'Your plan',
+  '/enough/what-if': 'What if',
 }
 
 const syncLabels = {

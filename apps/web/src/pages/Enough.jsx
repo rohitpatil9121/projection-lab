@@ -30,7 +30,8 @@ import {
 } from 'recharts'
 import { fmtMoney, SEQUENCE_COUNT, EQUITY_HISTORY, EQUITY_END_YEAR, ENOUGH_ASSETS, WATERFALL_ORDER, enoughYearRows, inflationOutrunsEverything, equityCagr } from '@projectlab/engine'
 import { useStore } from '../data/store.js'
-import { Card, SectionTitle, Modal } from '../components/ui.jsx'
+import { Card, Modal, PageHero, SectionCard, IconTile } from '../components/ui.jsx'
+import { IconPlan, IconTarget, IconSpark, IconAccounts, IconTrend, IconDashboard, IconTax, IconFlow, IconShield } from '../components/Icons.jsx'
 import { useEnoughSettings, useEnoughInput, useEnoughAnswer, useEnoughCurve, effectiveEnoughGoals } from '../data/useEnough.js'
 import WhatIfTab from '../components/enough/WhatIfTab.jsx'
 import GoalsEditor from '../components/enough/GoalsEditor.jsx'
@@ -69,15 +70,24 @@ const TAB_PATH = { ask: '/enough/what-if', num: '/enough', plan: '/enough/plan' 
 const tabFromPath = (pathname) =>
   pathname.endsWith('/what-if') ? 'ask' : pathname.endsWith('/plan') ? 'plan' : 'num'
 
-const TAB_TITLE = {
-  ask: 'What if',
-  num: 'How much is enough',
-  plan: 'Your plan',
-}
-const TAB_SUBTITLE = {
-  ask: 'Try a change the form has no field for — it runs on a copy of your plan, nothing is saved unless you say so',
-  num: `Your FIRE number, tested against all ${SEQUENCE_COUNT} NIFTY 500 sequences · every figure in the rupees of its own year`,
-  plan: 'The plan behind the number — every field is derived from your plan and can be overridden here',
+// Each tab gets its own colour and icon, so the three screens are told apart before a word
+// is read: blue is the plan you edit, green is the verdict, violet is the sandbox.
+const TAB_HERO = {
+  ask: {
+    tone: 'violet', Icon: IconSpark, eyebrow: 'What if',
+    title: 'Try a change, keep it or not',
+    subtitle: 'Runs on a copy of your plan — nothing is saved unless you say so',
+  },
+  num: {
+    tone: 'emerald', Icon: IconTarget, eyebrow: 'FIRE number',
+    title: 'How much is enough',
+    subtitle: `Tested against all ${SEQUENCE_COUNT} NIFTY 500 sequences · every figure in the rupees of its own year`,
+  },
+  plan: {
+    tone: 'brand', Icon: IconPlan, eyebrow: 'Your plan',
+    title: 'The plan behind the number',
+    subtitle: 'Every field is derived from your plan and can be overridden here',
+  },
 }
 
 export default function Enough() {
@@ -98,9 +108,13 @@ export default function Enough() {
   const solvedAge = useDeferredValue(liveAge)
   const { cfg, derived, raw } = useEnoughInput(settings, tab === 'num' ? solvedAge : undefined)
 
+  const hero = TAB_HERO[tab]
+
   return (
     <div className="space-y-5">
-      <SectionTitle title={TAB_TITLE[tab]} subtitle={TAB_SUBTITLE[tab]} />
+      <PageHero tone={hero.tone} icon={<hero.Icon size={24} />} eyebrow={hero.eyebrow} title={hero.title} subtitle={hero.subtitle}>
+        {tab === 'plan' && <PlanSummary cfg={cfg} />}
+      </PageHero>
 
       {tab === 'ask' && (
         <WhatIfTab baseRaw={raw} settings={settings} patch={patch} onApplied={() => setTab('num')} />
@@ -170,7 +184,7 @@ function FireNumberTab({ cfg, settings, patch, liveAge, solvedAge, sliderAge, se
       <AtAgePanel cfg={cfg} answer={answer} paths={paths} onOpen={() => setSheet('gap')} />
 
       {inflationOutrunsEverything(cfg) && (
-        <Card className="border-amber-300 bg-amber-50/60 dark:bg-amber-500/10">
+        <Card className="card-wash-amber">
           <p className="text-sm leading-relaxed">
             <b>Prices are set to rise faster than anything in this plan grows.</b> The cost of living is at{' '}
             {pct(cfg.inflation)} a year, above every asset held here — including what equity managed over the
@@ -310,8 +324,10 @@ function TodayAnchor({ today, cfg, onOpen }) {
       {today.ruinAge != null && <> — the money would run out at <b className="money">{today.ruinAge}</b></>}.
     </>
   }
+  // A strip with a coloured edge, not a card: the edge is the verdict at a glance.
+  const edge = today.have == null ? 'border-ink-300 dark:border-ink-600' : today.ok ? 'border-emerald-500' : 'border-amber-500'
   return (
-    <button onClick={onOpen} className="w-full text-left rounded-xl bg-ink-50 dark:bg-ink-800/60 px-4 py-3 transition hover:bg-ink-100 dark:hover:bg-ink-800">
+    <button onClick={onOpen} className={`w-full text-left rounded-xl border-l-4 ${edge} bg-white dark:bg-ink-900 shadow-card px-4 py-3 transition hover:shadow-soft`}>
       <div className="section-label">If you retired today · {cfg.currentYear}</div>
       <p className="text-sm leading-relaxed mt-1">
         {lead && <b className={tone}>{lead} </b>}{body}
@@ -328,57 +344,65 @@ function AtAgePanel({ cfg, answer, paths, onOpen }) {
 
   let out
   let outSub
-  let tone = ''
+  let tone = 'text-white'
+  let glow = 'bg-brand-500/25'
   if (!live) {
     out = `Lasts to ${cfg.planAge}`
     outSub = 'on a corpus sized to end at exactly zero'
   } else if (ranOut) {
     const m = paths.ruinAge - cfg.retireAge
     out = `Runs out at ${paths.ruinAge}`
-    tone = 'text-amber-600'
+    tone = 'text-amber-300'
+    glow = 'bg-amber-500/25'
     outSub = `${m} year${m === 1 ? '' : 's'} of retirement, then nothing — in the worst of the ${SEQUENCE_COUNT} sequences`
   } else {
     out = `Lasts to ${cfg.planAge}`
-    tone = 'text-emerald-600'
+    tone = 'text-emerald-300'
+    glow = 'bg-emerald-500/25'
     outSub = `even in the worst of the ${SEQUENCE_COUNT} sequences, on what you hold and put away now`
   }
 
+  // The verdict is the one thing this screen exists to say, so it is the one dark surface
+  // on the page: everything else sits light around it.
   return (
-    <button onClick={onOpen} className="card card-interactive w-full text-left block">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="section-label">{n > 0 ? `Retire at ${cfg.retireAge}` : 'Retire today'}</span>
-        <span className="text-[11px] uppercase tracking-wide text-ink-400 whitespace-nowrap">
-          {n > 0 ? `in ${n} year${n === 1 ? '' : 's'} · ${answer.retireYear}` : `age ${cfg.currentAge} · ${answer.retireYear}`}
-        </span>
-      </div>
-      <div className={`text-xl font-extrabold tracking-tight mt-3 ${tone}`}>{out}</div>
-      <p className="text-xs text-ink-400 mt-1">{outSub}</p>
+    <button onClick={onOpen} className="hero-card card-interactive relative overflow-hidden w-full text-left block">
+      <div className={`pointer-events-none absolute -top-20 -right-16 h-56 w-56 rounded-full blur-3xl ${glow}`} />
+      <div className="relative">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="section-label !text-white/50">{n > 0 ? `Retire at ${cfg.retireAge}` : 'Retire today'}</span>
+          <span className="text-[11px] uppercase tracking-wide text-white/50 whitespace-nowrap">
+            {n > 0 ? `in ${n} year${n === 1 ? '' : 's'} · ${answer.retireYear}` : `age ${cfg.currentAge} · ${answer.retireYear}`}
+          </span>
+        </div>
+        <div className={`text-3xl font-extrabold tracking-tight mt-3 ${tone}`}>{out}</div>
+        <p className="text-xs text-white/60 mt-1.5 leading-relaxed">{outSub}</p>
 
-      <div className="mt-4 pt-3 border-t border-ink-100 dark:border-ink-800 space-y-1">
-        <Row label="Corpus needed" value={money(answer.target)} strong />
-        {answer.sip != null && (
-          <Row
-            label={answer.sip <= 1 ? 'SIP needed' : `SIP needed · ${cfg.stepUp > 0 ? `rising ${pct(cfg.stepUp)}/yr` : 'flat for life'}`}
-            value={answer.sip <= 1
-              ? 'nothing more needed'
-              : `${money(answer.sip)} a month${cfg.saveMonthly != null ? ` · now ${money(cfg.saveMonthly)}` : ''}`}
-          />
-        )}
-        <Row label={`Left at ${cfg.planAge}`} value={ranOut ? 'nothing' : money(paths.endWorst)} />
-        {cfg.bequest > 0 && (
-          <Row label="Legacy you set" value={money(paths.legacy)} />
-        )}
+        <div className="mt-5 pt-4 border-t border-white/10 space-y-1.5">
+          <Row label="Corpus needed" value={money(answer.target)} strong dark />
+          {answer.sip != null && (
+            <Row dark
+              label={answer.sip <= 1 ? 'SIP needed' : `SIP needed · ${cfg.stepUp > 0 ? `rising ${pct(cfg.stepUp)}/yr` : 'flat for life'}`}
+              value={answer.sip <= 1
+                ? 'nothing more needed'
+                : `${money(answer.sip)} a month${cfg.saveMonthly != null ? ` · now ${money(cfg.saveMonthly)}` : ''}`}
+            />
+          )}
+          <Row dark label={`Left at ${cfg.planAge}`} value={ranOut ? 'nothing' : money(paths.endWorst)} />
+          {cfg.bequest > 0 && (
+            <Row dark label="Legacy you set" value={money(paths.legacy)} />
+          )}
+        </div>
+        <div className="text-xs font-semibold text-brand-300 mt-4">How this is worked out ›</div>
       </div>
-      <div className="text-xs font-semibold text-brand-600 mt-3">How this is worked out ›</div>
     </button>
   )
 }
 
-function Row({ label, value, strong }) {
+function Row({ label, value, strong, dark }) {
   return (
     <div className="flex items-baseline justify-between gap-4 py-0.5">
-      <span className="text-xs text-ink-400">{label}</span>
-      <span className={`money text-sm text-right ${strong ? 'font-extrabold' : 'font-semibold'}`}>{value}</span>
+      <span className={`text-xs ${dark ? 'text-white/55' : 'text-ink-400'}`}>{label}</span>
+      <span className={`money text-right ${strong ? 'text-base font-extrabold' : 'text-sm font-semibold'} ${dark ? 'text-white' : ''}`}>{value}</span>
     </div>
   )
 }
@@ -576,32 +600,45 @@ function EarliestCard({ cfg, earliest, pending }) {
   let out
   let sub
   let tone = ''
+  let wash = ''
+  let tile = 'ink'
   if (pending && earliest == null) {
     out = 'Solving…'
     sub = 'one full solve per age'
   } else if (earliest == null) {
     out = 'None'
     tone = 'text-amber-600'
+    wash = 'card-wash-amber'
+    tile = 'amber'
     sub = `no age up to ${cfg.planAge - 1} lasts on what you hold and put away now`
   } else if (earliest <= cfg.currentAge) {
     out = 'Today'
     tone = 'text-emerald-600'
+    wash = 'card-wash-emerald'
+    tile = 'emerald'
     sub = `age ${cfg.currentAge} · already past it`
   } else {
     const d = earliest - cfg.retireAge
+    const good = earliest <= cfg.retireAge
     out = `Age ${earliest}`
-    tone = earliest <= cfg.retireAge ? 'text-emerald-600' : 'text-amber-600'
+    tone = good ? 'text-emerald-600' : 'text-amber-600'
+    wash = good ? 'card-wash-emerald' : 'card-wash-amber'
+    tile = good ? 'emerald' : 'amber'
     sub = `${d === 0 ? `the ${cfg.retireAge} set here` : d < 0 ? `${-d} earlier than ${cfg.retireAge}` : `${d} later than ${cfg.retireAge}`}`
       + ` · ${earliest - cfg.currentAge} years from now · ${cfg.currentYear + (earliest - cfg.currentAge)}`
   }
+  // Washed in the verdict's colour so it reads as an answer, not another form.
   return (
-    <Card>
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="section-label">Earliest you can retire</span>
-        <span className="hidden sm:inline text-[11px] uppercase tracking-wide text-ink-400">on your corpus and SIP</span>
+    <Card className={`flex items-start gap-3.5 ${wash}`}>
+      <IconTile tone={tile}><IconTrend size={18} /></IconTile>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="section-label">Earliest you can retire</span>
+          <span className="hidden sm:inline text-[11px] uppercase tracking-wide text-ink-400">on your corpus and SIP</span>
+        </div>
+        <div className={`text-2xl font-extrabold tracking-tight mt-1.5 ${tone}`}>{out}</div>
+        <p className="text-xs text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">{sub}</p>
       </div>
-      <div className={`text-xl font-extrabold tracking-tight mt-3 ${tone}`}>{out}</div>
-      <p className="text-xs text-ink-400 mt-1">{sub}</p>
     </Card>
   )
 }
@@ -611,10 +648,14 @@ function MethodCard({ cfg, answer, onOpen, onLimits }) {
   // says nothing — 2036× at a 0.0% withdrawal. The banner above has already told the reader
   // the figure is not a plan; repeating it as a tidy ratio only lends it credibility.
   const showMultiple = answer.expenseMultiple != null && !inflationOutrunsEverything(cfg)
+  // Footnote, not a feature: dashed edge, no fill, so it sits back from the answers above it.
   return (
-    <Card>
-      <span className="section-label">Where this number comes from</span>
-      <p className="text-sm text-ink-500 mt-2 leading-relaxed">
+    <Card className="card-quiet">
+      <div className="flex items-center gap-3">
+        <IconTile tone="ink" size="sm"><IconShield size={15} /></IconTile>
+        <span className="section-label">Where this number comes from</span>
+      </div>
+      <p className="text-sm text-ink-500 mt-3 leading-relaxed">
         We do not guess an equity return and we do not ask you to. Your retirement is replayed through
         the NIFTY 500 TRI as it actually happened, {EQUITY_HISTORY.startYear}–{EQUITY_END_YEAR}, once per
         starting year, and the answer is the smallest corpus that survives <b>all {SEQUENCE_COUNT}</b> —
@@ -799,7 +840,7 @@ function YourPlanTab({ settings, patch, derived, cfg, profile, onSeeNumber }) {
   return (
     <div className="space-y-4">
       {!mixSet && (
-        <Card className="border-brand-300 bg-brand-50/50 dark:bg-brand-500/10">
+        <Card className="card-wash-brand">
           <p className="text-sm leading-relaxed">
             <b className="text-brand-600">One thing left</b> — your asset allocation. The corpus depends on how
             the money is invested, and it is the one input where a filled-in default would be a recommendation.
@@ -808,9 +849,7 @@ function YourPlanTab({ settings, patch, derived, cfg, profile, onSeeNumber }) {
         </Card>
       )}
 
-      <Card>
-        <PlanEditorFields settings={settings} patch={patch} derived={derived} cfg={cfg} profile={profile} />
-      </Card>
+      <PlanEditorFields settings={settings} patch={patch} derived={derived} cfg={cfg} profile={profile} />
 
       <GoalsEditor goals={goals} currentAge={cfg.currentAge} onChange={(next) => patch({ goals: next })} />
 
@@ -819,6 +858,26 @@ function YourPlanTab({ settings, patch, derived, cfg, profile, onSeeNumber }) {
       {mixSet && (
         <button className="btn-primary w-full" onClick={onSeeNumber}>See the corpus I need →</button>
       )}
+    </div>
+  )
+}
+
+/* The four figures the whole plan turns on, read at a glance under the page title. */
+function PlanSummary({ cfg }) {
+  const items = [
+    ['Spend / month', money(cfg.spendMonthly)],
+    ['Corpus today', cfg.haveNow == null ? '—' : money(cfg.haveNow)],
+    ['SIP / month', cfg.saveMonthly == null ? '—' : money(cfg.saveMonthly)],
+    ['Retire at', `${cfg.retireAge} → ${cfg.planAge}`],
+  ]
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+      {items.map(([label, value]) => (
+        <div key={label} className="rounded-xl border border-brand-100 dark:border-brand-500/20 bg-brand-50/60 dark:bg-brand-500/10 px-3 py-2">
+          <div className="text-[10px] font-bold uppercase tracking-wide text-brand-700/70 dark:text-brand-300/70 truncate">{label}</div>
+          <div className="money text-base font-extrabold mt-0.5 truncate">{value}</div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -858,19 +917,18 @@ function PlanData({ settings, patch }) {
     input.click()
   }
   return (
-    <Card>
-      <div className="section-label mb-2">Your plan data</div>
-      <p className="text-xs text-ink-400 leading-relaxed mb-3">
-        Kept in this browser — no account, no server. Export a copy to keep or move it to another device,
-        or import one you saved.
-      </p>
+    <SectionCard tone="ink" icon={<IconShield size={18} />} title="Your plan data"
+      hint="Kept in this browser — no account, no server" className="card-quiet">
       <div className="flex gap-2 flex-wrap">
         <button className="btn-secondary !py-2 text-xs" onClick={exportPlan}>Export plan</button>
         <button className="btn-secondary !py-2 text-xs" onClick={importPlan}>Import plan</button>
       </div>
-    </Card>
+    </SectionCard>
   )
 }
+
+// One colour per asset — used by the allocation bar and the dot beside each row.
+const MIX_COLORS = { equity: '#377cc8', debt: '#469b88', gold: '#d9a62e', realEstate: '#7c5cd6', other: '#94a3b8' }
 
 /* The editor body, shared shape with the old assumptions sheet — a flat list of fields the
    plan derives and the user can override. Rendered inside the Your-plan tab. */
@@ -878,106 +936,129 @@ function PlanEditorFields({ settings, patch, derived, cfg, profile }) {
   const mix = settings.mix || derived.mix || {}
   const mixTotal = Object.values(mix).reduce((a, b) => a + (+b || 0), 0)
 
+  // One card per subject. The old single sheet of fifteen fields read as one grey wall;
+  // a tile and a colour per group is what lets the eye find "the tax bit" without reading.
   return (
-    <div className="text-sm leading-relaxed text-ink-600 dark:text-ink-300 space-y-3">
-      <Field
-        label="Monthly spending once retired" hint="at today's prices"
-        value={cfg.spendMonthly} overridden={settings.spendMonthly != null}
-        onChange={(v) => patch({ spendMonthly: v })} onFollow={() => patch({ spendMonthly: null })}
-        followHint={`plan: ${money(derived.spendMonthly)}/mo`}
-      />
-      <Field
-        label="Invested corpus today" hint="cash, investments and retirement accounts — not the house"
-        value={cfg.haveNow ?? 0} overridden={settings.haveNow != null}
-        onChange={(v) => patch({ haveNow: v })} onFollow={() => patch({ haveNow: null })}
-        followHint={derived.haveNow == null ? 'no accounts on the plan yet' : `plan: ${money(derived.haveNow)}`}
-      />
-      <Field
-        label="Monthly SIP" hint="everything going in each month"
-        value={cfg.saveMonthly ?? 0} overridden={settings.saveMonthly != null}
-        onChange={(v) => patch({ saveMonthly: v })} onFollow={() => patch({ saveMonthly: null })}
-        followHint={derived.saveMonthly == null ? 'no contributions on the plan yet' : `plan: ${money(derived.saveMonthly)}/mo`}
-      />
-      <Field
-        label="What you leave behind" hint="today's prices, inflated to the last year of the plan"
-        value={settings.bequest} onChange={(v) => patch({ bequest: v })}
-      />
+    <div className="text-sm leading-relaxed text-ink-600 dark:text-ink-300 space-y-4">
+      <SectionCard tone="brand" icon={<IconAccounts size={18} />} title="Money in and out"
+        hint="What you spend, what you hold, what you put away">
+        <div className="space-y-4">
+          <Field
+            label="Monthly spending once retired" hint="at today's prices"
+            value={cfg.spendMonthly} overridden={settings.spendMonthly != null}
+            onChange={(v) => patch({ spendMonthly: v })} onFollow={() => patch({ spendMonthly: null })}
+            followHint={`plan: ${money(derived.spendMonthly)}/mo`}
+          />
+          <Field
+            label="Invested corpus today" hint="cash, investments and retirement accounts — not the house"
+            value={cfg.haveNow ?? 0} overridden={settings.haveNow != null}
+            onChange={(v) => patch({ haveNow: v })} onFollow={() => patch({ haveNow: null })}
+            followHint={derived.haveNow == null ? 'no accounts on the plan yet' : `plan: ${money(derived.haveNow)}`}
+          />
+          <Field
+            label="Monthly SIP" hint="everything going in each month"
+            value={cfg.saveMonthly ?? 0} overridden={settings.saveMonthly != null}
+            onChange={(v) => patch({ saveMonthly: v })} onFollow={() => patch({ saveMonthly: null })}
+            followHint={derived.saveMonthly == null ? 'no contributions on the plan yet' : `plan: ${money(derived.saveMonthly)}/mo`}
+          />
+          <Field
+            label="What you leave behind" hint="today's prices, inflated to the last year of the plan"
+            value={settings.bequest} onChange={(v) => patch({ bequest: v })}
+          />
+        </div>
+      </SectionCard>
 
-      <Pair
-        label="Retirement age" value={cfg.retireAge} min={cfg.currentAge} max={cfg.planAge - 1}
-        overridden={settings.retireAge != null}
-        onChange={(v) => patch({ retireAge: v })} onFollow={() => patch({ retireAge: null })}
-        followHint={`plan: ${profile.retirementAge}`}
-      />
-      <Pair
-        label="Plan until age" value={cfg.planAge} min={cfg.retireAge + 1} max={120}
-        overridden={settings.planAge != null}
-        onChange={(v) => patch({ planAge: v })} onFollow={() => patch({ planAge: null })}
-        followHint={`plan: ${profile.lifeExpectancy}`}
-      />
-      <Pair label="Inflation %/yr" value={+(cfg.inflation * 100).toFixed(1)} step={0.5} min={0} max={40}
-        overridden={settings.inflation != null}
-        onChange={(v) => patch({ inflation: v / 100 })} onFollow={() => patch({ inflation: null })}
-        followHint={`plan: ${pct(profile.inflation)}`}
-      />
-      <Pair label="SIP step-up %/yr" value={+(settings.stepUp * 100).toFixed(1)} step={1} min={0} max={40}
-        onChange={(v) => patch({ stepUp: v / 100 })}
-        hint="Nobody saves the same rupee amount at 30 and at 50. Zero means flat for life."
-      />
+      <SectionCard tone="emerald" icon={<IconTrend size={18} />} title="Timeline"
+        hint="When you stop, how long the plan runs, how prices move">
+        <div className="divide-y divide-ink-100 dark:divide-ink-800">
+          <Pair
+            label="Retirement age" value={cfg.retireAge} min={cfg.currentAge} max={cfg.planAge - 1}
+            overridden={settings.retireAge != null}
+            onChange={(v) => patch({ retireAge: v })} onFollow={() => patch({ retireAge: null })}
+            followHint={`plan: ${profile.retirementAge}`}
+          />
+          <Pair
+            label="Plan until age" value={cfg.planAge} min={cfg.retireAge + 1} max={120}
+            overridden={settings.planAge != null}
+            onChange={(v) => patch({ planAge: v })} onFollow={() => patch({ planAge: null })}
+            followHint={`plan: ${profile.lifeExpectancy}`}
+          />
+          <Pair label="Inflation %/yr" value={+(cfg.inflation * 100).toFixed(1)} step={0.5} min={0} max={40}
+            overridden={settings.inflation != null}
+            onChange={(v) => patch({ inflation: v / 100 })} onFollow={() => patch({ inflation: null })}
+            followHint={`plan: ${pct(profile.inflation)}`}
+          />
+          <Pair label="SIP step-up %/yr" value={+(settings.stepUp * 100).toFixed(1)} step={1} min={0} max={40}
+            onChange={(v) => patch({ stepUp: v / 100 })}
+            hint="Nobody saves the same rupee amount at 30 and at 50. Zero means flat for life."
+          />
+        </div>
+      </SectionCard>
 
-      <div className="pt-2">
-        <div className="section-label mb-2">Asset allocation</div>
-        {Object.entries(ENOUGH_ASSETS).map(([k, label]) => (
-          <div key={k} className="flex items-center gap-3 py-1">
-            <span className="flex-1 text-sm">{label}</span>
-            <input type="number" className="fcell w-20" value={mix[k] ?? 0} aria-label={label}
-              onChange={(e) => patch({ mix: { ...mix, [k]: Math.max(0, +e.target.value || 0) } })} />
-            <span className="text-xs text-ink-400 w-4">%</span>
-          </div>
-        ))}
-        <p className={`text-xs mt-1 font-semibold ${mixTotal === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
+      <SectionCard tone="violet" icon={<IconDashboard size={18} />} title="Asset allocation"
+        hint="How the money is held after you retire"
+        action={settings.mix != null && derived.mix && (
+          <button className="text-[11px] font-semibold text-brand-600" onClick={() => patch({ mix: null })}>Follow my accounts</button>
+        )}>
+        <div className="flex h-3 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800 mb-4">
+          {Object.keys(ENOUGH_ASSETS).map((k) => {
+            const w = mixTotal > 0 ? ((+mix[k] || 0) / mixTotal) * 100 : 0
+            return w > 0 ? <div key={k} className="h-full transition-[width] duration-300" style={{ width: `${w}%`, background: MIX_COLORS[k] }} /> : null
+          })}
+        </div>
+        <div className="divide-y divide-ink-100 dark:divide-ink-800">
+          {Object.entries(ENOUGH_ASSETS).map(([k, label]) => (
+            <div key={k} className="flex items-center gap-3 py-2">
+              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: MIX_COLORS[k] }} />
+              <span className="flex-1 text-sm font-medium">{label}</span>
+              <input type="number" className="fcell w-20" value={mix[k] ?? 0} aria-label={label}
+                onChange={(e) => patch({ mix: { ...mix, [k]: Math.max(0, +e.target.value || 0) } })} />
+              <span className="text-xs text-ink-400 w-4">%</span>
+            </div>
+          ))}
+        </div>
+        <p className={`text-xs mt-3 font-semibold ${mixTotal === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>
           {mixTotal === 100 ? 'Adds up to 100%.' : `Adds up to ${mixTotal}% — scaled to 100% for the arithmetic.`}
         </p>
-        {settings.mix != null && derived.mix && (
-          <button className="btn-ghost !py-1.5 text-xs mt-1" onClick={() => patch({ mix: null })}>
-            Follow my accounts instead
-          </button>
-        )}
-      </div>
+      </SectionCard>
 
-      <div className="pt-2">
+      <SectionCard tone="amber" icon={<IconTax size={18} />} title="Returns and tax"
+        hint="What the rest earns, and what selling costs">
         <div className="section-label mb-1">What you expect the rest to earn</div>
-        <p className="text-xs text-ink-400 mb-2">
+        <p className="text-xs text-ink-400 mb-2 leading-relaxed">
           Equity is not in this list. We do not assume a rate for it — {SEQUENCE_COUNT} years of real
           history are used instead. These four grow at a fixed rate every year and never have a bad one,
           so the answer looks better than it should.
         </p>
-        {Object.entries(ENOUGH_ASSETS).filter(([k]) => k !== 'equity').map(([k, label]) => (
-          <div key={k} className="flex items-center gap-3 py-1">
-            <span className="flex-1 text-sm">{label}</span>
-            <input type="number" step="0.5" className="fcell w-20" value={+(cfg.returns[k] * 100).toFixed(2)} aria-label={`${label} return`}
-              onChange={(e) => patch({ returns: { ...settings.returns, [k]: (+e.target.value || 0) / 100 } })} />
-            <span className="text-xs text-ink-400 w-8">%/yr</span>
-          </div>
-        ))}
-      </div>
+        <div className="divide-y divide-ink-100 dark:divide-ink-800">
+          {Object.entries(ENOUGH_ASSETS).filter(([k]) => k !== 'equity').map(([k, label]) => (
+            <div key={k} className="flex items-center gap-3 py-2">
+              <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: MIX_COLORS[k] }} />
+              <span className="flex-1 text-sm font-medium">{label}</span>
+              <input type="number" step="0.5" className="fcell w-20" value={+(cfg.returns[k] * 100).toFixed(2)} aria-label={`${label} return`}
+                onChange={(e) => patch({ returns: { ...settings.returns, [k]: (+e.target.value || 0) / 100 } })} />
+              <span className="text-xs text-ink-400 w-8">%/yr</span>
+            </div>
+          ))}
+        </div>
 
-      <div className="pt-2">
-        <div className="section-label mb-1">What tax takes when you sell</div>
-        <p className="text-xs text-ink-400 mb-2">
+        <div className="section-label mt-5 mb-1">What tax takes when you sell</div>
+        <p className="text-xs text-ink-400 mb-2 leading-relaxed">
           Spending in retirement means selling, and a long-term gain is taxed. We do not know what you
           paid for anything, so: a share of each sale is gain, taxed at the rate you set. At these
           settings, to spend ₹100 you sell about ₹{(100 * cfg.grossUp).toFixed(0)}. Set the rate to zero
           for a pre-tax figure.
         </p>
-        <Pair label="LTCG rate %" value={+(cfg.taxRate * 100).toFixed(1)} step={0.5} min={0} max={60}
-          onChange={(v) => patch({ taxRate: v / 100 })} />
-        <Pair label="Gain as a share of what you sell %" value={+(cfg.taxGainShare * 100).toFixed(0)} step={5} min={0} max={100}
-          onChange={(v) => patch({ taxGainShare: v / 100 })} />
-      </div>
+        <div className="divide-y divide-ink-100 dark:divide-ink-800">
+          <Pair label="LTCG rate %" value={+(cfg.taxRate * 100).toFixed(1)} step={0.5} min={0} max={60}
+            onChange={(v) => patch({ taxRate: v / 100 })} />
+          <Pair label="Gain as a share of what you sell %" value={+(cfg.taxGainShare * 100).toFixed(0)} step={5} min={0} max={100}
+            onChange={(v) => patch({ taxGainShare: v / 100 })} />
+        </div>
+      </SectionCard>
 
-      <div className="pt-2">
-        <div className="section-label mb-2">Withdrawal strategy</div>
+      <SectionCard tone="ink" icon={<IconFlow size={18} />} title="Withdrawal strategy"
+        hint="Which asset a withdrawal comes out of">
         <div className="inline-flex rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-xs font-semibold w-full">
           {[['rebalance', 'Rebalance'], ['waterfall', 'Safest first']].map(([v, label]) => (
             <button key={v} onClick={() => patch({ drawdown: v })}
@@ -986,17 +1067,12 @@ function PlanEditorFields({ settings, patch, derived, cfg, profile }) {
             </button>
           ))}
         </div>
-        <p className="text-xs text-ink-400 mt-2 leading-relaxed">
+        <p className="text-xs text-ink-400 mt-3 leading-relaxed">
           {cfg.drawdown === 'waterfall'
             ? <>Spending drains the assets in a fixed order — {WATERFALL_ORDER.map((k) => ENOUGH_ASSETS[k]).join(' → ')} — and equity is sold only when everything before it is gone. Nothing is rebalanced, so the mix drifts toward equity as the years pass. That drift is the strategy, not a side effect: you stop selling equity into bad years, which is what sequence risk actually is.</>
             : <>Spending is funded by selling whatever sits <b>above</b> its target weight. After a fall, equity is below target and debt is sold instead — so spending pulls the mix back toward your split with no trade of its own. Money going in does the mirror image.</>}
         </p>
-      </div>
-
-      <p className="text-xs text-ink-400 pt-2">
-        Goals are set below, under <b>Goals &amp; big expenses</b>. A goal you leave on is withdrawn in the
-        year it falls due, grossed up for tax, whether that year is before or after you retire.
-      </p>
+      </SectionCard>
     </div>
   )
 }
@@ -1005,14 +1081,20 @@ function Field({ label, hint, value, overridden, onChange, onFollow, followHint 
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-semibold">{label}</span>
-        {overridden && onFollow && (
-          <button className="text-[11px] font-semibold text-brand-600" onClick={onFollow}>Follow plan ({followHint})</button>
-        )}
+        <span className="text-sm font-semibold text-ink-900 dark:text-white">{label}</span>
+        {/* The compact reading beside the label — "₹39.5 L" — is what a person actually
+            checks; the raw digits in the box are what they type. */}
+        <span className="money text-xs font-bold text-ink-500 whitespace-nowrap">{money(value)}</span>
       </div>
       {hint && <p className="text-[11px] text-ink-400">{hint}</p>}
-      <input type="number" className="input mt-1" value={Math.round(value)} aria-label={label}
-        onChange={(e) => onChange(Math.max(0, +e.target.value || 0))} />
+      <div className="relative mt-1.5">
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-ink-400">₹</span>
+        <input type="number" className="input money !pl-8 font-bold" value={Math.round(value)} aria-label={label}
+          onChange={(e) => onChange(Math.max(0, +e.target.value || 0))} />
+      </div>
+      {overridden && onFollow && (
+        <button className="text-[11px] font-semibold text-brand-600 mt-1" onClick={onFollow}>Follow plan ({followHint})</button>
+      )}
       {!overridden && followHint && <p className="text-[11px] text-ink-400 mt-1">Following your plan — {followHint}</p>}
     </div>
   )
@@ -1020,9 +1102,9 @@ function Field({ label, hint, value, overridden, onChange, onFollow, followHint 
 
 function Pair({ label, hint, value, step = 1, min, max, overridden, onChange, onFollow, followHint }) {
   return (
-    <div className="flex items-center gap-3 py-1">
+    <div className="flex items-center gap-3 py-2.5">
       <div className="flex-1 min-w-0">
-        <span className="text-sm">{label}</span>
+        <span className="text-sm font-medium text-ink-900 dark:text-white">{label}</span>
         {hint && <p className="text-[11px] text-ink-400">{hint}</p>}
         {overridden && onFollow && (
           <button className="text-[11px] font-semibold text-brand-600" onClick={onFollow}>Follow plan ({followHint})</button>

@@ -11,7 +11,8 @@
 
 import { useState } from 'react'
 import { fmtMoney } from '@projectlab/engine'
-import { Card, Modal } from '../ui.jsx'
+import { Modal, SectionCard } from '../ui.jsx'
+import { IconMilestone } from '../Icons.jsx'
 
 const money = (v) => fmtMoney(v, { compact: true })
 const DOT = ['#0F8F82', '#5647B8', '#2A63C4', '#8A6410', '#B05A12']
@@ -69,9 +70,8 @@ export default function GoalsEditor({ goals, currentAge, onChange }) {
   }
 
   return (
-    <Card>
-      <div className="section-label mb-2">Goals &amp; big expenses</div>
-
+    <SectionCard tone="rose" icon={<IconMilestone size={18} />} title="Goals & big expenses"
+      hint="Each one is withdrawn from the corpus the year it falls due">
       {goals.length === 0 ? (
         <p className="text-sm text-ink-400 leading-relaxed py-2">
           No goals yet. A house down payment, a child’s education, a wedding, a long trip — anything with a
@@ -174,7 +174,7 @@ export default function GoalsEditor({ goals, currentAge, onChange }) {
           </div>
         </Modal>
       )}
-    </Card>
+    </SectionCard>
   )
 }
 

@@ -72,6 +72,58 @@ export function HeroCard({ className = '', children, ...rest }) {
   )
 }
 
+// One accent per page and per section — the tile colour is what tells them apart at a
+// glance before a single word is read. Keep the set small so each colour keeps a meaning.
+export const TONES = {
+  brand: { tile: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300', text: 'text-brand-600 dark:text-brand-300' },
+  emerald: { tile: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300', text: 'text-emerald-600 dark:text-emerald-300' },
+  violet: { tile: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300', text: 'text-violet-600 dark:text-violet-300' },
+  amber: { tile: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300', text: 'text-amber-600 dark:text-amber-300' },
+  rose: { tile: 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300', text: 'text-rose-600 dark:text-rose-300' },
+  ink: { tile: 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300', text: 'text-ink-500 dark:text-ink-400' },
+}
+
+export function IconTile({ tone = 'brand', size = 'md', className = '', children }) {
+  const dim = size === 'lg' ? 'h-12 w-12 rounded-2xl' : size === 'sm' ? 'h-8 w-8 rounded-lg' : 'h-10 w-10 rounded-xl'
+  return <div className={`grid place-items-center shrink-0 ${dim} ${TONES[tone].tile} ${className}`}>{children}</div>
+}
+
+// Page header with an identity: a toned icon tile, an eyebrow in the same tone, the title,
+// and an optional slot under it for a summary strip or filters.
+export function PageHero({ tone = 'brand', icon, eyebrow, title, subtitle, children }) {
+  return (
+    <div className="mb-5 animate-fade-in-up">
+      <div className="flex items-start gap-3.5">
+        {icon && <IconTile tone={tone} size="lg">{icon}</IconTile>}
+        <div className="min-w-0 flex-1">
+          {eyebrow && <div className={`text-[11px] font-bold uppercase tracking-[0.12em] ${TONES[tone].text}`}>{eyebrow}</div>}
+          <h2 className="text-[22px] leading-tight font-extrabold tracking-tight mt-0.5">{title}</h2>
+          {subtitle && <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">{subtitle}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+// A card that opens with an icon tile + title row, so a screen of several forms reads as
+// several subjects rather than one long sheet.
+export function SectionCard({ tone = 'brand', icon, title, hint, action, className = '', children }) {
+  return (
+    <Card className={className}>
+      <div className="flex items-center gap-3 mb-4">
+        {icon && <IconTile tone={tone}>{icon}</IconTile>}
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold leading-tight">{title}</div>
+          {hint && <div className="text-[11px] text-ink-400 font-medium mt-0.5 leading-snug">{hint}</div>}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+      {children}
+    </Card>
+  )
+}
+
 export function SectionTitle({ title, subtitle, action }) {
   // Stacks below sm: on a 360px phone — the most common Android width — a single
   // row let the action keep its intrinsic width and crushed the title to ~55px,

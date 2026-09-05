@@ -159,6 +159,37 @@ input[type='number'] {
     @apply border-ink-800;
     background: linear-gradient(160deg, #262629 0%, #232326 100%);
   }
+  /* Card variants. `.card` paints its surface with a `background` shorthand, so a bg-*
+     utility on top only changes the colour under the gradient and shows nothing — these
+     restate the whole background instead. */
+  .card-quiet {
+    @apply border-dashed shadow-none;
+    background: transparent;
+  }
+  .card-wash-emerald {
+    @apply border-emerald-200;
+    background: linear-gradient(160deg, #f1faf7 0%, #e4f3ee 100%);
+  }
+  .dark .card-wash-emerald {
+    @apply border-emerald-500/30;
+    background: linear-gradient(160deg, rgba(70, 155, 136, 0.18), rgba(70, 155, 136, 0.08));
+  }
+  .card-wash-amber {
+    @apply border-amber-200;
+    background: linear-gradient(160deg, #fffaf0 0%, #fcf1dc 100%);
+  }
+  .dark .card-wash-amber {
+    @apply border-amber-500/30;
+    background: linear-gradient(160deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.08));
+  }
+  .card-wash-brand {
+    @apply border-brand-200;
+    background: linear-gradient(160deg, #f3f8fd 0%, #e6f0fa 100%);
+  }
+  .dark .card-wash-brand {
+    @apply border-brand-500/30;
+    background: linear-gradient(160deg, rgba(55, 124, 200, 0.18), rgba(55, 124, 200, 0.08));
+  }
   /* Opt-in hover lift for clickable cards */
   .card-interactive {
     @apply cursor-pointer hover:shadow-lift hover:-translate-y-0.5
