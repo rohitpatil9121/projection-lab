@@ -19,17 +19,35 @@ html {
 
 body {
   @apply text-ink-900 antialiased;
-  /* A tinted canvas, not a flat near-white one: white cards need something to sit ON.
-     Cool light-pool up top fading to slate, plus a faint brand wash in the bottom
-     corner. Fixed so the gradient belongs to the screen, not to the scrolling content. */
+  /* The canvas is a cool, faintly tinted silver — not white, so white cards float on it —
+     with two soft ambient orbs (brand up top, teal low right) that give the page a light
+     source. Fixed, so it belongs to the screen rather than the scrolling content. */
   background:
-    radial-gradient(120% 60% at 50% -10%, #fbfdff 0%, transparent 60%),
-    radial-gradient(90% 55% at 105% 102%, rgba(55, 124, 200, 0.10) 0%, transparent 60%),
-    linear-gradient(180deg, #f2f7fc 0%, #dde5f1 100%);
+    radial-gradient(70% 45% at 18% -8%, rgba(55, 124, 200, 0.16) 0%, transparent 60%),
+    radial-gradient(60% 40% at 108% 92%, rgba(70, 155, 136, 0.13) 0%, transparent 60%),
+    linear-gradient(180deg, #f5f7fb 0%, #edf1f7 100%);
   background-attachment: fixed;
   /* Never allow sideways scroll; `clip` keeps position:sticky working (hidden fallback first). */
   overflow-x: hidden;
   overflow-x: clip;
+}
+
+/* A whisper of grain over the whole canvas so the flat gradient reads as a surface.
+   Fixed and inert: one layer, never repainted by scrolling. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+.dark body::after {
+  opacity: 0.05;
+  mix-blend-mode: screen;
 }
 
 /* Kill Android WebView "font boosting": it randomly inflates paragraph text at
@@ -46,10 +64,19 @@ body {
 .dark body {
   @apply text-ink-100;
   background:
-    radial-gradient(120% 60% at 50% -10%, #26262c 0%, transparent 60%),
-    radial-gradient(90% 55% at 105% 102%, rgba(55, 124, 200, 0.08) 0%, transparent 60%),
-    linear-gradient(180deg, #1d1d20 0%, #181818 100%);
+    radial-gradient(70% 45% at 18% -8%, rgba(55, 124, 200, 0.14) 0%, transparent 60%),
+    radial-gradient(60% 40% at 108% 92%, rgba(70, 155, 136, 0.08) 0%, transparent 60%),
+    linear-gradient(180deg, #1a1b1f 0%, #141518 100%);
   background-attachment: fixed;
+}
+
+/* Display type: tight, heavy, no orphans. */
+h1, h2, h3 {
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+}
+p {
+  text-wrap: pretty;
 }
 
 /* ---- Smoothness layer ---- */
@@ -65,9 +92,9 @@ body, .overflow-x-auto, .overflow-y-auto, .overflow-auto {
 @media (prefers-reduced-motion: no-preference) {
   /* Fade colours when the theme flips instead of snapping. */
   body { transition: background-color 0.3s ease, color 0.3s ease; }
-  .card { transition: box-shadow 0.3s ease, transform 0.25s ease, background-color 0.3s ease, border-color 0.3s ease; }
-  .hero-card, .input, header, aside, .nav-link {
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+  .card { transition: box-shadow 0.5s cubic-bezier(0.32, 0.72, 0, 1), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background-color 0.3s ease, border-color 0.3s ease; }
+  .hero-card, .input, header, .nav-link, .dock-link {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.25s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
   }
   /* Tactile press feedback on tappable cards. */
   .card-interactive:active { transform: scale(0.985); }
@@ -93,7 +120,7 @@ body, .overflow-x-auto, .overflow-y-auto, .overflow-auto {
 .dark ::-webkit-scrollbar-thumb { @apply bg-ink-700; }
 .dark ::-webkit-scrollbar-thumb:hover { @apply bg-ink-600; }
 
-/* Range sliders (Plan page) — brand-ringed thumb on a flat track. */
+/* Range sliders — brand-ringed thumb on a flat track. */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
@@ -113,24 +140,24 @@ input[type='range'] {
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border-style: solid;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 4px 10px -2px rgba(30, 41, 59, 0.28);
   @apply border-[3px] border-brand-600 bg-white;
 }
 .dark input[type='range']::-webkit-slider-thumb {
   @apply bg-ink-900;
 }
 input[type='range']::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   border-style: solid;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 4px 10px -2px rgba(30, 41, 59, 0.28);
   @apply border-[3px] border-brand-600 bg-white;
 }
 .dark input[type='range']::-moz-range-thumb {
@@ -149,123 +176,192 @@ input[type='number'] {
 }
 
 @layer components {
-  /* Entrance is not baked in here: PageCascade staggers `.card`/`.hero-card` on
-     route change, and a per-card CSS animation would fire all of them at once. */
+  /* ── Surfaces ─────────────────────────────────────────────────────────────────────
+     A card is a white plate sitting in a pale tray: the `bezel` shadow draws the
+     hairline, the tray ring and the tray's own hairline as concentric curves, then a
+     long soft shadow tinted with the canvas hue. Entrance is not baked in here:
+     PageCascade staggers `.card`/`.hero-card` on route change. */
   .card {
-    @apply rounded-2xl shadow-card border border-ink-200 p-5 transition-shadow duration-300;
-    background: linear-gradient(160deg, #ffffff 0%, #f6fafd 100%);
+    @apply relative rounded-4xl p-5 shadow-bezel;
+    background: linear-gradient(170deg, #ffffff 0%, #f9fbfe 100%);
   }
   .dark .card {
-    @apply border-ink-800;
-    background: linear-gradient(160deg, #262629 0%, #232326 100%);
+    @apply shadow-bezel-dark;
+    background: linear-gradient(170deg, #26272b 0%, #202124 100%);
+  }
+  /* Small tiles and list rows inside a page: one hairline, no tray. */
+  .card-flat {
+    @apply shadow-card;
+    box-shadow: 0 0 0 1px rgba(30, 41, 59, 0.06), 0 8px 24px -18px rgba(30, 41, 59, 0.2);
+  }
+  .dark .card-flat {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 8px 24px -18px rgba(0, 0, 0, 0.5);
+  }
+  /* Footnote: dashed hairline, no fill, no tray — sits back from the answers. */
+  .card-quiet {
+    background: transparent;
+    box-shadow: none;
+    @apply border border-dashed border-ink-300/70;
+  }
+  .dark .card-quiet {
+    @apply border-ink-700;
+  }
+  /* Washes restate the whole background so the tint is not hidden under the card's
+     own gradient. Rings stay so the wash sits in the same tray as its neighbours. */
+  .card-wash-emerald {
+    background: linear-gradient(170deg, #f0faf6 0%, #e3f3ec 100%);
+  }
+  .dark .card-wash-emerald {
+    background: linear-gradient(170deg, rgba(70, 155, 136, 0.2), rgba(70, 155, 136, 0.08));
+  }
+  .card-wash-amber {
+    background: linear-gradient(170deg, #fffaf0 0%, #fbf0d9 100%);
+  }
+  .dark .card-wash-amber {
+    background: linear-gradient(170deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.08));
+  }
+  .card-wash-brand {
+    background: linear-gradient(170deg, #f2f7fd 0%, #e4eefa 100%);
+  }
+  .dark .card-wash-brand {
+    background: linear-gradient(170deg, rgba(55, 124, 200, 0.2), rgba(55, 124, 200, 0.08));
   }
   /* Opt-in hover lift for clickable cards */
   .card-interactive {
-    @apply cursor-pointer hover:shadow-lift hover:-translate-y-0.5
-           transition-[transform,box-shadow] duration-300 ease-out-expo;
+    @apply cursor-pointer hover:-translate-y-0.5;
+  }
+  .card-interactive:hover {
+    box-shadow: 0 0 0 1px rgba(30, 41, 59, 0.08), 0 0 0 6px rgba(255, 255, 255, 0.7), 0 0 0 7px rgba(30, 41, 59, 0.07), 0 26px 50px -24px rgba(30, 41, 59, 0.38);
+  }
+  .dark .card-interactive:hover {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 0 6px rgba(255, 255, 255, 0.03), 0 0 0 7px rgba(255, 255, 255, 0.07), 0 30px 56px -24px rgba(0, 0, 0, 0.7);
   }
 
+  /* The one deep surface a page is allowed: navy with a brand mesh glow in the corner.
+     Same tray as the light cards so it reads as the same material, lit differently. */
+  .hero-card {
+    @apply relative rounded-4xl p-5 text-white shadow-bezel;
+    background:
+      radial-gradient(90% 80% at 100% 0%, rgba(63, 131, 205, 0.38) 0%, transparent 55%),
+      radial-gradient(60% 60% at 0% 100%, rgba(70, 155, 136, 0.18) 0%, transparent 60%),
+      linear-gradient(160deg, #1c2d4a 0%, #101a2c 100%);
+  }
+  .dark .hero-card {
+    @apply shadow-bezel-dark;
+  }
+  /* Dark chart panel — the journey/projection surface sits dark in both themes. */
+  .panel-dark {
+    @apply rounded-3xl border border-white/[0.06] p-3.5 pb-2.5 text-white;
+    background: linear-gradient(150deg, #1c2d4a, #101a2c);
+    box-shadow: 0 18px 40px -20px rgba(15, 23, 42, 0.5);
+  }
+
+  /* ── Navigation ───────────────────────────────────────────────────────────────────
+     Glass: only ever on the fixed/sticky chrome, never on scrolling content. */
+  .glass {
+    @apply border border-white/60 bg-white/70 supports-[backdrop-filter]:bg-white/55 supports-[backdrop-filter]:backdrop-blur-xl;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 12px 32px -18px rgba(30, 41, 59, 0.28);
+  }
+  .dark .glass {
+    @apply border-white/10 bg-ink-900/70 supports-[backdrop-filter]:bg-ink-900/55;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 12px 32px -18px rgba(0, 0, 0, 0.7);
+  }
+  /* Desktop island: text pills inside the glass bar. */
   .nav-link {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-ink-500
-           transition-colors duration-200;
+    @apply relative inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-ink-500
+           transition-[color,background-color,transform] duration-300 ease-silk;
   }
   .nav-link:hover {
-    @apply bg-ink-100 text-ink-900;
+    @apply text-ink-900;
   }
   .dark .nav-link:hover {
-    @apply bg-ink-800 text-white;
+    @apply text-white;
   }
   .nav-link.active {
-    @apply bg-brand-600 text-white shadow-soft;
+    @apply bg-ink-900 text-white;
   }
   .dark .nav-link.active {
-    @apply bg-brand-600 text-white;
+    @apply bg-white text-ink-900;
+  }
+  /* Mobile dock: icon over label, the active one lifted into a filled pill. */
+  .dock-link {
+    @apply relative flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 text-[10px] font-semibold text-ink-400
+           transition-[color,background-color,transform] duration-300 ease-silk;
+  }
+  .dock-link.active {
+    @apply text-brand-700 bg-brand-500/10;
+  }
+  .dark .dock-link.active {
+    @apply text-brand-200 bg-brand-400/15;
   }
 
+  /* ── Buttons ──────────────────────────────────────────────────────────────────────
+     Pills. Press compresses, hover lifts; the curve is the shared `silk`. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 min-h-[44px]
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 min-h-[46px]
            text-sm font-semibold select-none
-           transition-[background-color,box-shadow,transform] duration-150 ease-out
-           active:scale-[0.97]
+           transition-[background-color,box-shadow,transform,color] duration-300 ease-silk
+           hover:-translate-y-px active:translate-y-0 active:scale-[0.98]
            disabled:opacity-50 disabled:pointer-events-none;
   }
   .btn-primary {
-    @apply btn bg-brand-600 text-white shadow-soft hover:bg-brand-700 hover:shadow-glow;
+    @apply btn bg-brand-600 text-white shadow-glow hover:bg-brand-500;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset, 0 10px 26px -10px rgba(55, 124, 200, 0.55);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 14px 30px -10px rgba(55, 124, 200, 0.65);
   }
   .btn-secondary {
-    @apply btn border border-ink-200 bg-white text-ink-700 hover:bg-ink-50 hover:border-ink-300;
+    @apply btn bg-white text-ink-800 hover:bg-ink-50;
+    box-shadow: 0 0 0 1px rgba(30, 41, 59, 0.1), 0 6px 18px -12px rgba(30, 41, 59, 0.25);
   }
   .dark .btn-secondary {
-    @apply border-ink-700 bg-ink-900 text-ink-200 hover:bg-ink-800 hover:border-ink-600;
+    @apply bg-ink-800 text-ink-100 hover:bg-ink-700;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
   .btn-ghost {
-    @apply btn text-ink-600 hover:bg-ink-100;
+    @apply btn text-ink-600 hover:bg-ink-900/[0.05];
   }
   .dark .btn-ghost {
-    @apply text-ink-300 hover:bg-ink-800;
+    @apply text-ink-300 hover:bg-white/[0.06];
+  }
+  /* The trailing icon lives in its own small disc, flush with the pill's right edge. */
+  .btn-icon {
+    @apply grid place-items-center h-7 w-7 -mr-2 rounded-full bg-white/15 text-current
+           transition-transform duration-300 ease-silk;
+  }
+  .btn:hover .btn-icon {
+    transform: translate(2px, -1px) scale(1.05);
+  }
+  .btn-secondary .btn-icon,
+  .btn-ghost .btn-icon {
+    @apply bg-ink-900/[0.06];
+  }
+  .dark .btn-secondary .btn-icon,
+  .dark .btn-ghost .btn-icon {
+    @apply bg-white/10;
+  }
+
+  /* Segmented control: a recessed rail with a raised active tab. */
+  .seg {
+    @apply inline-flex rounded-full bg-ink-900/[0.05] p-1 text-xs font-semibold;
+  }
+  .dark .seg {
+    @apply bg-white/[0.06];
+  }
+  .seg-btn {
+    @apply flex-1 whitespace-nowrap rounded-full px-3.5 py-2 text-ink-500 transition-[background-color,color,box-shadow] duration-300 ease-silk;
+  }
+  .seg-btn.active {
+    @apply bg-white text-ink-900;
+    box-shadow: 0 1px 2px rgba(30, 41, 59, 0.08), 0 4px 12px -6px rgba(30, 41, 59, 0.2);
+  }
+  .dark .seg-btn.active {
+    @apply bg-ink-700 text-white;
   }
 
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold;
-  }
-
-  /* Visily "Institutional Minimalism" primitives */
-  .section-label {
-    @apply text-[11px] font-bold uppercase tracking-[0.12em] text-ink-400;
-  }
-  /* Money numerals are Plus Jakarta Sans with tabular figures — not mono.
-     Tabular-nums is what keeps columns aligned; the mono face is not needed. */
-  .money {
-    @apply font-sans tracking-tight tabular-nums;
-  }
-
-  /* Dark chart panel — the journey/projection surface sits dark in both themes. */
-  .panel-dark {
-    @apply rounded-2xl border border-white/[0.06] p-3.5 pb-2.5 text-white;
-    background: linear-gradient(150deg, #232326, #161618);
-    box-shadow: 0 18px 40px -20px rgba(15, 23, 42, 0.5);
-  }
-
-  /* Focus-within input cell used by the Settings rate grid. */
-  .rcell {
-    @apply flex items-baseline gap-1 rounded-xl border border-ink-100 bg-ink-50 px-3 py-0.5
-           transition-[border-color,box-shadow] duration-150;
-  }
-  .dark .rcell {
-    @apply border-ink-800 bg-ink-950/40;
-  }
-  .rcell:focus-within {
-    @apply border-brand-600 bg-white ring-4 ring-brand-600/15;
-  }
-  .dark .rcell:focus-within {
-    @apply bg-ink-900;
-  }
-  /* Small boxed numeric cell (from/to age, growth %) inside flow rows. */
-  .fcell {
-    @apply w-full rounded-[10px] border border-ink-100 bg-white px-2 py-2 text-center text-sm
-           font-bold tabular-nums text-ink-900 outline-none transition-[border-color,box-shadow];
-  }
-  .dark .fcell {
-    @apply border-ink-800 bg-ink-900 text-white;
-  }
-  .fcell:focus {
-    @apply border-brand-600 ring-4 ring-brand-600/15;
-  }
-
-  .rcell input,
-  .rcell select {
-    @apply w-full min-w-0 flex-1 border-none bg-transparent p-0 py-2.5 text-[17px] font-extrabold
-           tabular-nums text-ink-900 outline-none;
-  }
-  .dark .rcell input,
-  .dark .rcell select {
-    @apply text-white;
-  }
-  .hero-card {
-    @apply rounded-2xl bg-gradient-to-br from-ink-900 to-ink-950 text-white p-5 shadow-lift;
-  }
-  .dark .hero-card {
-    @apply from-ink-800 to-ink-950 ring-1 ring-ink-700/60;
   }
   .xp-chip {
     @apply chip bg-brand-50 text-brand-700;
@@ -274,15 +370,67 @@ input[type='number'] {
     @apply bg-brand-500/15 text-brand-300;
   }
 
+  /* ── Type ─────────────────────────────────────────────────────────────────────────
+     Eyebrow labels are the only all-caps text on a page. */
+  .section-label {
+    @apply text-[10.5px] font-bold uppercase tracking-[0.14em] text-ink-400;
+  }
+  /* Money numerals are Plus Jakarta Sans with tabular figures — not mono.
+     Tabular-nums is what keeps columns aligned; the mono face is not needed. */
+  .money {
+    @apply font-sans tracking-tight tabular-nums;
+  }
+
+  /* ── Inputs ───────────────────────────────────────────────────────────────────────
+     Recessed into the card: a soft well that turns white and lifts on focus. */
   .input {
-    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 min-h-[44px]
-           text-sm font-medium outline-none transition duration-150
-           placeholder:text-ink-400
-           hover:border-ink-300
-           focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
+    @apply w-full rounded-2xl border border-transparent bg-ink-900/[0.045] px-4 py-3 min-h-[48px]
+           text-[15px] font-semibold text-ink-900 outline-none
+           transition-[background-color,border-color,box-shadow] duration-300 ease-silk
+           placeholder:text-ink-400 placeholder:font-medium
+           hover:bg-ink-900/[0.06]
+           focus:bg-white focus:border-brand-400 focus:ring-4 focus:ring-brand-500/15;
   }
   .dark .input {
-    @apply border-ink-700 bg-ink-800 text-white placeholder:text-ink-500 hover:border-ink-600;
+    @apply bg-white/[0.06] text-white placeholder:text-ink-500 hover:bg-white/[0.08] focus:bg-ink-900 focus:border-brand-400;
+  }
+  /* Focus-within input cell used by the Settings rate grid. */
+  .rcell {
+    @apply flex items-baseline gap-1 rounded-2xl border border-transparent bg-ink-900/[0.045] px-3 py-0.5
+           transition-[border-color,box-shadow,background-color] duration-300 ease-silk;
+  }
+  .dark .rcell {
+    @apply bg-white/[0.06];
+  }
+  .rcell:focus-within {
+    @apply border-brand-400 bg-white ring-4 ring-brand-500/15;
+  }
+  .dark .rcell:focus-within {
+    @apply bg-ink-900;
+  }
+  /* Small boxed numeric cell (from/to age, growth %) inside flow rows. */
+  .fcell {
+    @apply w-full rounded-xl border border-transparent bg-ink-900/[0.045] px-2 py-2.5 text-center text-sm
+           font-bold tabular-nums text-ink-900 outline-none
+           transition-[border-color,box-shadow,background-color] duration-300 ease-silk;
+  }
+  .dark .fcell {
+    @apply bg-white/[0.06] text-white;
+  }
+  .fcell:focus {
+    @apply border-brand-400 bg-white ring-4 ring-brand-500/15;
+  }
+  .dark .fcell:focus {
+    @apply bg-ink-900;
+  }
+  .rcell input,
+  .rcell select {
+    @apply w-full min-w-0 flex-1 border-none bg-transparent p-0 py-2.5 text-[17px] font-extrabold
+           tabular-nums text-ink-900 outline-none;
+  }
+  .dark .rcell input,
+  .dark .rcell select {
+    @apply text-white;
   }
 
   /* Loading skeleton — shimmer sweep */

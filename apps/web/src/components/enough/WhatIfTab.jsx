@@ -16,6 +16,7 @@ import { fmtMoney, readEnoughSentence, scopeOfSentence, describeOps, SEQUENCE_CO
 import { previewWhatIf, whatIfPatch } from '../../data/useEnough.js'
 import { askEnoughModel } from '../../api/client.js'
 import { Card, Modal } from '../ui.jsx'
+import { IconSpark } from '../Icons.jsx'
 
 const money = (v) => (v == null ? '—' : fmtMoney(v, { compact: true }))
 
@@ -90,15 +91,28 @@ export default function WhatIfTab({ baseRaw, settings, patch, onApplied }) {
     <div className="space-y-3">
       {chat.length === 0 ? (
         <div className="space-y-3">
-          <p className="text-sm text-ink-500 leading-relaxed px-1">
-            Describe something the form has no field for. It is tried on a copy of your plan and thrown away —
-            nothing changes unless you say so.
-          </p>
+          {/* Violet is this tab's colour: a sandbox, not the plan. The intro card wears it
+              so the screen is unmistakably a different place from the form next door. */}
+          <div className="hero-card relative overflow-hidden !p-4"
+            style={{ background: 'linear-gradient(135deg, #6d5bd0 0%, #5647b8 55%, #46389f 100%)' }}>
+            <div className="pointer-events-none absolute -top-16 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
+                <IconSpark size={13} /> Sandbox
+              </div>
+              <p className="text-sm leading-relaxed mt-1.5 text-white/90">
+                Describe something the form has no field for. It is tried on a copy of your plan and thrown
+                away — nothing changes unless you say so.
+              </p>
+            </div>
+          </div>
+          <div className="section-label px-1 pt-1">Try one</div>
           <div className="space-y-2">
             {EXAMPLES.map((e) => (
               <button key={e} onClick={() => ask(e)}
-                className="w-full text-left text-sm font-medium px-4 py-2.5 rounded-xl bg-ink-100 dark:bg-ink-800 hover:bg-ink-200 dark:hover:bg-ink-700 transition">
-                {e}
+                className="card-flat group w-full flex items-center justify-between gap-3 text-left text-sm font-semibold rounded-2xl bg-white dark:bg-ink-900 px-4 py-3.5 transition-transform duration-300 ease-silk hover:-translate-y-px active:scale-[0.99]">
+                <span>{e}</span>
+                <span className="grid place-items-center h-7 w-7 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 transition-transform duration-300 ease-silk group-hover:translate-x-0.5">→</span>
               </button>
             ))}
           </div>
@@ -114,14 +128,15 @@ export default function WhatIfTab({ baseRaw, settings, patch, onApplied }) {
         </div>
       )}
 
-      <div className="card sticky bottom-2 flex items-center gap-2 !p-2">
+      {/* Sits above the phone dock; on desktop there is no dock so it hugs the bottom. */}
+      <div className="card sticky bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-4 flex items-center gap-2 !p-1.5 !rounded-full">
         <input
-          className="input !py-2 flex-1" placeholder="What if…" maxLength={200} value={input}
+          className="input !rounded-full !py-2 !min-h-[44px] flex-1 !bg-transparent hover:!bg-ink-900/[0.03] focus:!bg-white focus:!border-violet-400 focus:!ring-violet-500/15" placeholder="What if…" maxLength={200} value={input}
           aria-label="Ask what if" disabled={busy}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') ask(input) }}
         />
-        <button className="btn-primary !py-2 shrink-0" disabled={busy} onClick={() => ask(input)}>Ask</button>
+        <button className="btn-primary !min-h-[44px] shrink-0 !bg-violet-600 hover:!bg-violet-500 !shadow-none" disabled={busy} onClick={() => ask(input)}>Ask</button>
       </div>
 
       <button
@@ -170,7 +185,7 @@ function Bubble({ m, onApply }) {
   if (m.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-brand-600 text-white text-sm px-4 py-2.5">{m.text}</div>
+        <div className="max-w-[85%] rounded-2xl rounded-br-md bg-violet-600 text-white text-sm px-4 py-2.5">{m.text}</div>
       </div>
     )
   }
@@ -216,8 +231,8 @@ function ResultCard({ result, onApply }) {
       </p>
       {savable && done == null && (
         <div className="flex gap-2 mt-3">
-          <button className="btn-primary !py-2 text-xs" onClick={() => { onApply(ops); setDone('applied') }}>Make this my plan</button>
-          <button className="btn-ghost !py-2 text-xs" onClick={() => setDone('kept')}>Keep it as it was</button>
+          <button className="btn-primary !min-h-[38px] !px-4 text-xs" onClick={() => { onApply(ops); setDone('applied') }}>Make this my plan</button>
+          <button className="btn-ghost !min-h-[38px] !px-4 text-xs" onClick={() => setDone('kept')}>Keep it as it was</button>
         </div>
       )}
       {done === 'kept' && <p className="text-xs text-ink-400 mt-3">Left as it was.</p>}

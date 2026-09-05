@@ -82,7 +82,7 @@ export default function Login() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden flex items-center justify-center px-5 py-10 bg-ink-50 dark:bg-ink-950">
+    <div className="relative min-h-[100dvh] overflow-hidden flex items-center justify-center px-5 py-10">
       {/* Animated background */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-brand-400/25 blur-3xl animate-float" />
@@ -119,7 +119,7 @@ export default function Login() {
             type="button"
             onClick={() => navigate(-1)}
             aria-label="Back"
-            className="mb-4 -ml-2 grid place-items-center h-9 w-9 rounded-xl text-ink-600 dark:text-ink-300 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+            className="mb-4 -ml-2 grid place-items-center h-9 w-9 rounded-full text-ink-600 dark:text-ink-300 hover:bg-ink-900/[0.05] dark:hover:bg-white/[0.06] transition-colors"
           >
             <IconChevron size={18} className="rotate-180" />
           </button>
@@ -128,8 +128,8 @@ export default function Login() {
             <span className="grid place-items-center h-11 w-11 rounded-full bg-brand-600 text-white shadow-glow mb-4">
               <IconTrend size={20} />
             </span>
-            <h1 className="text-3xl font-extrabold tracking-tight">
-              {mode === 'signup' ? 'Open an Account' : 'Welcome Back'}
+            <h1 className="text-3xl font-extrabold tracking-[-0.03em]">
+              {mode === 'signup' ? 'Create an account' : 'Welcome back'}
             </h1>
             <p className="text-sm text-ink-400 mt-2 leading-relaxed">
               {mode === 'signup'
@@ -164,14 +164,14 @@ export default function Login() {
                 <div className="h-px flex-1 bg-ink-100 dark:bg-ink-800" />
               </div>
 
-              <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-sm font-semibold mb-4" role="tablist">
+              <div className="seg w-full !text-sm mb-4" role="tablist">
                 <button type="button" role="tab" aria-selected={mode === 'login'}
                   onClick={() => { setMode('login'); setError('') }}
-                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'login' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+                  className={`seg-btn ${mode === 'login' ? 'active' : ''}`}
                 >Log in</button>
                 <button type="button" role="tab" aria-selected={mode === 'signup'}
                   onClick={() => { setMode('signup'); setError('') }}
-                  className={`flex-1 px-3 py-2 rounded-lg transition-all duration-200 ${mode === 'signup' ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+                  className={`seg-btn ${mode === 'signup' ? 'active' : ''}`}
                 >Sign up</button>
               </div>
 
@@ -216,8 +216,8 @@ export default function Login() {
                     Secure login on this device
                   </label>
                 )}
-                <button type="submit" disabled={loading || !!apiUnavailable} className="btn-primary w-full uppercase tracking-wide">
-                  {loading ? <><Spinner size={16} /> Please wait…</> : <>{mode === 'signup' ? 'Create account' : 'Sign in'} <span aria-hidden>→</span></>}
+                <button type="submit" disabled={loading || !!apiUnavailable} className="btn-primary w-full !justify-between !pl-6">
+                  {loading ? <><Spinner size={16} /> Please wait…</> : <>{mode === 'signup' ? 'Create account' : 'Sign in'} <span className="btn-icon" aria-hidden>→</span></>}
                 </button>
               </form>
 
@@ -230,7 +230,7 @@ export default function Login() {
               <p className="text-center text-sm text-ink-500 dark:text-ink-400">
                 {mode === 'signup' ? 'Already have an account? ' : 'New to Financial Blueprint? '}
                 <button type="button" onClick={() => { setMode(mode === 'signup' ? 'login' : 'signup'); setError('') }} className="font-bold text-brand-600 hover:text-brand-700">
-                  {mode === 'signup' ? 'Log in' : 'Open an Account'}
+                  {mode === 'signup' ? 'Log in' : 'Create an account'}
                 </button>
               </p>
 

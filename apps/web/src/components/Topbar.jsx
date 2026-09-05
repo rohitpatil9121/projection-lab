@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store.js'
 import { Modal } from './ui.jsx'
+import AppLogo from './AppLogo.jsx'
+import { NAV_LINKS } from './navLinks.js'
 import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
@@ -9,11 +11,12 @@ const titles = {
   '/plan': 'Financial Plan',
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',
-  // Short enough to fit a 360px header without truncating; the card below it
-  // carries the full "Monte Carlo — Range of Outcomes" heading.
   '/monte-carlo': 'Monte Carlo',
   '/milestones': 'Goals',
   '/settings': 'Settings',
+  '/enough': 'FIRE number',
+  '/enough/plan': 'Your plan',
+  '/enough/what-if': 'What if',
 }
 
 const syncLabels = {
@@ -28,6 +31,9 @@ const syncLabels = {
   local: 'What-if · not synced',
 }
 
+/* A floating glass bar, detached from the top edge. On desktop the page links sit in
+   the middle of it as an island; on a phone the bar carries the page title and the
+   dock at the bottom carries the links. */
 export default function Topbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
@@ -88,89 +94,108 @@ export default function Topbar() {
   const initials = (profile.name || 'U').split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-ink-100 dark:border-ink-800 bg-ink-50 dark:bg-ink-950 supports-[backdrop-filter]:bg-ink-50/80 supports-[backdrop-filter]:dark:bg-ink-950/80 supports-[backdrop-filter]:backdrop-blur px-5 md:px-8 py-4">
-      <div className="min-w-0">
-        {/* truncate, not wrap: a long title like "Monte Carlo Simulation" ran to two
-            lines at 360px and squeezed the actions beside it into a narrow column. */}
-        <h1 className="truncate text-lg md:text-xl font-extrabold tracking-tight">{titles[pathname] || 'Financial Blueprint'}</h1>
-        <div className="flex items-center gap-1 text-xs text-ink-400 font-medium">
-          <select
-            value={activeScenarioId}
-            onChange={(e) => switchScenario(e.target.value)}
-            className="bg-transparent font-semibold text-ink-500 dark:text-ink-300 outline-none cursor-pointer max-w-[140px] truncate rounded"
-            title="Switch scenario"
-          >
-            {scenarios.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
-          </select>
-          <button
-            onClick={() => { setNewName(''); setNewOpen(true) }}
-            className="px-1.5 text-brand-600 hover:text-brand-700 font-bold rounded" title="New scenario (fresh setup)"
-          >+</button>
-          {scenarios.length > 1 && (
-            <button
-              onClick={() => setDelOpen(true)}
-              className="px-1.5 text-ink-400 hover:text-rose-500 rounded" title="Delete this scenario"
-            >×</button>
-          )}
-          <span className="hidden sm:inline truncate">· {auth?.user?.email || auth?.user?.phone || profile.name}</span>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2">
-        {syncStatus === 'conflict' ? (
-          <div className="hidden sm:flex items-center gap-1 text-xs">
-            <button onClick={() => resolveConflict(true)} className="chip bg-brand-100 text-brand-700">Keep mine</button>
-            <button onClick={() => resolveConflict(false)} className="chip bg-ink-100 text-ink-600">Reload</button>
-          </div>
-        ) : syncLabels[syncStatus] && (
-          <span className={`hidden sm:inline chip text-xs ${
-            syncStatus === 'synced' ? 'bg-emerald-100 text-emerald-700' :
-            syncStatus === 'offline' ? 'bg-amber-100 text-amber-700' :
-            syncStatus === 'error' ? 'bg-rose-100 text-rose-700' :
-            'bg-ink-100 text-ink-500'
-          }`} title={syncError || ''}>
-            {syncLabels[syncStatus]}
-          </span>
-        )}
-
-        {!auth?.user && (
-          <Link to="/login" className="btn-ghost whitespace-nowrap text-xs sm:text-sm">Sign in</Link>
-        )}
-
-        <button onClick={toggleDark} className="btn-ghost !px-2.5" title="Toggle theme" aria-label="Toggle theme">
-          {dark ? <IconSun size={19} /> : <IconMoon size={19} />}
-        </button>
-
-        {/* Avatar + dropdown menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((o) => !o)}
-            className="flex items-center gap-2 rounded-xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 pl-1.5 pr-2 py-1.5 hover:border-ink-200 dark:hover:border-ink-700 transition-colors"
-            aria-haspopup="true" aria-expanded={menuOpen}
-          >
-            <div className="grid place-items-center h-7 w-7 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-bold">{initials}</div>
-            <span className="hidden sm:inline text-sm font-semibold max-w-[120px] truncate">{profile.name || 'Guest'}</span>
-            <IconChevron size={14} className={`text-ink-400 transition-transform ${menuOpen ? 'rotate-90' : ''}`} />
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 shadow-lift p-1.5 animate-scale-in origin-top-right">
-              <div className="px-3 py-2 border-b border-ink-100 dark:border-ink-800 mb-1">
-                <div className="text-sm font-bold truncate">{profile.name || 'Guest'}</div>
-                <div className="text-xs text-ink-400 truncate">{auth?.user?.email || auth?.user?.phone || 'Not signed in'}</div>
-              </div>
+    <header className="sticky top-0 z-30 px-4 pt-3 md:px-6 md:pt-4">
+      <div className="glass mx-auto flex max-w-6xl items-center gap-3 rounded-[1.6rem] px-3 py-2 md:rounded-full md:px-3">
+        {/* Left: brand on desktop, page title on a phone. */}
+        <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">
+          <AppLogo size={38} className="!rounded-full shadow-card" />
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-extrabold tracking-tight leading-tight md:hidden">
+              {titles[pathname] || 'Financial Blueprint'}
+            </div>
+            <div className="hidden md:block text-[15px] font-extrabold tracking-tight leading-tight">Financial Blueprint</div>
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-ink-400 leading-tight">
+              <select
+                value={activeScenarioId}
+                onChange={(e) => switchScenario(e.target.value)}
+                className="bg-transparent font-semibold text-ink-500 dark:text-ink-300 outline-none cursor-pointer max-w-[130px] truncate rounded"
+                title="Switch scenario"
+              >
+                {scenarios.map((sc) => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
+              </select>
               <button
-                type="button"
-                onClick={() => { setMenuOpen(false); navigate('/settings') }}
-                className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
-              >⚙️ Settings</button>
-              {auth ? (
-                <button onClick={signOut} className="w-full text-left rounded-lg px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">↩ Sign out</button>
-              ) : (
-                <Link to="/login" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors">→ Sign in</Link>
+                onClick={() => { setNewName(''); setNewOpen(true) }}
+                className="px-1 text-brand-600 hover:text-brand-700 font-bold rounded" title="New scenario (fresh setup)"
+              >+</button>
+              {scenarios.length > 1 && (
+                <button
+                  onClick={() => setDelOpen(true)}
+                  className="px-1 text-ink-400 hover:text-rose-500 rounded" title="Delete this scenario"
+                >×</button>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Centre: the island. */}
+        <nav aria-label="Primary" className="hidden md:flex flex-1 justify-center">
+          <div className="inline-flex items-center gap-0.5 rounded-full bg-ink-900/[0.04] dark:bg-white/[0.05] p-1">
+            {NAV_LINKS.map(({ to, label, Icon, end }) => (
+              <NavLink key={to} to={to} end={end} className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <Icon size={16} />
+                {label}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+
+        {/* Right: status, theme, account. */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {syncStatus === 'conflict' ? (
+            <div className="hidden sm:flex items-center gap-1 text-xs">
+              <button onClick={() => resolveConflict(true)} className="chip bg-brand-100 text-brand-700">Keep mine</button>
+              <button onClick={() => resolveConflict(false)} className="chip bg-ink-100 text-ink-600">Reload</button>
+            </div>
+          ) : syncLabels[syncStatus] && (
+            <span className={`hidden sm:inline chip text-xs ${
+              syncStatus === 'synced' ? 'bg-emerald-100 text-emerald-700' :
+              syncStatus === 'offline' ? 'bg-amber-100 text-amber-700' :
+              syncStatus === 'error' ? 'bg-rose-100 text-rose-700' :
+              'bg-ink-100 text-ink-500'
+            }`} title={syncError || ''}>
+              {syncLabels[syncStatus]}
+            </span>
           )}
+
+          {!auth?.user && (
+            <Link to="/login" className="hidden sm:inline-flex btn-ghost !min-h-[40px] !px-3 whitespace-nowrap text-sm">Sign in</Link>
+          )}
+
+          <button onClick={toggleDark} className="btn-ghost !min-h-[40px] !px-2.5" title="Toggle theme" aria-label="Toggle theme">
+            {dark ? <IconSun size={18} /> : <IconMoon size={18} />}
+          </button>
+
+          {/* Avatar + dropdown menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              className="flex items-center gap-2 rounded-full bg-white/70 dark:bg-white/[0.06] pl-1 pr-1.5 py-1 shadow-card transition-transform duration-300 ease-silk hover:-translate-y-px"
+              aria-haspopup="true" aria-expanded={menuOpen}
+            >
+              <div className="grid place-items-center h-8 w-8 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white text-xs font-bold">{initials}</div>
+              <span className="hidden lg:inline text-sm font-semibold max-w-[120px] truncate">{profile.name || 'Guest'}</span>
+              <IconChevron size={14} className={`text-ink-400 transition-transform duration-300 ease-silk ${menuOpen ? 'rotate-90' : ''}`} />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-56 rounded-3xl glass p-1.5 animate-scale-in origin-top-right">
+                <div className="px-3 py-2.5 mb-1">
+                  <div className="text-sm font-bold truncate">{profile.name || 'Guest'}</div>
+                  <div className="text-xs text-ink-400 truncate">{auth?.user?.email || auth?.user?.phone || 'Not signed in'}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setMenuOpen(false); navigate('/settings') }}
+                  className="w-full text-left rounded-2xl px-3 py-2.5 text-sm font-medium hover:bg-ink-900/[0.05] dark:hover:bg-white/[0.06] transition-colors"
+                >Settings</button>
+                {auth ? (
+                  <button onClick={signOut} className="w-full text-left rounded-2xl px-3 py-2.5 text-sm font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">Sign out</button>
+                ) : (
+                  <Link to="/login" onClick={() => setMenuOpen(false)} className="block rounded-2xl px-3 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/40 transition-colors">Sign in</Link>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

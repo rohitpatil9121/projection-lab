@@ -1,5 +1,5 @@
 // Lightweight inline SVG icon set (stroke-based, inherits currentColor).
-const base = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' }
+const base = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round', strokeLinejoin: 'round' }
 const S = ({ children, size = 20, className = '' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" className={className} {...base}>{children}</svg>
 )
