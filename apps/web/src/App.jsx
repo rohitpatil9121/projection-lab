@@ -5,7 +5,6 @@ import { useGSAP } from '@gsap/react'
 import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import MobileNav from './components/MobileNav.jsx'
-import Today from './pages/Today.jsx'
 import Plan from './pages/Plan.jsx'
 import Accounts from './pages/Accounts.jsx'
 import CashFlow from './pages/CashFlow.jsx'
@@ -149,7 +148,7 @@ export default function App() {
         <Route path="/onboarding" element={<OnboardingRoute />} />
         <Route element={<ProtectedLayout />}>
           <Route element={<AppShell />}>
-            <Route index element={<Today />} />
+            <Route index element={<Navigate to="/enough/plan" replace />} />
             <Route path="plan" element={<Plan />} />
             <Route path="accounts" element={<Accounts />} />
             <Route path="cash-flow" element={<CashFlow />} />
