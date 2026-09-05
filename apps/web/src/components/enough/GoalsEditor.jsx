@@ -110,7 +110,7 @@ export default function GoalsEditor({ goals, currentAge, onChange }) {
       )}
 
       <button
-        className="mt-3 w-full rounded-xl border border-dashed border-ink-200 dark:border-ink-700 py-2.5 text-sm font-bold text-ink-500 hover:border-brand-500 hover:text-brand-600 transition"
+        className="mt-3 w-full rounded-full border border-dashed border-ink-300 dark:border-ink-700 py-3 text-sm font-bold text-ink-500 hover:border-brand-500 hover:text-brand-600 hover:bg-brand-50/50 dark:hover:bg-brand-500/10 transition-colors duration-300"
         onClick={openAdd}
       >+ Add a goal</button>
 
@@ -131,13 +131,13 @@ export default function GoalsEditor({ goals, currentAge, onChange }) {
                 onChange={(e) => setEditing({ ...editing, draft: { ...editing.draft, amountL: e.target.value } })} />
             </label>
 
-            <div className="inline-flex w-full rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-xs font-semibold">
+            <div className="seg w-full">
               {[['one', 'One-time'], ['recur', 'Every year']].map(([v, label]) => {
                 const active = (v === 'recur') === editing.draft.recurring
                 return (
                   <button key={v}
                     onClick={() => setEditing({ ...editing, draft: { ...editing.draft, recurring: v === 'recur' } })}
-                    className={`flex-1 px-3 py-1.5 rounded-lg transition ${active ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}>
+                    className={`seg-btn ${active ? 'active' : ''}`}>
                     {label}
                   </button>
                 )

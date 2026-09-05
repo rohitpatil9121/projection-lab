@@ -110,9 +110,9 @@ export default function WhatIfTab({ baseRaw, settings, patch, onApplied }) {
           <div className="space-y-2">
             {EXAMPLES.map((e) => (
               <button key={e} onClick={() => ask(e)}
-                className="card card-interactive w-full flex items-center justify-between gap-3 text-left text-sm font-semibold !px-4 !py-3 !border-violet-100 dark:!border-violet-500/20 hover:!border-violet-300">
+                className="card-flat group w-full flex items-center justify-between gap-3 text-left text-sm font-semibold rounded-2xl bg-white dark:bg-ink-900 px-4 py-3.5 transition-transform duration-300 ease-silk hover:-translate-y-px active:scale-[0.99]">
                 <span>{e}</span>
-                <span className="text-violet-500 text-base leading-none">→</span>
+                <span className="grid place-items-center h-7 w-7 rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-300 transition-transform duration-300 ease-silk group-hover:translate-x-0.5">→</span>
               </button>
             ))}
           </div>
@@ -128,14 +128,15 @@ export default function WhatIfTab({ baseRaw, settings, patch, onApplied }) {
         </div>
       )}
 
-      <div className="card sticky bottom-2 flex items-center gap-2 !p-2 !border-violet-200 dark:!border-violet-500/30 shadow-lift">
+      {/* Sits above the phone dock; on desktop there is no dock so it hugs the bottom. */}
+      <div className="card sticky bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-4 flex items-center gap-2 !p-1.5 !rounded-full">
         <input
-          className="input !py-2 flex-1 !border-transparent focus:!border-violet-400 focus:!ring-violet-500/15" placeholder="What if…" maxLength={200} value={input}
+          className="input !rounded-full !py-2 !min-h-[44px] flex-1 !bg-transparent hover:!bg-ink-900/[0.03] focus:!bg-white focus:!border-violet-400 focus:!ring-violet-500/15" placeholder="What if…" maxLength={200} value={input}
           aria-label="Ask what if" disabled={busy}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') ask(input) }}
         />
-        <button className="btn-primary !py-2 shrink-0 !bg-violet-600 hover:!bg-violet-700 !shadow-none" disabled={busy} onClick={() => ask(input)}>Ask</button>
+        <button className="btn-primary !min-h-[44px] shrink-0 !bg-violet-600 hover:!bg-violet-500 !shadow-none" disabled={busy} onClick={() => ask(input)}>Ask</button>
       </div>
 
       <button
@@ -230,8 +231,8 @@ function ResultCard({ result, onApply }) {
       </p>
       {savable && done == null && (
         <div className="flex gap-2 mt-3">
-          <button className="btn-primary !py-2 text-xs" onClick={() => { onApply(ops); setDone('applied') }}>Make this my plan</button>
-          <button className="btn-ghost !py-2 text-xs" onClick={() => setDone('kept')}>Keep it as it was</button>
+          <button className="btn-primary !min-h-[38px] !px-4 text-xs" onClick={() => { onApply(ops); setDone('applied') }}>Make this my plan</button>
+          <button className="btn-ghost !min-h-[38px] !px-4 text-xs" onClick={() => setDone('kept')}>Keep it as it was</button>
         </div>
       )}
       {done === 'kept' && <p className="text-xs text-ink-400 mt-3">Left as it was.</p>}

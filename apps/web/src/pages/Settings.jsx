@@ -1,7 +1,7 @@
 import { useStore } from '../data/store.js'
 import { emptyProfile } from '@projectlab/schema'
-import { Card, SectionLabel } from '../components/ui.jsx'
-import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts } from '../components/Icons.jsx'
+import { Card, SectionLabel, PageHero } from '../components/ui.jsx'
+import { IconPlus, IconTrash, IconChevron, IconMoon, IconTrend, IconShield, IconAccounts, IconSettings } from '../components/Icons.jsx'
 import { Link, useNavigate } from 'react-router-dom'
 
 // iOS-style switch used by every preference row.
@@ -75,12 +75,9 @@ export default function Settings() {
     .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('') || '?'
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      {/* ---- Header ---- */}
-      <div className="animate-fade-in-up">
-        <h1 className="text-[22px] font-extrabold tracking-tight">Settings</h1>
-        <p className="mt-1 text-[13px] text-ink-500">Manage your profile and preferences</p>
-      </div>
+    <div className="space-y-6">
+      <PageHero tone="ink" icon={<IconSettings size={24} />} eyebrow="Settings"
+        title="Your profile and preferences" subtitle="Who the plan is for, how the app looks, and what happens to your data" />
 
       {/* ---- User profile ---- */}
       <div>
@@ -166,14 +163,14 @@ export default function Settings() {
       {auth && (
         <button
           onClick={signOut}
-          className="w-full rounded-xl border border-rose-300 dark:border-rose-500/40 text-rose-600 dark:text-rose-400 py-3 text-sm font-bold hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+          className="btn w-full text-rose-600 dark:text-rose-400 ring-1 ring-rose-300 dark:ring-rose-500/40 hover:bg-rose-50 dark:hover:bg-rose-500/10"
         >
-          ⎋ Sign Out
+          Sign out
         </button>
       )}
 
       <p className="text-center text-[11px] text-ink-400 font-medium pb-4">
-        Financial Blueprint v{__APP_VERSION__} · build {__BUILD_STAMP__} · Institutional Minimalism Theme
+        Financial Blueprint v{__APP_VERSION__} · build {__BUILD_STAMP__}
       </p>
 
     </div>

@@ -198,10 +198,9 @@ function FireNumberTab({ cfg, settings, patch, liveAge, solvedAge, sliderAge, se
       <Card>
         <div className="flex items-center justify-between gap-3 mb-3">
           <span className="section-label truncate">{page === 'chart' ? 'Your corpus over time' : 'Year by year'}</span>
-          <div className="inline-flex shrink-0 rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-xs font-semibold">
+          <div className="seg shrink-0">
             {['chart', 'table'].map((p) => (
-              <button key={p} onClick={() => setPage(p)}
-                className={`px-3 py-1.5 rounded-lg transition ${page === p ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}>
+              <button key={p} onClick={() => setPage(p)} className={`seg-btn !py-1.5 ${page === p ? 'active' : ''}`}>
                 {p === 'chart' ? 'Chart' : 'Year by year'}
               </button>
             ))}
@@ -229,10 +228,10 @@ function FireNumberTab({ cfg, settings, patch, liveAge, solvedAge, sliderAge, se
           </div>
           {sliderAge != null && sliderAge !== (settings.retireAge ?? profile.retirementAge) && (
             <div className="flex gap-2 mt-3">
-              <button className="btn-secondary !py-2 text-xs" onClick={() => patch({ retireAge: sliderAge })}>
+              <button className="btn-secondary !min-h-[38px] !px-4 text-xs" onClick={() => patch({ retireAge: sliderAge })}>
                 Keep {sliderAge} as my retirement age
               </button>
-              <button className="btn-ghost !py-2 text-xs" onClick={() => setSliderAge(null)}>Reset</button>
+              <button className="btn-ghost !min-h-[38px] !px-4 text-xs" onClick={() => setSliderAge(null)}>Reset</button>
             </div>
           )}
         </div>
@@ -327,7 +326,7 @@ function TodayAnchor({ today, cfg, onOpen }) {
   // A strip with a coloured edge, not a card: the edge is the verdict at a glance.
   const edge = today.have == null ? 'border-ink-300 dark:border-ink-600' : today.ok ? 'border-emerald-500' : 'border-amber-500'
   return (
-    <button onClick={onOpen} className={`w-full text-left rounded-xl border-l-4 ${edge} bg-white dark:bg-ink-900 shadow-card px-4 py-3 transition hover:shadow-soft`}>
+    <button onClick={onOpen} className={`card-flat w-full text-left rounded-2xl border-l-4 ${edge} bg-white dark:bg-ink-900 px-4 py-3.5 transition-transform duration-300 ease-silk hover:-translate-y-px`}>
       <div className="section-label">If you retired today · {cfg.currentYear}</div>
       <p className="text-sm leading-relaxed mt-1">
         {lead && <b className={tone}>{lead} </b>}{body}
@@ -585,7 +584,7 @@ function YearTable({ cfg, paths }) {
         <p className="text-[11px] text-ink-400 leading-relaxed">
           The worst of the {SEQUENCE_COUNT} sequences. Every row follows from the one above it.
         </p>
-        <button className="btn-secondary !py-2 text-xs shrink-0" onClick={download}>Download CSV</button>
+        <button className="btn-secondary !min-h-[38px] !px-4 text-xs shrink-0" onClick={download}>Download CSV</button>
       </div>
     </div>
   )
@@ -668,8 +667,8 @@ function MethodCard({ cfg, answer, onOpen, onLimits }) {
         )}
       </p>
       <div className="flex gap-2 mt-4 flex-wrap">
-        <button className="btn-secondary !py-2 text-xs" onClick={onOpen}>The method</button>
-        <button className="btn-secondary !py-2 text-xs" onClick={onLimits}>What this cannot do</button>
+        <button className="btn-secondary !min-h-[38px] !px-4 text-xs" onClick={onOpen}>The method</button>
+        <button className="btn-secondary !min-h-[38px] !px-4 text-xs" onClick={onLimits}>What this cannot do</button>
       </div>
     </Card>
   )
@@ -856,7 +855,9 @@ function YourPlanTab({ settings, patch, derived, cfg, profile, onSeeNumber }) {
       <PlanData settings={settings} patch={patch} />
 
       {mixSet && (
-        <button className="btn-primary w-full" onClick={onSeeNumber}>See the corpus I need →</button>
+        <button className="btn-primary w-full !justify-between !pl-6" onClick={onSeeNumber}>
+          See the corpus I need <span className="btn-icon" aria-hidden>→</span>
+        </button>
       )}
     </div>
   )
@@ -871,11 +872,11 @@ function PlanSummary({ cfg }) {
     ['Retire at', `${cfg.retireAge} → ${cfg.planAge}`],
   ]
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
       {items.map(([label, value]) => (
-        <div key={label} className="rounded-xl border border-brand-100 dark:border-brand-500/20 bg-brand-50/60 dark:bg-brand-500/10 px-3 py-2">
-          <div className="text-[10px] font-bold uppercase tracking-wide text-brand-700/70 dark:text-brand-300/70 truncate">{label}</div>
-          <div className="money text-base font-extrabold mt-0.5 truncate">{value}</div>
+        <div key={label} className="card-flat rounded-2xl bg-white/80 dark:bg-white/[0.04] px-3.5 py-3">
+          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-ink-400 truncate">{label}</div>
+          <div className="money text-lg font-extrabold mt-0.5 truncate">{value}</div>
         </div>
       ))}
     </div>
@@ -920,8 +921,8 @@ function PlanData({ settings, patch }) {
     <SectionCard tone="ink" icon={<IconShield size={18} />} title="Your plan data"
       hint="Kept in this browser — no account, no server" className="card-quiet">
       <div className="flex gap-2 flex-wrap">
-        <button className="btn-secondary !py-2 text-xs" onClick={exportPlan}>Export plan</button>
-        <button className="btn-secondary !py-2 text-xs" onClick={importPlan}>Import plan</button>
+        <button className="btn-secondary !min-h-[38px] !px-4 text-xs" onClick={exportPlan}>Export plan</button>
+        <button className="btn-secondary !min-h-[38px] !px-4 text-xs" onClick={importPlan}>Import plan</button>
       </div>
     </SectionCard>
   )
@@ -1059,10 +1060,9 @@ function PlanEditorFields({ settings, patch, derived, cfg, profile }) {
 
       <SectionCard tone="ink" icon={<IconFlow size={18} />} title="Withdrawal strategy"
         hint="Which asset a withdrawal comes out of">
-        <div className="inline-flex rounded-xl bg-ink-100 dark:bg-ink-800 p-1 text-xs font-semibold w-full">
+        <div className="seg w-full">
           {[['rebalance', 'Rebalance'], ['waterfall', 'Safest first']].map(([v, label]) => (
-            <button key={v} onClick={() => patch({ drawdown: v })}
-              className={`flex-1 px-3 py-2 rounded-lg transition ${cfg.drawdown === v ? 'bg-white dark:bg-ink-900 text-brand-600 shadow-sm' : 'text-ink-500'}`}>
+            <button key={v} onClick={() => patch({ drawdown: v })} className={`seg-btn ${cfg.drawdown === v ? 'active' : ''}`}>
               {label}
             </button>
           ))}

@@ -1,27 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { IconSettings, IconPlan, IconTarget, IconSpark } from './Icons.jsx'
+import { NAV_LINKS } from './navLinks.js'
 
-const links = [
-  { to: '/enough/plan', label: 'Your plan', Icon: IconPlan },
-  { to: '/enough', label: 'FIRE number', Icon: IconTarget, end: true },
-  { to: '/enough/what-if', label: 'What if', Icon: IconSpark },
-  { to: '/settings', label: 'Settings', Icon: IconSettings },
-]
-
+// A floating glass dock, detached from the screen edge, rather than a bar glued to it.
 export default function MobileNav() {
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 flex justify-around border-t border-ink-100 dark:border-ink-800 bg-white/95 dark:bg-ink-900/95 backdrop-blur px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
-      {links.map(({ to, label, Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) =>
-            `flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold ${
-              isActive ? 'text-brand-600' : 'text-ink-400'
-            }`
-          }
-        >
+    <nav
+      aria-label="Primary"
+      className="md:hidden fixed inset-x-4 z-30 mx-auto max-w-sm glass rounded-full p-1.5 flex items-stretch"
+      style={{ bottom: 'max(0.875rem, env(safe-area-inset-bottom))' }}
+    >
+      {NAV_LINKS.map(({ to, label, Icon, end }) => (
+        <NavLink key={to} to={to} end={end} className={({ isActive }) => `dock-link ${isActive ? 'active' : ''}`}>
           <Icon size={20} />
           {label}
         </NavLink>

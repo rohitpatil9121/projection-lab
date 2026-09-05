@@ -27,17 +27,19 @@ export function Modal({ open, onClose, title, className = 'max-w-sm', children }
   }, [open, onClose])
 
   if (!open) return null
+  // A sheet from the bottom on a phone, a centred dialog on anything wider.
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center px-5 bg-ink-950/50 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center px-3 pb-3 sm:px-5 sm:pb-0 bg-ink-950/40 backdrop-blur-sm animate-fade-in"
       onClick={onClose}
       role="dialog" aria-modal="true"
     >
       <div
-        className={`card w-full ${className} shadow-lift animate-scale-in`}
+        className={`card w-full ${className} !rounded-[2rem] animate-sheet-in sm:animate-scale-in`}
         onClick={(e) => e.stopPropagation()}
       >
-        {title && <h3 className="text-base font-bold tracking-tight mb-3">{title}</h3>}
+        <div className="sm:hidden mx-auto mb-3 h-1 w-10 rounded-full bg-ink-900/10 dark:bg-white/15" aria-hidden />
+        {title && <h3 className="text-lg font-extrabold tracking-tight mb-3">{title}</h3>}
         {children}
       </div>
     </div>,
@@ -92,13 +94,17 @@ export function IconTile({ tone = 'brand', size = 'md', className = '', children
 // and an optional slot under it for a summary strip or filters.
 export function PageHero({ tone = 'brand', icon, eyebrow, title, subtitle, children }) {
   return (
-    <div className="mb-5 animate-fade-in-up">
-      <div className="flex items-start gap-3.5">
-        {icon && <IconTile tone={tone} size="lg">{icon}</IconTile>}
+    <div className="mb-7 animate-fade-in-up">
+      <div className="flex items-start gap-4">
+        {icon && <IconTile tone={tone} size="lg" className="!rounded-full shadow-card">{icon}</IconTile>}
         <div className="min-w-0 flex-1">
-          {eyebrow && <div className={`text-[11px] font-bold uppercase tracking-[0.12em] ${TONES[tone].text}`}>{eyebrow}</div>}
-          <h2 className="text-[22px] leading-tight font-extrabold tracking-tight mt-0.5">{title}</h2>
-          {subtitle && <p className="text-[13px] text-ink-500 dark:text-ink-400 mt-1 leading-relaxed">{subtitle}</p>}
+          {eyebrow && (
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${TONES[tone].tile}`}>
+              {eyebrow}
+            </span>
+          )}
+          <h2 className="text-[26px] md:text-[32px] leading-[1.05] font-extrabold tracking-[-0.03em] mt-2">{title}</h2>
+          {subtitle && <p className="text-[13.5px] text-ink-500 dark:text-ink-400 mt-2 leading-relaxed max-w-[42ch]">{subtitle}</p>}
         </div>
       </div>
       {children}
@@ -111,7 +117,7 @@ export function PageHero({ tone = 'brand', icon, eyebrow, title, subtitle, child
 export function SectionCard({ tone = 'brand', icon, title, hint, action, className = '', children }) {
   return (
     <Card className={className}>
-      <div className="flex items-center gap-3 mb-4">
+      <div className="flex items-center gap-3 mb-5">
         {icon && <IconTile tone={tone}>{icon}</IconTile>}
         <div className="min-w-0 flex-1">
           <div className="text-sm font-bold leading-tight">{title}</div>

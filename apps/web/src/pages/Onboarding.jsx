@@ -51,17 +51,17 @@ function ChoiceCard({ selected, onClick, icon, title, desc, meta }) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative text-left rounded-2xl border p-4 transition w-full ${
+      className={`relative text-left rounded-3xl p-4 w-full transition-[background-color,box-shadow,transform] duration-300 ease-silk active:scale-[0.99] ${
         selected
-          ? 'border-brand-500 bg-brand-50/60 dark:bg-brand-500/10 ring-1 ring-brand-500'
-          : 'border-ink-200 dark:border-ink-700 hover:border-brand-300'
+          ? 'bg-brand-50/80 dark:bg-brand-500/15 ring-2 ring-brand-500 shadow-card'
+          : 'bg-ink-900/[0.03] dark:bg-white/[0.04] ring-1 ring-ink-900/[0.06] dark:ring-white/10 hover:bg-white dark:hover:bg-white/[0.07] hover:shadow-card hover:-translate-y-px'
       }`}
     >
       {selected && (
         <span className="absolute top-2.5 right-2.5 grid place-items-center h-5 w-5 rounded-full bg-brand-600 text-white text-[11px] font-bold">✓</span>
       )}
       <div className="flex items-center gap-2.5">
-        <span className="grid place-items-center h-9 w-9 rounded-xl bg-ink-100 dark:bg-ink-800 text-lg shrink-0">{icon}</span>
+        <span className="grid place-items-center h-9 w-9 rounded-full bg-white dark:bg-ink-800 shadow-card text-lg shrink-0">{icon}</span>
         <span className="font-bold text-sm">{title}</span>
       </div>
       <p className="text-xs text-ink-400 mt-2 leading-snug">{desc}</p>
@@ -219,12 +219,12 @@ export default function Onboarding() {
   const h = headings[step]
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 bg-ink-50 dark:bg-ink-950">
-      <div className={`card w-full shadow-soft ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
+    <div className="min-h-[100dvh] flex items-center justify-center px-4 py-8">
+      <div className={`card w-full animate-scale-in ${step === 'persona' ? 'max-w-2xl' : 'max-w-lg'}`}>
         {/* Header — logo tile, wizard title, progress dots */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <span className="grid place-items-center h-[42px] w-[42px] rounded-xl bg-brand-600 text-white">
+            <span className="grid place-items-center h-[42px] w-[42px] rounded-full bg-brand-600 text-white shadow-glow">
               <IconTrend size={20} className="!stroke-[2.2]" />
             </span>
             <h2 className="text-[19px] font-extrabold tracking-tight">{isNewScenario ? 'New plan setup' : 'Setup'}</h2>
@@ -333,7 +333,7 @@ export default function Onboarding() {
 
         {/* ---- Footer buttons ---- */}
         <div className="flex justify-end gap-3 mt-6">
-          <button type="button" onClick={goBack} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">Back</button>
+          <button type="button" onClick={goBack} className="btn-ghost">Back</button>
           {step === 'persona' ? (
             <button type="button" onClick={confirmPersona} className="btn-primary px-6" disabled={!personaId}>Confirm</button>
           ) : step === 'balances' ? (

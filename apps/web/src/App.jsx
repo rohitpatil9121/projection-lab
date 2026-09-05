@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
 import { useGSAP } from '@gsap/react'
-import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
 import MobileNav from './components/MobileNav.jsx'
 import Plan from './pages/Plan.jsx'
@@ -43,11 +42,11 @@ function PageCascade({ children }) {
       const cards = gsap.utils.toArray('.card, .hero-card', scope.current)
       if (!cards.length) return
       gsap.from(cards, {
-        y: 16,
+        y: 22,
         opacity: 0,
-        duration: 0.5,
-        ease: 'power3.out',
-        stagger: 0.055,
+        duration: 0.8,
+        ease: 'expo.out',
+        stagger: 0.06,
         clearProps: 'transform,opacity',
       })
     })
@@ -64,20 +63,20 @@ function AppShell() {
     document.documentElement.classList.toggle('dark', dark)
   }, [dark])
 
+  // No sidebar: the chrome is a floating bar up top and, on a phone, a dock at the
+  // bottom. Content sits in one measured column so a card is never wider than it can
+  // be read.
   return (
-    <div className="flex h-full min-h-screen">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <Topbar />
-        <main className="flex-1 px-5 md:px-8 py-6 pb-24 md:pb-8 max-w-[1400px] w-full mx-auto">
-          <ErrorBoundary>
-            {/* Keyed on route so each navigation replays the card cascade. */}
-            <PageCascade key={pathname}>
-              <Outlet />
-            </PageCascade>
-          </ErrorBoundary>
-        </main>
-      </div>
+    <div className="flex min-h-[100dvh] flex-col">
+      <Topbar />
+      <main className="w-full max-w-3xl mx-auto flex-1 px-4 md:px-6 pt-6 md:pt-10 pb-32 md:pb-20">
+        <ErrorBoundary>
+          {/* Keyed on route so each navigation replays the card cascade. */}
+          <PageCascade key={pathname}>
+            <Outlet />
+          </PageCascade>
+        </ErrorBoundary>
+      </main>
       <MobileNav />
     </div>
   )

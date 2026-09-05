@@ -58,17 +58,28 @@ export default {
       borderRadius: {
         '2xl': '1rem',
         '3xl': '1.5rem',
+        '4xl': '1.75rem',
       },
       boxShadow: {
-        card: '0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04)',
-        soft: '0 4px 24px rgba(15,23,42,0.06)',
-        lift: '0 12px 32px -8px rgba(15,23,42,0.14), 0 4px 12px -4px rgba(15,23,42,0.08)',
-        glow: '0 0 0 1px rgba(55,124,200,0.15), 0 8px 30px -6px rgba(55,124,200,0.35)',
+        // Shadows carry the canvas hue (slate-navy), never plain black.
+        card: '0 1px 2px rgba(30,41,59,0.04), 0 8px 24px -16px rgba(30,41,59,0.18)',
+        soft: '0 6px 28px -12px rgba(30,41,59,0.16)',
+        lift: '0 18px 44px -18px rgba(30,41,59,0.28), 0 6px 14px -8px rgba(30,41,59,0.10)',
+        glow: '0 10px 26px -10px rgba(55,124,200,0.55)',
+        // The double bezel: hairline, then a pale tray ring, then its own hairline.
+        bezel: '0 0 0 1px rgba(30,41,59,0.06), 0 0 0 6px rgba(255,255,255,0.55), 0 0 0 7px rgba(30,41,59,0.05), 0 18px 40px -24px rgba(30,41,59,0.30)',
+        'bezel-dark': '0 0 0 1px rgba(255,255,255,0.07), 0 0 0 6px rgba(255,255,255,0.025), 0 0 0 7px rgba(255,255,255,0.05), 0 24px 48px -24px rgba(0,0,0,0.6)',
       },
       transitionTimingFunction: {
         'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        // The one curve every interactive element shares — heavy start, long settle.
+        silk: 'cubic-bezier(0.32, 0.72, 0, 1)',
       },
       keyframes: {
+        'sheet-in': {
+          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
         'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(12px)' },
@@ -113,8 +124,9 @@ export default {
       },
       animation: {
         'fade-in': 'fade-in 0.4s ease-out both',
-        'fade-in-up': 'fade-in-up 0.5s cubic-bezier(0.16,1,0.3,1) both',
-        'scale-in': 'scale-in 0.35s cubic-bezier(0.16,1,0.3,1) both',
+        'fade-in-up': 'fade-in-up 0.7s cubic-bezier(0.32,0.72,0,1) both',
+        'scale-in': 'scale-in 0.45s cubic-bezier(0.32,0.72,0,1) both',
+        'sheet-in': 'sheet-in 0.5s cubic-bezier(0.32,0.72,0,1) both',
         shimmer: 'shimmer 1.6s infinite',
         float: 'float 6s ease-in-out infinite',
         'float-y': 'float-y 8s ease-in-out infinite',
