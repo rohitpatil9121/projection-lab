@@ -6,7 +6,6 @@ import { IconSun, IconMoon, IconChevron } from './Icons.jsx'
 import { registerBackHandler } from '../hooks/backButton.js'
 
 const titles = {
-  '/': 'Today',
   '/plan': 'Financial Plan',
   '/accounts': 'Accounts',
   '/cash-flow': 'Cash Flow',
