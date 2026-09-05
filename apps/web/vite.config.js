@@ -9,9 +9,12 @@ const buildStamp = new Date().toLocaleString('en-IN', {
   day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false,
 })
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: './',
+  // The Android WebView loads the bundle from a file path, so it needs relative asset
+  // URLs. On the web, relative URLs break every nested route: a refresh on /enough/plan
+  // asks for /enough/assets/… and gets the SPA fallback HTML back as "JavaScript".
+  base: mode === 'capacitor' ? './' : '/',
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_STAMP__: JSON.stringify(buildStamp),
@@ -23,4 +26,4 @@ export default defineConfig({
       '/healthz': 'http://localhost:3001',
     },
   },
-})
+}))
